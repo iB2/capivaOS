@@ -12,6 +12,8 @@ Claude Code is powerful but undisciplined. Without structure, it exhibits predic
 
 These aren't edge cases — they're the default behavior when Claude Code operates without guardrails. Every team that uses Claude for production code encounters them.
 
+**Note on stack-agnosticism**: The pipeline structure, state machine, and quality discipline are universal. Stack-specific patterns (coding standards, test frameworks, build commands) are injected via pluggable blueprints — see the Active Blueprint system in CLAUDE.md.
+
 **This harness exists to make disciplined development the path of least resistance.**
 
 The agent can't skip steps because the state machine won't let it. It can't write code without a spec because the phase guard refuses. It can't ship without tests because the quality gate blocks the PR. The pipeline IS the discipline.
