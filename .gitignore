@@ -1,0 +1,79 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio
+.vs/
+*.rsuser
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# Build results
+[Dd]ebugPublic/
+[Rr]eleases/
+[Aa]rtifacts/
+build_output/
+TestResults/
+
+# Test reports (generated, not committed)
+/reports/
+docs/reports/*.md
+
+# Code coverage
+coverage/
+*.coverage
+*.coveragexml
+*.opencover.xml
+
+# Dotnet tools
+.config/dotnet-tools.json
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*
+
+# Claude Code
+.claude_output/
+
+# Board runtime state (lock file)
+.board/board.lock
+
+# Worktrees
+.worktrees/
+
+# Secrets
+*.pfx
+*.key
+*.pem
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+local.settings.json

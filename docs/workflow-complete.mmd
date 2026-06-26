@@ -1,0 +1,345 @@
+---
+config:
+  layout: elk
+  elk:
+    mergeEdges: true
+    nodePlacementStrategy: NETWORK_SIMPLEX
+  theme: dark
+---
+flowchart TD
+    classDef phase fill:#1a1a2e,stroke:#e94560,color:#eee,font-weight:bold
+    classDef activity fill:#16213e,stroke:#0f3460,color:#ddd
+    classDef artifact fill:#1b4332,stroke:#2d6a4f,color:#d8f3dc,font-weight:bold
+    classDef human fill:#e94560,stroke:#fff,color:#fff,font-weight:bold
+    classDef guard fill:#533483,stroke:#7b2cbf,color:#e0aaff
+    classDef fail fill:#6a040f,stroke:#d00000,color:#faa
+    classDef decision fill:#e9c46a,stroke:#264653,color:#264653,font-weight:bold
+    classDef lock fill:#3a0ca3,stroke:#4361ee,color:#b5e2ff
+    classDef loop fill:#264653,stroke:#2a9d8f,color:#fff,font-weight:bold
+    classDef handover fill:#ff6d00,stroke:#e65100,color:#fff,font-weight:bold
+    classDef context fill:#4a148c,stroke:#7c43bd,color:#e1bee7
+
+    START(["▶ /sprint"]):::loop --> READ_STATE["📖 Read sprint-state.md\n+ check docs/handover/"]:::activity
+    READ_STATE --> CHECK{Phase?}:::decision
+
+    CHECK -->|"IDLE"| TRIAGE
+    CHECK -->|"BLOCKED"| BLOCKED_REPORT["⛔ Report blocker\nWait human resolution"]:::fail
+    CHECK -->|"Any other"| RESUME_PHASE["↩ Resume from\ncurrent phase\n(read handover doc if exists)"]:::activity
+    BLOCKED_REPORT -->|"Resolved"| RESUME_PHASE
+    RESUME_PHASE --> ROUTE_PHASE{"Route to\nactive phase"}:::decision
+    ROUTE_PHASE -->|GRILL_SPEC| CTX_1
+    ROUTE_PHASE -->|PLAN| CTX_2
+    ROUTE_PHASE -->|IMPLEMENT| CTX_3
+    ROUTE_PHASE -->|TEST_VERIFY| CTX_4
+    ROUTE_PHASE -->|FINISH| CTX_5
+
+    %% ═══════════════════════════════════════════════════════
+    %% HANDOVER — Context Budget Exhausted
+    %% ═══════════════════════════════════════════════════════
+    subgraph HANDOVER_FLOW["HANDOVER — Context Budget Exhausted"]
+        direction TB
+        HO_SAVE["Save artifacts to disk\ngit commit WIP on branch"]:::activity
+        HO_LOCK["🔒 Acquire board lock"]:::lock
+        HO_BOARD["Update task progress"]:::activity
+        HO_UNLOCK["🔓 Release board lock"]:::lock
+        HO_STATE["Update sprint-state\nphase stays current"]:::activity
+        HO_WRITE["Write handover document\ndocs/handover/TASK-ID-handover.md\n• Completed phases + artifacts\n• Current phase progress\n• Decisions + open questions\n• Resume instructions"]:::activity
+        HO_DOC[/"📄 Handover doc\nself-contained"/]:::artifact
+
+        HO_SAVE --> HO_LOCK --> HO_BOARD --> HO_UNLOCK --> HO_STATE --> HO_WRITE --> HO_DOC
+    end
+    HANDOVER_FLOW:::handover
+
+    HO_DOC --> SESSION_END(["⏹ Session End\nResume: /sprint in new session"]):::handover
+
+    %% ═══════════════════════════════════════════════════════
+    %% CONTEXT CHECKS — Between Every Phase
+    %% ═══════════════════════════════════════════════════════
+    CTX_1{"🧠 Context Check\nCompactions? Budget?"}:::context
+    CTX_1 -->|"🟢 OK"| GS_GUARD
+    CTX_1 -->|"🟡 Compact"| COMPACT_1["/compact\nwith focus"]:::context
+    CTX_1 -->|"🔴 Handover"| HO_SAVE
+    COMPACT_1 --> GS_GUARD
+
+    CTX_2{"🧠 Context Check\nCompactions? Budget?"}:::context
+    CTX_2 -->|"🟢 OK"| PL_GUARD
+    CTX_2 -->|"🟡 Compact"| COMPACT_2["/compact\nwith focus"]:::context
+    CTX_2 -->|"🔴 Handover"| HO_SAVE
+    COMPACT_2 --> PL_GUARD
+
+    CTX_3{"🧠 Context Check\n⚠ IMPLEMENT heavy\n~60-100K tokens"}:::context
+    CTX_3 -->|"🟢 0 compactions"| IM_GUARD
+    CTX_3 -->|"🟡🔴 Any compaction\nheavy phase"| HO_SAVE
+
+    CTX_4{"🧠 Context Check\n⚠ TEST_VERIFY heavy\n~40-70K tokens"}:::context
+    CTX_4 -->|"🟢 0 compactions"| TV_GUARD
+    CTX_4 -->|"🟡🔴 Any compaction\nheavy phase"| HO_SAVE
+
+    CTX_5{"🧠 Context Check\nFINISH light ~10-20K"}:::context
+    CTX_5 -->|"🟢 OK"| FN_GUARD
+    CTX_5 -->|"🟡 Compact"| COMPACT_5["/compact\nwith focus"]:::context
+    CTX_5 -->|"🔴 2+ compactions"| HO_SAVE
+    COMPACT_5 --> FN_GUARD
+
+    %% ═══════════════════════════════════════════════════════
+    %% PHASE 0 — TRIAGE
+    %% ═══════════════════════════════════════════════════════
+    subgraph TRIAGE["Phase 0 — TRIAGE"]
+        direction TB
+        T_READ["📖 Read .board/tasks.md"]:::activity
+        T_PICK{"Highest priority\nuncompleted task?"}:::decision
+        T_NONE["Sprint complete\nNo eligible tasks"]:::fail
+        T_LOCK["🔒 Acquire board lock"]:::lock
+        T_MOVE["Move task → In Progress\nSet Phase = TRIAGE"]:::activity
+        T_UNLOCK["🔓 Release board lock"]:::lock
+        T_STATE["📝 Update sprint-state\nTask ID, Title, Priority\nPhase → GRILL_SPEC"]:::activity
+        T_LOAD["Load task spec\ninto context"]:::activity
+
+        T_READ --> T_PICK
+        T_PICK -->|"No tasks"| T_NONE
+        T_PICK -->|"Found"| T_LOCK
+        T_LOCK --> T_MOVE --> T_UNLOCK --> T_STATE --> T_LOAD
+    end
+    TRIAGE:::phase
+
+    %% ═══════════════════════════════════════════════════════
+    %% PHASE 1 — GRILL SPEC
+    %% ═══════════════════════════════════════════════════════
+    subgraph GRILL["Phase 1 — GRILL SPEC"]
+        direction TB
+        GS_GUARD{{"🛡 Phase Guard\nPhase = GRILL_SPEC?"}}:::guard
+        GS_FAIL["⛔ Guard failed\nWrong phase"]:::fail
+        GS_CONTEXT["Load CONTEXT.md\nLoad ADRs\nScan source files"]:::activity
+        GS_INTERVIEW["Adversarial Interview\n🔁 One question at a time\n• Scope boundaries\n• Domain ambiguity\n• Edge cases\n• Integration points\n• Error scenarios"]:::activity
+        GS_UPDATE_CTX["Update CONTEXT.md\n+ domain terms"]:::activity
+        GS_ADR{"ADR needed?\n• Hard to reverse\n• Non-obvious\n• Real tradeoffs"}:::decision
+        GS_WRITE_ADR["Write docs/adr/\nNNNN-slug.md"]:::activity
+        GS_WRITE_SPEC["Write formal spec\ndocs/specs/TASK-ID-spec.md"]:::activity
+        GS_QA_CHECK{"Output Quality Gate\n✓ GIVEN/WHEN/THEN ACs\n✓ Domain terms table\n✓ In/Out scope\n✓ Error scenarios\n✓ No placeholders"}:::decision
+        GS_ITERATE["Iterate on spec\nFix quality gaps"]:::activity
+        GS_SPEC_DOC[/"📄 docs/specs/\nTASK-ID-spec.md"/]:::artifact
+        GS_PRESENT["Present refined spec\nto human"]:::activity
+
+        GS_GUARD -->|"✅ Match"| GS_CONTEXT
+        GS_GUARD -->|"❌ Mismatch"| GS_FAIL
+        GS_CONTEXT --> GS_INTERVIEW
+        GS_INTERVIEW --> GS_UPDATE_CTX --> GS_ADR
+        GS_ADR -->|"Yes"| GS_WRITE_ADR --> GS_WRITE_SPEC
+        GS_ADR -->|"No"| GS_WRITE_SPEC
+        GS_WRITE_SPEC --> GS_QA_CHECK
+        GS_QA_CHECK -->|"❌ Below standard"| GS_ITERATE --> GS_WRITE_SPEC
+        GS_QA_CHECK -->|"✅ Meets standard"| GS_SPEC_DOC --> GS_PRESENT
+    end
+    GRILL:::phase
+
+    GS_PRESENT --> HUMAN_SPEC{{"🧑 CHECKPOINT\nApprove spec?"}}:::human
+    HUMAN_SPEC -->|"Rejected / Changes"| GS_INTERVIEW
+    HUMAN_SPEC -->|"Stop"| SPRINT_END
+    HUMAN_SPEC -->|"Approved ✅"| SPEC_TRANSITION["📝 sprint-state:\nSpec Approved = Yes\nPhase → PLAN"]:::activity
+
+    %% ═══════════════════════════════════════════════════════
+    %% PHASE 2 — PLAN
+    %% ═══════════════════════════════════════════════════════
+    subgraph PLAN["Phase 2 — PLAN"]
+        direction TB
+        PL_GUARD{{"🛡 Phase Guard\nPhase = PLAN?\nSpec Approved = Yes?\nSpec file exists?"}}:::guard
+        PL_FAIL["⛔ Guard failed"]:::fail
+        PL_INPUT{"Input Validation\n✓ GIVEN/WHEN/THEN ACs\n✓ Domain terms\n✓ In/Out scope\n✓ No open questions"}:::decision
+        PL_INPUT_FAIL["⛔ Spec below standard\nReturn to /grill-spec"]:::fail
+        PL_LOAD["Load spec + CONTEXT.md\n+ ADRs + codebase scan"]:::activity
+        PL_APPROACH["Present approach\n+ rejected alternatives\n+ risk assessment"]:::activity
+        PL_APPROACH_GATE{{"🧑 Approve\napproach?"}}:::human
+        PL_DECOMPOSE["Decompose into micro-tasks\n• 2-5 min each\n• File paths, code, tests\n• Dependency ordering\n• Parallel groups"]:::activity
+        PL_WRITE["Write PLAN.md\n+ dependency graph\n+ quality checklist"]:::activity
+        PL_QA_CHECK{"Output Quality Gate\n✓ Purpose + Files + Context\n✓ Implementation code\n✓ Test skeleton (TDD)\n✓ Verify command\n✓ Dependency graph\n✓ Risk assessment"}:::decision
+        PL_ITERATE["Iterate on plan\nFix quality gaps"]:::activity
+        PL_DOC[/"📄 PLAN.md"/]:::artifact
+        PL_PRESENT["Present plan summary\ntasks, time, risks"]:::activity
+
+        PL_GUARD -->|"✅"| PL_INPUT
+        PL_GUARD -->|"❌"| PL_FAIL
+        PL_INPUT -->|"✅"| PL_LOAD
+        PL_INPUT -->|"❌"| PL_INPUT_FAIL
+        PL_LOAD --> PL_APPROACH --> PL_APPROACH_GATE
+        PL_APPROACH_GATE -->|"Change approach"| PL_APPROACH
+        PL_APPROACH_GATE -->|"Approved"| PL_DECOMPOSE
+        PL_DECOMPOSE --> PL_WRITE --> PL_QA_CHECK
+        PL_QA_CHECK -->|"❌"| PL_ITERATE --> PL_WRITE
+        PL_QA_CHECK -->|"✅"| PL_DOC --> PL_PRESENT
+    end
+    PLAN:::phase
+
+    PL_PRESENT --> HUMAN_PLAN{{"🧑 CHECKPOINT\nApprove plan?"}}:::human
+    HUMAN_PLAN -->|"Edit / Reject"| PL_DECOMPOSE
+    HUMAN_PLAN -->|"Stop"| SPRINT_END
+    HUMAN_PLAN -->|"Approved ✅"| PLAN_TRANSITION["📝 sprint-state:\nPlan Approved = Yes\nPhase → IMPLEMENT"]:::activity
+
+    %% ═══════════════════════════════════════════════════════
+    %% PHASE 3 — IMPLEMENT
+    %% ═══════════════════════════════════════════════════════
+    subgraph IMPL["Phase 3 — IMPLEMENT"]
+        direction TB
+        IM_GUARD{{"🛡 Phase Guard\nPhase = IMPLEMENT?\nPlan Approved = Yes?\nPLAN.md exists?"}}:::guard
+        IM_FAIL["⛔ Guard failed"]:::fail
+        IM_INPUT{"Input Validation\n✓ Tasks have all sections\n✓ File paths absolute\n✓ Code with namespace\n✓ Test skeletons complete\n✓ Dependency graph present"}:::decision
+        IM_INPUT_FAIL["⛔ Plan below standard\nReturn to /plan"]:::fail
+        IM_BRANCH["Create feature branch\ngit checkout -b\nfeature/TASK-ID-slug"]:::activity
+        IM_BASELINE["Verify clean baseline\ndotnet test ✅"]:::activity
+
+        subgraph TASK_LOOP["🔁 For Each Micro-Task"]
+            direction TB
+            IM_SPAWN["Spawn subagent\n(dev role, fresh context)\n+ task description\n+ CONTEXT.md"]:::activity
+            IM_RED["🔴 RED\nWrite failing test FIRST"]:::activity
+            IM_GREEN["🟢 GREEN\nMinimum code to pass"]:::activity
+            IM_REFACTOR["🔵 REFACTOR\nClean up"]:::activity
+            IM_VERIFY["Run verify command\ndotnet test --filter ..."]:::activity
+            IM_REVIEW["Two-stage review\n1. Spec compliance\n2. Code quality"]:::activity
+            IM_REVIEW_OK{"Review\npass?"}:::decision
+            IM_FIX["Fix issues"]:::activity
+            IM_STRIKE{"Strike\ncount?"}:::decision
+            IM_ESCALATE["⛔ 3 strikes\nPhase → BLOCKED\nEscalate to human"]:::fail
+
+            IM_SPAWN --> IM_RED --> IM_GREEN --> IM_REFACTOR --> IM_VERIFY --> IM_REVIEW
+            IM_REVIEW --> IM_REVIEW_OK
+            IM_REVIEW_OK -->|"Pass"| TASK_DONE["✅ Task complete\nCommit changes"]:::activity
+            IM_REVIEW_OK -->|"Fail"| IM_FIX --> IM_STRIKE
+            IM_STRIKE -->|"< 3"| IM_RED
+            IM_STRIKE -->|"≥ 3"| IM_ESCALATE
+        end
+
+        IM_FINAL["Final verification\ndotnet build --no-incremental\ndotnet test"]:::activity
+        IM_PUSH["git push -u origin\nfeature/TASK-ID-slug"]:::activity
+        IM_REPORT["Write implementation report\n• Tasks completed\n• Files changed\n• Tests added\n• AC coverage status\n• Flags & deviations"]:::activity
+        IM_QA_CHECK{"Output Quality Gate\n✓ All columns populated\n✓ AC coverage mapped\n✓ Gaps explicit\n✓ dotnet test results"}:::decision
+        IM_BRANCH_ART[/"📄 Feature branch\n+ implementation report"/]:::artifact
+
+        IM_GUARD -->|"✅"| IM_INPUT
+        IM_GUARD -->|"❌"| IM_FAIL
+        IM_INPUT -->|"✅"| IM_BRANCH
+        IM_INPUT -->|"❌"| IM_INPUT_FAIL
+        IM_BRANCH --> IM_BASELINE --> TASK_LOOP
+        TASK_LOOP --> IM_FINAL --> IM_PUSH --> IM_REPORT --> IM_QA_CHECK
+        IM_QA_CHECK -->|"✅"| IM_BRANCH_ART
+    end
+    IMPL:::phase
+
+    IM_BRANCH_ART --> IMPL_TRANSITION["📝 sprint-state:\nPhase → TEST_VERIFY\nBranch registered"]:::activity
+
+    %% ═══════════════════════════════════════════════════════
+    %% PHASE 4 — TEST & VERIFY
+    %% ═══════════════════════════════════════════════════════
+    subgraph VERIFY["Phase 4 — TEST & VERIFY"]
+        direction TB
+        TV_GUARD{{"🛡 Phase Guard\nPhase = TEST_VERIFY?\nBranch exists?\ndotnet test passes?"}}:::guard
+        TV_FAIL["⛔ Guard failed"]:::fail
+        TV_ANALYZE["Analyze implementation\ngit diff main..HEAD\nMap AC → tests"]:::activity
+
+        subgraph TWO_AGENT["Two-Agent Pattern"]
+            direction LR
+            TV_WRITER["🤖 Test Writer\n• Integration tests\n• BDD scenarios\n• Property-based\n• Edge cases"]:::activity
+            TV_REVIEWER["🤖 Test Reviewer\n• AC coverage check\n• Assertion quality\n• Redundancy audit\n• Container usage"]:::activity
+            TV_WRITER --> TV_REVIEWER
+        end
+
+        TV_REVIEWER_OK{"Reviewer\nverdict?"}:::decision
+        TV_ITERATE_TESTS["Iterate once\non test quality"]:::activity
+        TV_RUN["dotnet test\n--logger trx"]:::activity
+        TV_STATIC["Static Analysis\n(SonarQube + StyleCop)"]:::activity
+        TV_COVERAGE["reportgenerator\n→ HTML coverage report"]:::activity
+        TV_WRITE_REPORT["Write quality report\ndocs/reports/TASK-ID-quality.md\n• Coverage per scope\n• SonarQube analysis\n• StyleCop compliance\n• AC coverage matrix\n• Test inventory"]:::activity
+        TV_QA_CHECK{"Output Quality Gate\n✓ Executive summary\n✓ Each issue analyzed\n✓ AC matrix complete\n✓ All gates have verdict\n✓ No -- or pending"}:::decision
+        TV_ITERATE_REPORT["Iterate on report\nor add more tests"]:::activity
+        TV_GATES{"Quality Gates\n• Coverage ≥ 80%\n• StyleCop 0 warnings\n• SonarQube pass\n• All integration pass\n• All AC covered"}:::decision
+        TV_HARD_FAIL["⛔ HARD FAIL\nBlock /finish\nRequire more tests"]:::fail
+        TV_SOFT_FAIL["⚠ SOFT FAIL\nFlag issues\nPresent to human"]:::activity
+        TV_REPORT_DOC[/"📄 docs/reports/\nTASK-ID-quality.md"/]:::artifact
+        TV_PRESENT["Present quality report\nwith gate verdicts"]:::activity
+
+        TV_GUARD -->|"✅"| TV_ANALYZE
+        TV_GUARD -->|"❌"| TV_FAIL
+        TV_ANALYZE --> TWO_AGENT
+        TWO_AGENT --> TV_REVIEWER_OK
+        TV_REVIEWER_OK -->|"NEEDS IMPROVEMENT"| TV_ITERATE_TESTS --> TWO_AGENT
+        TV_REVIEWER_OK -->|"APPROVE"| TV_RUN
+        TV_RUN --> TV_STATIC --> TV_COVERAGE --> TV_WRITE_REPORT --> TV_QA_CHECK
+        TV_QA_CHECK -->|"❌"| TV_ITERATE_REPORT --> TV_WRITE_REPORT
+        TV_QA_CHECK -->|"✅"| TV_GATES
+        TV_GATES -->|"HARD FAIL"| TV_HARD_FAIL --> TV_ITERATE_TESTS
+        TV_GATES -->|"SOFT FAIL"| TV_SOFT_FAIL --> TV_REPORT_DOC
+        TV_GATES -->|"PASS"| TV_REPORT_DOC
+        TV_REPORT_DOC --> TV_PRESENT
+    end
+    VERIFY:::phase
+
+    TV_PRESENT --> HUMAN_QUALITY{{"🧑 CHECKPOINT\nReview quality report?"}}:::human
+    HUMAN_QUALITY -->|"More tests needed"| TV_ITERATE_TESTS
+    HUMAN_QUALITY -->|"Stop"| SPRINT_END
+    HUMAN_QUALITY -->|"Approved ✅"| QUALITY_TRANSITION["📝 sprint-state:\nQuality Gate = PASS\nPhase → FINISH"]:::activity
+
+    %% ═══════════════════════════════════════════════════════
+    %% PHASE 5 — FINISH
+    %% ═══════════════════════════════════════════════════════
+    subgraph FINISH["Phase 5 — FINISH"]
+        direction TB
+        FN_GUARD{{"🛡 Phase Guard\nPhase = FINISH?\nQuality Gate = PASS?\nReport exists?"}}:::guard
+        FN_FAIL["⛔ Guard failed"]:::fail
+        FN_INPUT{"Input Validation\n✓ All gates have verdict\n✓ AC matrix complete\n✓ Mutants analyzed\n✓ No HARD_FAIL"}:::decision
+        FN_INPUT_FAIL["⛔ Report incomplete\nReturn to /test-verify"]:::fail
+        FN_PREFLIGHT["Pre-flight checks\n• dotnet test ✅\n• git status clean\n• Branch pushed\n• Rebased on main"]:::activity
+        FN_PR["Create PR\ngh pr create\n• Summary (what + why)\n• Spec & ADR references\n• Changes by concern\n• Quality metrics table\n• AC checkboxes + tests\n• Test plan checklist"]:::activity
+        FN_PR_QA{"Output Quality Gate\n✓ WHY not just WHAT\n✓ Spec path referenced\n✓ Quality table present\n✓ Each AC checked off\n✓ No vague descriptions"}:::decision
+        FN_PR_ITERATE["Iterate on PR\ndescription"]:::activity
+        FN_LOCK["🔒 Acquire board lock"]:::lock
+        FN_BOARD["Move task → Done\nAdd PR #, Quality,\nCompleted date"]:::activity
+        FN_UNLOCK["🔓 Release board lock"]:::lock
+        FN_JIRA{"Jira\nconfigured?"}:::decision
+        FN_JIRA_YES["Transition issue\nAdd PR comment"]:::activity
+        FN_CLEANUP["Clean up\n• Remove worktree\n• Keep TestResults/"]:::activity
+        FN_PR_DOC[/"📄 PR #N\non remote"/]:::artifact
+        FN_PRESENT["Present merge options\n1. Merge now\n2. Keep for review\n3. Discard"]:::activity
+
+        FN_GUARD -->|"✅"| FN_INPUT
+        FN_GUARD -->|"❌"| FN_FAIL
+        FN_INPUT -->|"✅"| FN_PREFLIGHT
+        FN_INPUT -->|"❌"| FN_INPUT_FAIL
+        FN_PREFLIGHT --> FN_PR --> FN_PR_QA
+        FN_PR_QA -->|"❌"| FN_PR_ITERATE --> FN_PR
+        FN_PR_QA -->|"✅"| FN_LOCK
+        FN_LOCK --> FN_BOARD --> FN_UNLOCK --> FN_JIRA
+        FN_JIRA -->|"Yes"| FN_JIRA_YES --> FN_CLEANUP
+        FN_JIRA -->|"No"| FN_CLEANUP
+        FN_CLEANUP --> FN_PR_DOC --> FN_PRESENT
+    end
+    FINISH:::phase
+
+    FN_PRESENT --> HUMAN_MERGE{{"🧑 CHECKPOINT\nMerge decision?"}}:::human
+    HUMAN_MERGE -->|"Merge"| DO_MERGE["gh pr merge --squash"]:::activity
+    HUMAN_MERGE -->|"Review"| KEEP_OPEN["PR stays open"]:::activity
+    HUMAN_MERGE -->|"Discard"| DISCARD["Close PR + delete branch"]:::activity
+
+    DO_MERGE --> FINISH_TRANSITION
+    KEEP_OPEN --> FINISH_TRANSITION
+    DISCARD --> FINISH_TRANSITION
+
+    FINISH_TRANSITION["📝 sprint-state:\nPhase → IDLE\nReset current task\nIncrement metrics"]:::activity
+
+    %% ═══════════════════════════════════════════════════════
+    %% LOOP BACK
+    %% ═══════════════════════════════════════════════════════
+    FINISH_TRANSITION --> CLEAR["/clear context\n(mandatory)"]:::loop
+    CLEAR --> READ_STATE
+
+    %% ═══════════════════════════════════════════════════════
+    %% SPRINT END
+    %% ═══════════════════════════════════════════════════════
+    T_NONE --> SPRINT_END
+    SPRINT_END["📊 Sprint Summary\n• Tasks completed\n• PRs created\n• Avg coverage\n• SonarQube status"]:::loop
+
+    %% ═══════════════════════════════════════════════════════
+    %% CONNECTIONS BETWEEN PHASES (through context checks)
+    %% ═══════════════════════════════════════════════════════
+    T_LOAD --> CTX_1
+    SPEC_TRANSITION --> CTX_2
+    PLAN_TRANSITION --> CTX_3
+    IMPL_TRANSITION --> CTX_4
+    QUALITY_TRANSITION --> CTX_5
