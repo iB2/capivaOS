@@ -65,7 +65,7 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 
 ### IMPLEMENT → TEST_VERIFY
 - **Trigger**: All micro-tasks complete, all tests green
-- **Gate**: `dotnet test` passes, all PLAN.md tasks checked off
+- **Gate**: Test suite passes (per blueprint §build-commands), all PLAN.md tasks checked off
 - **Action**: Update sprint-state phase = TEST_VERIFY, register branch artifact
 - **Board**: Update task Phase field, set Branch
 
@@ -99,8 +99,8 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 
 1. Identify which gate failed
 2. Coverage gap → targeted tests for uncovered lines
-3. SonarQube issue → address code smell or justify suppression
-4. Integration failure → check Testcontainer setup
+3. Static analysis issue → address or justify suppression
+4. Integration failure → check test infrastructure setup
 5. Re-run full suite
 6. After 2 iterations: escalate to human with report
 
@@ -108,7 +108,7 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 
 1. Check error output
 2. Fix the build error
-3. Re-run `dotnet build`
+3. Re-run build (per blueprint §build-commands)
 4. If fix requires architectural change → return to PLAN phase (reset sprint-state)
 
 ### Spec Ambiguity in IMPLEMENT
@@ -190,7 +190,7 @@ LOOP:
     // Phase 3: IMPLEMENT
     INVOKE /implement
     (autonomous — subagents execute micro-tasks)
-    VERIFY all tests green
+    VERIFY all tests green (per blueprint §build-commands)
     UPDATE sprint-state → TEST_VERIFY
 
     // Phase 4: TEST_VERIFY
