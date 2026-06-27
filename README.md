@@ -46,7 +46,7 @@ The harness separates the **universal pipeline** (phases, state machine, artifac
 | Blueprint | Stack | Architecture |
 |-----------|-------|-------------|
 | `dotnet-hexagonal` | .NET 10 / C# 13 | Hexagonal (Ports & Adapters) |
-| `python-fastapi` | Python 3.11+ / FastAPI | Layered (api → services → repositories → db) |
+| `python-fastapi` | Python 3.13 / FastAPI | Layered (api → services → repositories → db) |
 
 Set the active blueprint in `.claude/CLAUDE.md`. Agent roles, skills, and rules automatically read the active blueprint's `reference.md` for stack-specific guidance.
 

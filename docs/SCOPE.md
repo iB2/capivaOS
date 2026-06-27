@@ -96,7 +96,7 @@ The harness is stack-agnostic. Technology-specific patterns, commands, and stand
 | Blueprint | Stack | Architecture |
 |-----------|-------|-------------|
 | `dotnet-hexagonal` | .NET 10 / C# 13 | Hexagonal (Ports & Adapters) |
-| `python-fastapi` | Python 3.11+ / FastAPI | Layered Architecture |
+| `python-fastapi` | Python 3.13 / FastAPI | Layered Architecture |
 
 ### Adding a New Blueprint
 

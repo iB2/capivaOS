@@ -30,7 +30,7 @@ Active Blueprint: .claude/blueprints/dotnet-hexagonal
 | Blueprint | Stack | Reference |
 |-----------|-------|-----------|
 | `dotnet-hexagonal` | .NET 10 / C# 13 / Hexagonal Architecture | `.claude/blueprints/dotnet-hexagonal/reference.md` |
-| `python-fastapi` | Python 3.11+ / FastAPI / Layered Architecture | `.claude/blueprints/python-fastapi/reference.md` |
+| `python-fastapi` | Python 3.13 / FastAPI / Layered Architecture | `.claude/blueprints/python-fastapi/reference.md` |
 
 ### How Blueprints Work
 
