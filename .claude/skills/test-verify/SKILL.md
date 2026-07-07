@@ -38,7 +38,7 @@ Generate integration tests beyond what TDD produced, run static analysis, and pr
 Spawn two subagents:
 
 #### Agent 1: Test Writer
-- Role: `.claude/agents/roles/dev.md` (with test-writing focus)
+- Agent: **dev** (native definition `.claude/agents/dev.md`, spawned by type — platform-enforced tool allowlist), with test-writing focus
 - Input: Spec + implementation diff + existing tests + blueprint reference.md
 - Produces: New test files following existing patterns and blueprint §test-stack conventions
 
@@ -49,7 +49,7 @@ Test categories to cover:
 4. **Edge case tests**: Null inputs, boundary values, concurrent access, timeouts
 
 #### Agent 2: Adversarial Reviewer
-- Role: `.claude/agents/roles/qa.md`
+- Agent: **qa** (native definition `.claude/agents/qa.md`, spawned by type — READ-ONLY tool allowlist: the reviewer mechanically cannot modify what it reviews)
 - Input: The implementation report's CLAIMS + all tests (existing + new from Agent 1) + the diff + `docs/specs/TASK-ID-acs.json` + blueprint reference.md
 - Produces: Review with CLAIMS VERIFIED or REFUTED verdict
 
@@ -287,3 +287,130 @@ If ANY check fails → iterate on the report and/or add more tests before presen
 - **Hard fail blocks progression.** Cannot proceed to /finish with hard fail.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
 - **Static analysis issue analysis is MANDATORY.** Each code smell or issue in new code must be analyzed and addressed or justified.
+
+---
+
+## Gold Standard (moved from artifact-standards.md, ADR-0011)
+
+The normative template and quality bar for this skill's artifact — the FLOOR, not the ceiling. `artifact-standards.md` keeps the anti-slop rules and validation checklists; the worked examples live here so they load only when this phase runs.
+
+### Artifact 4: Quality Report — Required Sections
+```markdown
+# Quality Report: [Task Title]
+
+## Task Reference
+- ID: [TASK-ID]
+- Branch: `feature/TASK-ID-slug`
+- Spec: `docs/specs/TASK-ID-spec.md`
+- Plan: `PLAN.md` ([N] tasks, [M] commits)
+
+## Executive Summary
+
+[2-3 sentences: overall quality verdict, key findings, any concerns.
+This is what the human reads first to decide if they need to dig deeper.]
+
+Example: "All quality gates pass. Coverage at 87% across business logic.
+SonarQube clean — zero new code smells, zero vulnerabilities. StyleCop zero warnings.
+One uncovered catch block in QuoteRepository (connection disposed during shutdown) —
+low risk, defensive code."
+
+## Coverage
+
+| Scope | Lines | Branches | Coverage | Target | Verdict |
+|-------|-------|----------|----------|--------|---------|
+| Business logic (`Application/`) | 142/158 | 38/44 | 89.9% | >= 80% | ✅ PASS |
+| Infrastructure (`Infrastructure/`) | 67/87 | 18/24 | 77.0% | >= 60% | ✅ PASS |
+| Domain (`Domain/`) | 23/23 | 6/6 | 100% | >= 80% | ✅ PASS |
+| **Combined** | **232/268** | **62/74** | **86.6%** | **>= 80%** | **✅ PASS** |
+
+### Uncovered Lines (notable)
+
+[Don't list every uncovered line — list the ones that MATTER.
+Why are they uncovered? Should they be covered? Or are they legitimately excluded?]
+
+| File | Lines | Reason | Risk |
+|------|-------|--------|------|
+| `QuoteRepository.cs` | 78-82 | Catch block for connection disposed during shutdown | Low — defensive code, not business logic |
+| `QuoteOrchestrationService.cs` | 134-138 | Circuit breaker tripped path | Medium — consider adding targeted test |
+
+## Static Analysis
+
+| Tool | Status | New Issues | Details |
+|------|--------|-----------|---------|
+| StyleCop | ✅ 0 warnings | 0 | All new code compliant |
+| SonarQube | ✅ Quality Gate Pass | 0 code smells, 0 vulnerabilities | [server URL or "deferred to CI pipeline"] |
+
+### Quality Gate Issue Analysis
+
+[If any issues found, each must be analyzed — not just counted.
+Explain the issue, its impact, and the resolution or justification.]
+
+| # | File | Issue | Category | Severity | Resolution |
+|---|------|-------|----------|----------|------------|
+| — | — | No new issues | — | — | — |
+
+## Test Inventory
+
+| Category | Existing | New | Total | Notes |
+|----------|----------|-----|-------|-------|
+| Unit tests | 0 | 8 | 8 | QuoteStatus, QuoteOrchestration |
+| Integration tests | 0 | 6 | 6 | QuoteRepository (Testcontainers.MsSql) |
+| BDD scenarios | 0 | 0 | 0 | Not applicable — no Gherkin in spec |
+| Property-based | 0 | 1 | 1 | Quote ID generation uniqueness (FsCheck) |
+| **Total** | **0** | **15** | **15** | |
+
+### New Tests Detail
+
+[Each test with what it validates — not just names, but WHAT BEHAVIOR they prove.]
+
+| Test | Type | Validates | AC# |
+|------|------|-----------|-----|
+| `QuoteStatusTests.QuoteStatus_Should_Include_Expired_Value` | Unit | Enum has Expired value | — |
+| `QuoteOrchestrationTests.RunSweep_ExpiresQuotesOlderThanThreshold` | Unit | AC 1: expiration logic |  1 |
+| `QuoteOrchestrationTests.RunSweep_WritesQuoteEventOnExpiration` | Unit | AC 1: event logging | 1 |
+| `QuoteOrchestrationTests.RunSweep_IncrementsMetricOnExpiration` | Unit | AC 1: metric emission | 1 |
+| `QuoteOrchestrationTests.GetActiveQuote_ReturnsNull_WhenExpired` | Unit | AC 2: expired not returned | 2 |
+| `QuoteOrchestrationTests.RunSweep_RetriesOnce_OnSqlTimeout` | Unit | AC 3: timeout retry | 3 |
+| `QuoteOrchestrationTests.RunSweep_SkipsBatch_OnDoubleTimeout` | Unit | AC 3: skip after retry fail | 3 |
+| `QuoteOrchestrationTests.RunSweep_DoesNotExpire_OnFailedBatch` | Unit | AC 3: no partial update | 3 |
+| `QuoteRepositoryTests.GetExpiredQuotes_ReturnsOnlyActive_OlderThan` | Integration | SQL query correctness | 1 |
+| `QuoteRepositoryTests.MarkAsExpired_UpdatesStatus_AndTimestamp` | Integration | SQL update correctness | 1 |
+| `QuoteRepositoryTests.GetActiveQuote_ExcludesExpired` | Integration | SQL filter correctness | 2 |
+| `QuoteRepositoryTests.GetExpiredQuotes_RespectssBatchSize` | Integration | Batch limiting works | 1 |
+| `QuoteRepositoryTests.MarkAsExpired_IsIdempotent` | Integration | Double-expire doesn't error | — |
+| `QuoteRepositoryTests.GetActiveQuote_ReturnsNull_WhenNotFound` | Integration | Null handling | 2 |
+| `QuoteIdGenerationTests.Generated_Ids_Are_Unique_Across_1000` | Property | ID uniqueness guarantee | — |
+
+## Acceptance Criteria Coverage Matrix
+
+[THE most important table in this report. GENERATED from `docs/specs/TASK-ID-acs.json`
+— never hand-maintained. One row per JSON entry, criterion text verbatim from the
+`text` field, status from the `status` field. Row count MUST equal the JSON entry
+count. If an AC has no test or no end-to-end evidence → its status stays `fail`
+and the quality gate FAILS.]
+
+| AC# | Criterion | Tests | Verdict |
+|-----|-----------|-------|---------|
+| 1 | Quote expiration sweep updates status + writes QUOTE_EVENT + increments metric | `RunSweep_ExpiresQuotesOlderThanThreshold`, `RunSweep_WritesQuoteEventOnExpiration`, `RunSweep_IncrementsMetricOnExpiration`, `GetExpiredQuotes_ReturnsOnlyActive_OlderThan`, `MarkAsExpired_UpdatesStatus_AndTimestamp` | ✅ 5 tests |
+| 2 | Expired quotes not returned by GetActiveQuote | `GetActiveQuote_ReturnsNull_WhenExpired`, `GetActiveQuote_ExcludesExpired`, `GetActiveQuote_ReturnsNull_WhenNotFound` | ✅ 3 tests |
+| 3 | SQL timeout retry + skip + no partial update | `RunSweep_RetriesOnce_OnSqlTimeout`, `RunSweep_SkipsBatch_OnDoubleTimeout`, `RunSweep_DoesNotExpire_OnFailedBatch` | ✅ 3 tests |
+
+## Quality Gate Verdict
+
+| Gate | Value | Target | Hard Fail | Status |
+|------|-------|--------|-----------|--------|
+| Unit coverage | 86.6% | >= 80% | < 60% | ✅ PASS |
+| StyleCop warnings | 0 | 0 | Any warning | ✅ PASS |
+| SonarQube quality gate | Pass | Pass | Fail | ✅ PASS |
+| Integration tests | 6/6 pass | All pass | Any failure | ✅ PASS |
+| AC coverage | 3/3 covered | All covered | Any uncovered | ✅ PASS |
+| **Overall** | | | | **✅ PASS** |
+
+## Report Files
+- Coverage HTML: `TestResults/CoverageReport/index.html`
+- SonarQube: [server URL or "deferred to CI pipeline"]
+- TRX results: `TestResults/*.trx`
+```
+
+---
+

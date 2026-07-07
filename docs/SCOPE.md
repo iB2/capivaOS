@@ -25,6 +25,23 @@ A **development pipeline enforcer** for Claude Code that structures how AI agent
 | Documentation-only tasks | Poor | Use P4 priority to bypass quality gates |
 | Exploratory spikes | Acceptable | Use P4 — no spec or quality gates required |
 
+### Pipeline Lanes — When Each Applies
+
+The harness has two state-machine paths (see [ADR-0010](adr/0010-fast-lane-pipeline.md)). **Full is the default**; the fast lane must be earned by a mechanical predicate evaluated at TRIAGE.
+
+| | Full lane | Fast lane |
+|---|-----------|-----------|
+| Path | TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH | TRIAGE → SPEC_PLAN → IMPLEMENT → VERIFY_FINISH |
+| Human gates | 4 (spec, plan, quality, merge) | 2 (spec+plan combined; quality+merge combined) |
+| Applies to | P0/P1 always; any task creating files, touching schema/migrations, changing architecture, or adding dependencies; anything failing the predicate; anything ambiguous | P2/P3 tasks that modify existing files only, with no schema/migration changes, no architectural changes, and no new dependencies |
+| Typical examples | New endpoint, new service, schema change, new integration | One-file bug fix with clear repro, copy/config change with a testable AC, small behavior tweak in an existing service |
+| Unchanged in both | Board entry, sprint-state, TDD, `TASK-ID-acs.json` contract + end-to-end exercise (ADR-0009), quality thresholds, lint/static analysis | |
+
+Lane rules:
+- The human can always force the full lane; nothing can force a non-qualifying task fast.
+- Scope growth mid-lane (a new file, schema change, architectural decision, or >4 micro-tasks discovered during /spec-plan or later) is a **mandatory abort to the full lane** — logged in Phase History, never silent.
+- P4 (spike/exploratory) remains outside both lanes: no spec, no quality gates, explicitly experimental.
+
 ### Target Team Size
 
 Designed for **solo developer or small team (1-3)** working with Claude Code as the primary implementation agent. The human provides direction, reviews, and approval; Claude Code executes the pipeline.
@@ -125,6 +142,16 @@ The harness assumes:
 6. **Tasks are well-scoped.** The pipeline works best with tasks that can be specified, planned, and implemented in 1-3 sessions. Epics should be broken into tasks before entering the board.
 
 ---
+
+## Project Setup (moved from CLAUDE.md, ADR-0011)
+
+1. Copy `.claude/`, `.board/`, `docs/`, `templates/` into your project
+2. Populate project docs: `docs/CONTEXT.md` (domain glossary) and `docs/specs/INTAKE-summary.md` (project scope — see `templates/intake-summary.md`)
+3. Run `/init` — validates docs, detects your stack, selects the matching blueprint, writes the config
+4. Populate `.board/tasks.md` with your backlog
+5. Run `/sprint` to begin
+
+Optional: Jira integration (add project key, board ID, transition IDs to CLAUDE.md), quality-threshold overrides (edit `.claude/rules/quality-gates.md` + ADR), custom blueprints (below).
 
 ## Adaptation Guide
 

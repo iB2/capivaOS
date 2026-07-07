@@ -24,7 +24,7 @@ Usage:
   python3 scripts/harness_lint.py --self-test  # verify the linter catches seeded drift
 
 Scanned files: README.md, .claude/CLAUDE.md, .claude/rules/*.md,
-.claude/skills/*/SKILL.md, .claude/agents/roles/*.md, docs/DESIGN.md,
+.claude/skills/*/SKILL.md, .claude/agents/*.md, docs/DESIGN.md,
 docs/SCOPE.md, templates/*.md. Excluded: docs/audits/ (session artifacts),
 docs/blueprint-migration-map.md (historical record), .board/ (mutable).
 """
@@ -110,7 +110,7 @@ def scanned_files(root: Path):
     ]
     files = [root / p for p in patterns if (root / p).is_file()]
     for glob in (".claude/rules/*.md", ".claude/skills/*/SKILL.md",
-                 ".claude/agents/roles/*.md", "templates/*.md"):
+                 ".claude/agents/*.md", "templates/*.md"):
         files.extend(sorted(root.glob(glob)))
     return files
 

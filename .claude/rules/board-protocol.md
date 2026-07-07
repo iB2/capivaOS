@@ -19,7 +19,7 @@ Every task on the board follows this structure:
   - **Depends**: [TASK-IDs or "none"]
   - **Assignee**: [name or "unassigned"]
   - **Status**: Backlog | In Progress | Blocked | Review | Done
-  - **Phase**: IDLE | TRIAGE | GRILL_SPEC | PLAN | IMPLEMENT | TEST_VERIFY | FINISH
+  - **Phase**: IDLE | TRIAGE | GRILL_SPEC | PLAN | IMPLEMENT | TEST_VERIFY | FINISH | SPEC_PLAN | VERIFY_FINISH (fast lane)
   - **Branch**: [feature/branch-name or "--"]
   - **PR**: [#number or "--"]
   - **Quality**: [coverage% / quality gate pass|fail or "--"]
@@ -34,8 +34,8 @@ Every task on the board follows this structure:
 |----------|---------|---------------------|
 | P0 | Critical blocker | Full pipeline, human review at EVERY checkpoint |
 | P1 | Sprint commitment | Full pipeline, human review at spec + quality gates |
-| P2 | Planned | Full pipeline, automated review acceptable at Phase 3 |
-| P3 | Nice to have | Spec + plan required, lighter review |
+| P2 | Planned | Full pipeline, automated review acceptable at Phase 3; fast lane if the ADR-0010 predicate passes |
+| P3 | Nice to have | Spec + plan required, lighter review; fast lane if the ADR-0010 predicate passes |
 | P4 | Backlog / spike | No spec required, no quality gates |
 
 ---

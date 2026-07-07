@@ -267,3 +267,74 @@ No silent overrides. HARD_FAIL gates cannot be overridden — they block /finish
 - **Jira failures are non-blocking.** Log and continue. PR + board = what matters.
 - **Sprint-state reset to IDLE.** Task is done, state machine returns to start.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
+
+---
+
+## Gold Standard (moved from artifact-standards.md, ADR-0011)
+
+The normative template and quality bar for this skill's artifact — the FLOOR, not the ceiling. `artifact-standards.md` keeps the anti-slop rules and validation checklists; the worked examples live here so they load only when this phase runs.
+
+### Artifact 5: PR Description — Required Content
+```markdown
+## Summary
+[2-3 bullet points. What changed and WHY — not a list of files.]
+
+- Implemented quote expiration lifecycle: scheduled sweep marks stale quotes as EXPIRED,
+  writes QUOTE_EVENT audit trail, and emits Prometheus metrics
+- Added SQL timeout resilience: single retry with exponential backoff, batch skipping
+  on persistent failure, zero partial updates
+- QuoteOrchestrationService coordinates the full cycle; QuoteRepository handles SQL persistence
+
+## Spec & Decisions
+- Spec: `docs/specs/STH-1192-spec.md`
+- ADRs: `docs/adr/0003-quote-expiration-batch-strategy.md` — batch sweep chosen over
+  per-quote timer (lower SQL load, simpler recovery)
+
+## Changes
+
+### Domain (`src/Domain/`)
+- `Models/Quote.cs` — Added `QuoteStatus.Expired` enum value
+- `Interfaces/IQuoteRepository.cs` — New: `GetExpiredQuotes`, `MarkAsExpired`
+
+### Application (`src/Application/`)
+- `Services/QuoteOrchestrationService.cs` — New: expiration sweep logic, metric emission,
+  timeout retry strategy
+
+### Infrastructure (`src/Infrastructure/`)
+- `Repositories/QuoteRepository.cs` — New: SQL implementations of IQuoteRepository methods
+
+### Tests
+- `tests/Domain/QuoteStatusTests.cs` — Enum validation (1 test)
+- `tests/Application/QuoteOrchestrationTests.cs` — Service logic (8 tests)
+- `tests/Infrastructure/QuoteRepositoryTests.cs` — SQL integration via Testcontainers (6 tests)
+
+## Quality Metrics
+
+| Metric | Value | Target |
+|--------|-------|--------|
+| Unit coverage | 86.6% | >= 80% |
+| Mutation score (business) | 74.5% | >= 70% |
+| Mutation score (infra) | 60.9% | >= 50% |
+| Tests | 15 new, 15 total | All passing |
+| AC coverage | 3/3 | All covered |
+
+Full quality report: `docs/reports/STH-1192-quality.md`
+
+## Acceptance Criteria
+
+- [x] AC1: Expiration sweep updates QUOTE.status and writes QUOTE_EVENT — 5 tests
+- [x] AC2: Expired quotes excluded from GetActiveQuote — 3 tests
+- [x] AC3: SQL timeout retry, skip, no partial updates — 3 tests
+
+## Test Plan
+
+- [x] All existing tests pass (0 regressions)
+- [x] New unit tests pass (8/8)
+- [x] New integration tests pass (6/6, Testcontainers.MsSql)
+- [x] Property-based test passes (FsCheck, 1000 iterations)
+- [x] SonarQube quality gate: Pass, StyleCop: 0 warnings
+- [ ] Manual verification: trigger expiration sweep with test data (reviewer)
+```
+
+---
+

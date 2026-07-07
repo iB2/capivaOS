@@ -9,7 +9,7 @@ Decompose an approved spec into implementable micro-tasks. Each task is self-con
 
 ## Architecture Enforcement — Arch Role
 
-Before decomposing into tasks, the /plan skill MUST validate architectural compliance using the Architect role (`.claude/agents/roles/arch.md`).
+Before decomposing into tasks, the /plan skill MUST validate architectural compliance using the **arch** agent (native definition `.claude/agents/arch.md` — read + Write allowlist for ADRs and deviation records; it cannot touch source).
 
 ### Pre-Decomposition Architecture Check
 
@@ -40,7 +40,7 @@ When spawning the arch role:
 
 ```
 Agent(
-  role: .claude/agents/roles/arch.md
+  subagent_type: "arch"          // native definition .claude/agents/arch.md
   input: spec + existing architecture + CONTEXT.md + blueprint reference.md
   output: ADRs + layer assignments + interface definitions
 )
@@ -315,3 +315,158 @@ If ANY check fails → iterate on the plan before presenting.
 - **No code.** This skill produces the plan, never implementation code.
 - **Spec is input, not repeated.** Reference the spec file, don't paste it into the plan.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
+
+---
+
+## Gold Standard (moved from artifact-standards.md, ADR-0011)
+
+The normative template and quality bar for this skill's artifact — the FLOOR, not the ceiling. `artifact-standards.md` keeps the anti-slop rules and validation checklists; the worked examples live here so they load only when this phase runs.
+
+### Artifact 2: PLAN.md — Required Sections
+```markdown
+# Plan: [Task Title]
+
+## Spec Reference
+docs/specs/[TASK-ID]-spec.md — [one-line summary of what the spec decided]
+
+## Tech Context
+docs/tech-context/[TASK-ID]-tech.md — [libraries queried via Context7, key findings]
+
+## Approach
+
+### Chosen Strategy
+[2-3 paragraphs explaining the implementation approach. Reference ADRs.
+Reference verified API patterns from the tech context.
+Explain WHY this approach, not just WHAT.]
+
+### Rejected Alternatives
+[What you considered and why you rejected it. This prevents subagents from
+"improving" the approach by accidentally choosing a rejected path.]
+
+### Risk Assessment
+- **Highest risk**: [task N] — [why it's risky and what to watch for]
+- **Integration risk**: [where things might not fit together]
+- **Testing risk**: [what's hard to test and how we'll handle it]
+
+## Task Summary
+- Total tasks: [N]
+- Sequential tasks: [list]
+- Parallel group A: [tasks that can run simultaneously]
+- Parallel group B: [if applicable]
+- Estimated total: [M] minutes
+- Estimated wall clock (with parallelism): [K] minutes
+
+## Dependency Graph
+
+```
+Task 1: IQuoteRepository interface
+├── Task 2: QuoteRepository (SQL impl) ── depends on 1
+├── Task 3: QuoteOrchestrationService  ── depends on 1
+│   └── Task 5: Orchestration tests    ── depends on 3
+└── Task 4: QuoteExpirationJob         ── depends on 1, 2
+    └── Task 6: Expiration tests       ── depends on 4
+Task 7: Integration tests              ── depends on 2, 3, 4
+```
+
+## Tasks
+
+### Task 1: [Descriptive title — not "Create interface"]
+
+**Purpose**: [One sentence: WHY this task exists in the plan, what it enables]
+
+**Files**:
+- `src/Domain/Interfaces/IQuoteRepository.cs` (CREATE)
+- `src/Domain/Models/Quote.cs` (MODIFY — add Status enum value)
+
+**Context** (existing code the agent needs to see):
+```csharp
+// Current state of Quote.cs that the agent needs to understand
+namespace COS.Domain.Models;
+
+public class Quote
+{
+    public Guid Id { get; set; }
+    public string Symbol { get; set; }
+    public string Bank { get; set; }
+    public QuoteStatus Status { get; set; }
+    // ... other properties
+}
+
+public enum QuoteStatus
+{
+    Active,
+    Filled,
+    Rejected
+    // Task: add Expired here
+}
+```
+
+**Implementation**:
+```csharp
+// What the agent should produce
+namespace COS.Domain.Interfaces;
+
+public interface IQuoteRepository
+{
+    Task<Quote?> GetActiveQuote(Guid quoteId);
+    Task<IReadOnlyList<Quote>> GetExpiredQuotes(TimeSpan olderThan, int batchSize);
+    Task MarkAsExpired(Guid quoteId, CancellationToken ct);
+}
+```
+
+**Test (write FIRST)**:
+```csharp
+namespace COS.Tests.Domain;
+
+public class QuoteStatusTests
+{
+    [Fact]
+    public void QuoteStatus_Should_Include_Expired_Value()
+    {
+        var expired = QuoteStatus.Expired;
+        expired.Should().BeDefined();
+        ((int)expired).Should().BeGreaterThan((int)QuoteStatus.Rejected);
+    }
+}
+```
+
+**Verify**:
+```bash
+dotnet test --filter "QuoteStatusTests"
+```
+
+**Depends on**: None (first task)
+**Parallelizable**: No — other tasks depend on this interface
+**Estimate**: 3 min
+**Risk**: Low
+
+### Task 2: [next task...]
+[Same depth and detail as Task 1]
+
+## Quality Checklist
+- [ ] All existing tests still pass after each task
+- [ ] Every new public method has a corresponding test
+- [ ] CONTEXT.md terms used consistently (no synonyms in code)
+- [ ] No ADR violations
+- [ ] No new compiler warnings
+- [ ] Each task's test is written BEFORE its implementation
+```
+
+### Artifact 2: PLAN.md — Quality Bar Examples
+**REJECT** — vague task:
+```
+### Task 3: Implement the service
+
+**Files**: src/Services/QuoteService.cs (create)
+
+**Code**: Implement the service that handles quote operations.
+
+**Verify**: dotnet test
+```
+
+**ACCEPT** — complete task (see template above for the full pattern)
+
+A task is acceptable when a developer who has NEVER seen the codebase can implement it by reading ONLY the task description + CONTEXT.md. If they'd need to "figure out" anything — the task is incomplete.
+
+---
+

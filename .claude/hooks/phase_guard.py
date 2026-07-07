@@ -6,9 +6,10 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
 (see ADR-0008):
 
   - Edit/Write/NotebookEdit to source paths  -> only when Phase = IMPLEMENT
-    (test paths also allowed when Phase = TEST_VERIFY)
-  - `gh pr create`                           -> only when Phase = FINISH and
-    Quality Gate is PASS / ACCEPTED_SOFT_FAIL
+    (test paths also allowed when Phase = TEST_VERIFY or VERIFY_FINISH)
+  - `gh pr create`                           -> only when Phase = FINISH or
+    VERIFY_FINISH (fast lane, ADR-0010) and Quality Gate is PASS /
+    ACCEPTED_SOFT_FAIL
 
 Pipeline artifacts (.board/, docs/, .claude/, templates/, PLAN.md, root *.md)
 are writable in every phase — the pipeline itself produces them.
@@ -57,6 +58,9 @@ TEST_PATH_RE = re.compile(
 )
 
 PASSING_GATES = {"PASS", "ACCEPTED_SOFT_FAIL"}
+# Fast lane (ADR-0010): VERIFY_FINISH combines TEST_VERIFY + FINISH.
+TEST_WRITE_PHASES = {"TEST_VERIFY", "VERIFY_FINISH"}
+PR_PHASES = {"FINISH", "VERIFY_FINISH"}
 
 
 def _parse_field(content: str, field: str) -> str:
@@ -115,11 +119,11 @@ def _check_file_write(tool_input: dict, phase: str):
         _allow()
     if phase == "IMPLEMENT":
         _allow()
-    if phase == "TEST_VERIFY" and TEST_PATH_RE.search(str(path)):
+    if phase in TEST_WRITE_PHASES and TEST_PATH_RE.search(str(path)):
         _allow()
     _deny(
         f"Phase guard: source file writes require Phase = IMPLEMENT "
-        f"(tests also allowed in TEST_VERIFY). Current phase: {phase or 'UNKNOWN'}. "
+        f"(tests also allowed in TEST_VERIFY / VERIFY_FINISH). Current phase: {phase or 'UNKNOWN'}. "
         f"Run /sprint to advance the pipeline, or edit pipeline artifacts "
         f"(docs/, .board/, PLAN.md) instead. File: {path}"
     )
@@ -128,9 +132,10 @@ def _check_file_write(tool_input: dict, phase: str):
 def _check_shell(tool_input: dict, phase: str, gate: str):
     command = tool_input.get("command", "")
     if re.search(r"\bgh\s+pr\s+create\b", command):
-        if phase != "FINISH":
+        if phase not in PR_PHASES:
             _deny(
-                f"Phase guard: `gh pr create` requires Phase = FINISH. "
+                f"Phase guard: `gh pr create` requires Phase = FINISH "
+                f"(or VERIFY_FINISH in the fast lane). "
                 f"Current phase: {phase or 'UNKNOWN'}. Complete /test-verify and "
                 f"quality review first, then /finish creates the PR."
             )

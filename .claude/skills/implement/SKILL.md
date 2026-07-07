@@ -17,7 +17,8 @@ Execute an approved plan by spawning subagents for each micro-task. TDD is enfor
 4. Verify `PLAN.md` exists in working directory
 5. Check if `docs/tech-context/TASK-ID-tech.md` exists:
    - If YES → include in each subagent's context alongside spec and PLAN.md
-   - If NO → check sprint-state Notes for "domain-only" flag. If flagged, proceed. If NOT flagged → **WARN**: "Tech context missing. Consider running /plan Step 1.5 (Context7 discovery) to avoid using stale API docs."
+   - If NO and Lane = fast with PLAN.md noting "fast lane: tech context inline" → proceed (fast lane embeds tech findings in PLAN.md; see /spec-plan)
+   - If NO otherwise → check sprint-state Notes for "domain-only" flag. If flagged, proceed. If NOT flagged → **WARN**: "Tech context missing. Consider running /plan Step 1.5 (Context7 discovery) to avoid using stale API docs."
 6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /plan first."
 7. If ALL checks pass → proceed
 
@@ -46,7 +47,9 @@ For each task in PLAN.md, in dependency order:
 
 #### a. Spawn Subagent
 
-Launch a dev-role subagent (`.claude/agents/roles/dev.md`) with:
+Launch a **dev** subagent (native agent definition `.claude/agents/dev.md` — spawn by
+agent type so the platform enforces its tool allowlist; do NOT paste the role file
+into the prompt) with:
 - The task description from PLAN.md (verbatim)
 - `docs/CONTEXT.md` domain terms
 - `docs/tech-context/TASK-ID-tech.md` current library docs (relevant sections for this task's libraries)
@@ -57,6 +60,19 @@ Launch a dev-role subagent (`.claude/agents/roles/dev.md`) with:
 - Instruction: **do NOT modify any other files besides those listed in the task**
 
 Each subagent gets fresh context — no bleed from previous tasks.
+
+#### a2. Collect & Validate the Structured Report (ADR-0012)
+
+Every dev subagent ends with one fenced JSON completion report (schema in
+`.claude/agents/dev.md`). On completion:
+
+1. Extract the JSON block; validate it: `python scripts/validate_impl_report.py report.json`
+2. Missing or invalid → respawn ONCE asking for the report only (no code changes). Still invalid → the attempt counts as a failure (three-strike rule).
+3. Cross-check claims mechanically:
+   - `files_changed` vs `git diff --name-status` for the task's commits — any mismatch is a REFUTED claim: fix the report or the code
+   - `test_results` vs your own run of the suite (Step c) — counts must match
+   - `tests_added[].acs` ids must exist in `docs/specs/TASK-ID-acs.json`
+4. Aggregate the validated JSONs — the Implementation Report (Step 5) is GENERATED from them, not re-written from memory.
 
 #### b. TDD Enforcement
 
@@ -125,7 +141,7 @@ Both must succeed. If any fail → diagnose and fix before proceeding.
    git push -u origin feature/TASK-ID-slug
    ```
 
-4. Produce implementation report:
+4. Produce implementation report — GENERATED from the validated per-task JSON reports (Step a2), not hand-written:
 ```markdown
 ## Implementation Report
 
@@ -155,16 +171,18 @@ Both must succeed. If any fail → diagnose and fix before proceeding.
 
 **After all tasks complete and tests are green:**
 
+The next phase depends on the lane: TEST_VERIFY (Lane = full) or VERIFY_FINISH (Lane = fast, ADR-0010).
+
 1. Update `.board/sprint-state.md`:
-   - Phase History: `| [now] | [task] | IMPLEMENT | TEST_VERIFY | tests-green | [N] tasks, [M] tests |`
+   - Phase History: `| [now] | [task] | IMPLEMENT | TEST_VERIFY or VERIFY_FINISH | tests-green | [N] tasks, [M] tests |`
 2. Update `.board/tasks.md` (with lock):
    - Set Branch field on the task
    - Update Phase field
-3. **→ Return control to /sprint** which will invoke /test-verify next.
+3. **→ Return control to /sprint** which will invoke /test-verify (full lane) or /verify-finish (fast lane) next.
 
 If invoked standalone:
 - Update sprint-state as above
-- State: "Implementation complete. [N] tasks done, [M] tests added, all green. Next: invoke /test-verify."
+- State: "Implementation complete. [N] tasks done, [M] tests added, all green. Next: invoke /test-verify (or /verify-finish in the fast lane)."
 
 ## Input Quality Validation
 
@@ -203,3 +221,69 @@ Before advancing to /test-verify, validate the implementation report against `.c
 - **Board lock for writes.** Any board update follows the lock protocol.
 - **Spec ambiguity = STOP.** If implementation reveals ambiguity → halt, document, return to GRILL_SPEC.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
+
+---
+
+## Gold Standard (moved from artifact-standards.md, ADR-0011)
+
+The normative template and quality bar for this skill's artifact — the FLOOR, not the ceiling. `artifact-standards.md` keeps the anti-slop rules and validation checklists; the worked examples live here so they load only when this phase runs.
+
+### Artifact 3: Implementation Report — Required Content
+```markdown
+## Implementation Report: [Task Title]
+
+### Branch
+- Name: `feature/TASK-ID-slug`
+- Base: `main` at commit [hash]
+- Commits: [N]
+
+### Tasks Completed
+
+| # | Task Title | Files Changed | Tests Added | Commits | Attempts | Status |
+|---|-----------|---------------|-------------|---------|----------|--------|
+| 1 | IQuoteRepository interface | IQuoteRepository.cs, Quote.cs | QuoteStatusTests (1) | abc1234 | 1 | ✅ |
+| 2 | QuoteRepository SQL impl | QuoteRepository.cs | QuoteRepositoryTests (4) | def5678 | 1 | ✅ |
+| 3 | QuoteOrchestrationService | QuoteOrchestrationService.cs | QuoteOrchestrationTests (6) | ghi9012 | 2 | ✅ (retry: NSubstitute setup issue) |
+
+### Files Changed (complete list)
+
+| File | Action | Lines | Purpose |
+|------|--------|-------|---------|
+| `src/Domain/Interfaces/IQuoteRepository.cs` | CREATE | 15 | Repository interface for quote operations |
+| `src/Domain/Models/Quote.cs` | MODIFY | +3 | Added QuoteStatus.Expired enum value |
+| `src/Infrastructure/Repositories/QuoteRepository.cs` | CREATE | 87 | SQL Server implementation of IQuoteRepository |
+| `src/Application/Services/QuoteOrchestrationService.cs` | CREATE | 142 | Quote lifecycle orchestration |
+| `tests/Domain/QuoteStatusTests.cs` | CREATE | 12 | Enum validation |
+| `tests/Infrastructure/QuoteRepositoryTests.cs` | CREATE | 98 | Repository integration tests (Testcontainers.MsSql) |
+| `tests/Application/QuoteOrchestrationTests.cs` | CREATE | 156 | Service unit tests with NSubstitute mocks |
+
+### Test Inventory (from TDD)
+
+| Test Class | Tests | Type | AC Coverage |
+|-----------|-------|------|-------------|
+| QuoteStatusTests | 1 | Unit | AC none (infrastructure) |
+| QuoteRepositoryTests | 4 | Integration | AC 1 (get active), AC 2 (expiration sweep) |
+| QuoteOrchestrationTests | 6 | Unit | AC 1, AC 2, AC 3 (partial — no SQL timeout test) |
+
+### AC Coverage Status (pre-verification)
+
+| AC# | Description | Covered By TDD? | Gaps |
+|-----|-------------|-----------------|------|
+| 1 | Quote expiration sweep updates status + event | ✅ Partial | Missing: metric increment assertion |
+| 2 | Expired quotes not returned by GetActiveQuote | ✅ Full | — |
+| 3 | SQL timeout retry + skip behavior | ❌ Not covered | Needs integration test with simulated timeout |
+
+### Flags & Deviations
+- Task 3 required 2 attempts (first subagent misconfigured NSubstitute returns)
+- No deviations from PLAN.md
+- AC 3 (timeout handling) partially deferred to /test-verify — requires Testcontainers with fault injection
+
+### Test Results
+```
+dotnet test — 11 passed, 0 failed, 0 skipped
+Build: 0 warnings
+```
+```
+
+---
+

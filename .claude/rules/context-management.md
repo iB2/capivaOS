@@ -38,7 +38,10 @@ it's the maximum before quality degradation becomes unacceptable.
 | IMPLEMENT | ~60K | ~100K | Multiple subagents + reviews |
 | TEST_VERIFY | ~30K | ~50K | Two agents + static analysis |
 | FINISH | ~10K | ~20K | PR creation + board update |
-| **Total** | **~165K** | **~285K** | Heavy exceeds single session |
+| **Total (full lane)** | **~165K** | **~285K** | Heavy exceeds single session |
+| SPEC_PLAN (fast lane) | ~15K | ~25K | Combined spec-lite + plan, targeted interview |
+| VERIFY_FINISH (fast lane) | ~20K | ~35K | No two-agent generation; compact report + PR |
+| **Total (fast lane)** | **~75K** | **~135K** | TRIAGE + SPEC_PLAN + IMPLEMENT + VERIFY_FINISH |
 
 **Key insight**: A complex task's full pipeline may NOT fit in one session.
 The harness must handle multi-session execution gracefully.
@@ -61,6 +64,27 @@ Context management is **enforced mechanically** via Claude Code hooks, not by ag
 **Script**: `.claude/hooks/context-persistence.py` (always exits 0, never blocks).
 
 This means: the agent does NOT need to "track compaction count" — the hooks save and restore state automatically. The agent's job is to follow the phase boundary rules below.
+
+### 2026-07 Re-Benchmark (HARN-009, ADR-0012)
+
+The heuristics below were re-checked against current Claude Code context management:
+
+- **CONFIRMED — 200K planning ceiling.** The default context window is still the
+  right budget unit for phase planning; the phase-budget table above stands.
+- **UPDATED — signal hierarchy.** Current Claude Code summarizes context
+  automatically at the window boundary and continues work in the next window,
+  and exposes live usage (`/context`, statusline). Direct signals now take
+  precedence: (1) live context usage where visible, (2) observed quality
+  degradation (forgotten decisions, vague output, repeated questions),
+  (3) compaction count as the fallback when neither is available.
+- **RETAINED — "2 auto-compactions = mandatory handover"** as the conservative
+  fallback rule. A compaction is no longer a cliff (summarization preserves
+  more than 2025-era compaction did, and the PreCompact/SessionStart hooks
+  persist sprint state mechanically), but it remains the best available proxy
+  for "this session has been long enough that quality risk is real."
+- **RETAINED — handover at phase boundaries.** Even with automatic continuation,
+  a deliberate `/handover` document beats an automatic summary for multi-session
+  tasks: it is reviewable, versioned, and structured for the next agent.
 
 ### Phase Boundary Checkpoints
 
