@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
 """
-context-persistence.py — Automated session state persistence for Boss sessions.
+context-persistence.py — Automated session state persistence for the harness.
 
 Entry points:
   precompact  — save current state before compaction fires
   restore     — return saved state as additionalContext after compaction
   stop        — save final state on session end (skip if /handover exists)
 
-Always exits 0, never blocks. Follows session-start.py conventions.
+Always exits 0, never blocks the session.
+
+Requires `python3` on PATH. On Windows this is satisfied by the python.org
+installer or the Microsoft Store build; the hook command in settings.json is a
+plain invocation valid in Git Bash, cmd, and PowerShell alike.
 """
 
 import json
+import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-PROJECT_ROOT = Path.cwd()
+PROJECT_ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
 STATE_DIR = PROJECT_ROOT / ".state"
 BOARD_DIR = PROJECT_ROOT / ".board"
 HANDOVER_DIR = PROJECT_ROOT / "docs" / "handover"
-SESSION_STATE_FILE = STATE_DIR / "boss-session.md"
+SESSION_STATE_FILE = STATE_DIR / "session-state.md"
+
+# Fields parsed from the "Current Task" section of sprint-state.md
+SPRINT_FIELDS = ("Task ID", "Phase", "Spec Approved", "Plan Approved", "Quality Gate", "Branch")
 
 
 def _run(cmd: list[str], fallback: str = "") -> str:
@@ -36,37 +45,35 @@ def _board_snapshot() -> str:
     if not tasks.is_file():
         return "Board: not found"
     try:
-        content = tasks.read_text(encoding="utf-8")
-        in_progress = content.count("**Status**: In Progress")
-        open_tasks = content.count("- [ ]")
-        done_tasks = content.count("- [x]")
+        lines = tasks.read_text(encoding="utf-8").splitlines()
+        in_progress = sum(1 for l in lines if l.strip().startswith("- **Status**: In Progress"))
+        open_tasks = sum(1 for l in lines if l.lstrip().startswith("- [ ]"))
+        done_tasks = sum(1 for l in lines if l.lstrip().startswith("- [x]"))
         return f"Board: {open_tasks} open, {in_progress} in progress, {done_tasks} done"
     except Exception:
         return "Board: read error"
 
 
 def _sprint_state_summary() -> str:
+    """Parse `- **Field**: value` bullets from sprint-state.md (state-management.md field format)."""
     state_file = BOARD_DIR / "sprint-state.md"
     if not state_file.is_file():
         return "Sprint state: IDLE (no sprint-state.md)"
     try:
         content = state_file.read_text(encoding="utf-8")
-        lines = content.splitlines()
         summary_parts = []
-        for line in lines:
-            low = line.lower().strip()
-            if low.startswith("| phase") or low.startswith("| task") or low.startswith("| sprint"):
-                parts = [p.strip() for p in line.split("|") if p.strip()]
-                if len(parts) >= 2:
-                    summary_parts.append(f"{parts[0]}: {parts[1]}")
-        return "Sprint state: " + (" | ".join(summary_parts[:5]) if summary_parts else "see sprint-state.md")
+        for field in SPRINT_FIELDS:
+            m = re.search(rf"^- \*\*{re.escape(field)}\*\*:\s*(.+)$", content, re.MULTILINE)
+            if m:
+                summary_parts.append(f"{field}: {m.group(1).strip()}")
+        return "Sprint state: " + (" | ".join(summary_parts) if summary_parts else "see sprint-state.md")
     except Exception:
         return "Sprint state: read error"
 
 
 def _gather_state() -> str:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    sections = [f"# Boss Session State\n\n> Auto-saved: {now}\n> Source: context-persistence.py precompact\n"]
+    sections = [f"# Session State\n\n> Auto-saved: {now}\n> Source: context-persistence.py\n"]
 
     sections.append("## Sprint State\n")
     sections.append(_sprint_state_summary())
@@ -89,25 +96,6 @@ def _gather_state() -> str:
     sections.append("\n## Recent Commits\n```")
     sections.append(_run(["git", "log", "--oneline", "-5"], "no commits"))
     sections.append("```")
-
-    cycle_state = STATE_DIR / "cycle-state.json"
-    if cycle_state.is_file():
-        try:
-            cs = json.loads(cycle_state.read_text(encoding="utf-8"))
-            sections.append(f"\n## Cycle State\n")
-            sections.append(f"- Cycle: {cs.get('cycle_number', '?')}")
-            sections.append(f"- Health: {cs.get('health', '?')}")
-            sections.append(f"- Last result: {cs.get('last_result', '?')}")
-        except Exception:
-            pass
-
-    state_md = STATE_DIR / "state.md"
-    if state_md.is_file():
-        try:
-            content = state_md.read_text(encoding="utf-8")[:500]
-            sections.append(f"\n## Last Cycle Narrative\n{content}")
-        except Exception:
-            pass
 
     return "\n".join(sections)
 

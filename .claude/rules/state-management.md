@@ -66,6 +66,8 @@ Every skill includes this guard at the top:
 
 **No exceptions.** Even if the human says "just run /implement" — if the phase isn't IMPLEMENT, refuse.
 
+**Hook backstop**: independent of skill discipline, the `phase_guard.py` PreToolUse hook parses this file's `- **Field**:` format and denies source-file writes outside IMPLEMENT and `gh pr create` outside FINISH at the tool layer (see ADR-0008). The field format above is therefore a load-bearing interface — changing it requires updating `phase_guard.py` and `context-persistence.py` in the same commit.
+
 ### Sprint State Updates
 
 When transitioning phases, update `.board/sprint-state.md` atomically:
@@ -148,7 +150,7 @@ Every board update MUST include:
 Example:
 ```markdown
 - [x] **STH-1192** MCP Order API — PR #45 (2026-06-18)
-  - Coverage: 87% | SonarQube: Pass | StyleCop: 0 warnings
+  - Coverage: 87% | Quality gate: Pass | Linter: 0 warnings
   - Completed: 2026-06-18 15:38
 ```
 
@@ -181,7 +183,7 @@ Before starting, each skill verifies its input artifacts:
 | /grill-spec | Task spec loaded in context | sprint-state shows task selected |
 | /plan | `docs/specs/TASK-ID-spec.md` exists | File exists AND was approved (gate in sprint-state) |
 | /implement | `PLAN.md` exists | File exists AND was approved (gate in sprint-state) |
-| /test-verify | Feature branch with green tests | `dotnet test` passes on branch |
+| /test-verify | Feature branch with green tests | Test suite passes on branch (per blueprint §build-commands) |
 | /finish | `docs/reports/TASK-ID-quality.md` exists | File exists AND quality gates pass |
 
 If ANY required artifact is missing → STOP. Report what's missing. Do NOT proceed.

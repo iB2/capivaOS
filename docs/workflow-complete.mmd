@@ -1,4 +1,4 @@
----
+﻿---
 config:
   layout: elk
   elk:
@@ -184,7 +184,7 @@ flowchart TD
         IM_INPUT{"Input Validation\n✓ Tasks have all sections\n✓ File paths absolute\n✓ Code with namespace\n✓ Test skeletons complete\n✓ Dependency graph present"}:::decision
         IM_INPUT_FAIL["⛔ Plan below standard\nReturn to /plan"]:::fail
         IM_BRANCH["Create feature branch\ngit checkout -b\nfeature/TASK-ID-slug"]:::activity
-        IM_BASELINE["Verify clean baseline\ndotnet test ✅"]:::activity
+        IM_BASELINE["Verify clean baseline\ntest suite green ✅"]:::activity
 
         subgraph TASK_LOOP["🔁 For Each Micro-Task"]
             direction TB
@@ -192,7 +192,7 @@ flowchart TD
             IM_RED["🔴 RED\nWrite failing test FIRST"]:::activity
             IM_GREEN["🟢 GREEN\nMinimum code to pass"]:::activity
             IM_REFACTOR["🔵 REFACTOR\nClean up"]:::activity
-            IM_VERIFY["Run verify command\ndotnet test --filter ..."]:::activity
+            IM_VERIFY["Run verify command\n(per blueprint §build-commands)"]:::activity
             IM_REVIEW["Two-stage review\n1. Spec compliance\n2. Code quality"]:::activity
             IM_REVIEW_OK{"Review\npass?"}:::decision
             IM_FIX["Fix issues"]:::activity
@@ -207,10 +207,10 @@ flowchart TD
             IM_STRIKE -->|"≥ 3"| IM_ESCALATE
         end
 
-        IM_FINAL["Final verification\ndotnet build --no-incremental\ndotnet test"]:::activity
+        IM_FINAL["Final verification\nfull build + test suite\n(per blueprint §build-commands)"]:::activity
         IM_PUSH["git push -u origin\nfeature/TASK-ID-slug"]:::activity
         IM_REPORT["Write implementation report\n• Tasks completed\n• Files changed\n• Tests added\n• AC coverage status\n• Flags & deviations"]:::activity
-        IM_QA_CHECK{"Output Quality Gate\n✓ All columns populated\n✓ AC coverage mapped\n✓ Gaps explicit\n✓ dotnet test results"}:::decision
+        IM_QA_CHECK{"Output Quality Gate\n✓ All columns populated\n✓ AC coverage mapped\n✓ Gaps explicit\n✓ test suite results"}:::decision
         IM_BRANCH_ART[/"📄 Feature branch\n+ implementation report"/]:::artifact
 
         IM_GUARD -->|"✅"| IM_INPUT
@@ -230,7 +230,7 @@ flowchart TD
     %% ═══════════════════════════════════════════════════════
     subgraph VERIFY["Phase 4 — TEST & VERIFY"]
         direction TB
-        TV_GUARD{{"🛡 Phase Guard\nPhase = TEST_VERIFY?\nBranch exists?\ndotnet test passes?"}}:::guard
+        TV_GUARD{{"🛡 Phase Guard\nPhase = TEST_VERIFY?\nBranch exists?\ntest suite passes?"}}:::guard
         TV_FAIL["⛔ Guard failed"]:::fail
         TV_ANALYZE["Analyze implementation\ngit diff main..HEAD\nMap AC → tests"]:::activity
 
@@ -243,13 +243,13 @@ flowchart TD
 
         TV_REVIEWER_OK{"Reviewer\nverdict?"}:::decision
         TV_ITERATE_TESTS["Iterate once\non test quality"]:::activity
-        TV_RUN["dotnet test\n--logger trx"]:::activity
-        TV_STATIC["Static Analysis\n(SonarQube + StyleCop)"]:::activity
-        TV_COVERAGE["reportgenerator\n→ HTML coverage report"]:::activity
-        TV_WRITE_REPORT["Write quality report\ndocs/reports/TASK-ID-quality.md\n• Coverage per scope\n• SonarQube analysis\n• StyleCop compliance\n• AC coverage matrix\n• Test inventory"]:::activity
+        TV_RUN["Run test suite\n(per blueprint §build-commands)"]:::activity
+        TV_STATIC["Static Analysis\n(per blueprint §static-analysis)"]:::activity
+        TV_COVERAGE["Coverage report\n(per blueprint §build-commands)"]:::activity
+        TV_WRITE_REPORT["Write quality report\ndocs/reports/TASK-ID-quality.md\n• Coverage per scope\n• Quality gate analysis\n• Linter compliance\n• AC coverage matrix\n• Test inventory"]:::activity
         TV_QA_CHECK{"Output Quality Gate\n✓ Executive summary\n✓ Each issue analyzed\n✓ AC matrix complete\n✓ All gates have verdict\n✓ No -- or pending"}:::decision
         TV_ITERATE_REPORT["Iterate on report\nor add more tests"]:::activity
-        TV_GATES{"Quality Gates\n• Coverage ≥ 80%\n• StyleCop 0 warnings\n• SonarQube pass\n• All integration pass\n• All AC covered"}:::decision
+        TV_GATES{"Quality Gates\n• Coverage ≥ 80%\n• Linter 0 warnings\n• Quality gate pass\n• All integration pass\n• All AC covered"}:::decision
         TV_HARD_FAIL["⛔ HARD FAIL\nBlock /finish\nRequire more tests"]:::fail
         TV_SOFT_FAIL["⚠ SOFT FAIL\nFlag issues\nPresent to human"]:::activity
         TV_REPORT_DOC[/"📄 docs/reports/\nTASK-ID-quality.md"/]:::artifact
@@ -285,7 +285,7 @@ flowchart TD
         FN_FAIL["⛔ Guard failed"]:::fail
         FN_INPUT{"Input Validation\n✓ All gates have verdict\n✓ AC matrix complete\n✓ Mutants analyzed\n✓ No HARD_FAIL"}:::decision
         FN_INPUT_FAIL["⛔ Report incomplete\nReturn to /test-verify"]:::fail
-        FN_PREFLIGHT["Pre-flight checks\n• dotnet test ✅\n• git status clean\n• Branch pushed\n• Rebased on main"]:::activity
+        FN_PREFLIGHT["Pre-flight checks\n• test suite ✅\n• git status clean\n• Branch pushed\n• Rebased on main"]:::activity
         FN_PR["Create PR\ngh pr create\n• Summary (what + why)\n• Spec & ADR references\n• Changes by concern\n• Quality metrics table\n• AC checkboxes + tests\n• Test plan checklist"]:::activity
         FN_PR_QA{"Output Quality Gate\n✓ WHY not just WHAT\n✓ Spec path referenced\n✓ Quality table present\n✓ Each AC checked off\n✓ No vague descriptions"}:::decision
         FN_PR_ITERATE["Iterate on PR\ndescription"]:::activity
@@ -333,7 +333,7 @@ flowchart TD
     %% SPRINT END
     %% ═══════════════════════════════════════════════════════
     T_NONE --> SPRINT_END
-    SPRINT_END["📊 Sprint Summary\n• Tasks completed\n• PRs created\n• Avg coverage\n• SonarQube status"]:::loop
+    SPRINT_END["📊 Sprint Summary\n• Tasks completed\n• PRs created\n• Avg coverage\n• Quality gate status"]:::loop
 
     %% ═══════════════════════════════════════════════════════
     %% CONNECTIONS BETWEEN PHASES (through context checks)

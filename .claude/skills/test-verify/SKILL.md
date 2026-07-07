@@ -78,7 +78,7 @@ ALL tests (unit + integration) must pass. If any fail → fix and re-run.
 Run the static analysis tools defined in the blueprint's reference.md §static-analysis section:
 
 1. **Linter/Analyzer**: Run the linting command from §build-commands. Confirm zero new warnings in new/changed files.
-2. **Quality Gate Tool** (e.g., SonarQube): If available locally, run analysis per §build-commands. If not available locally, note deferral to CI pipeline.
+2. **Quality Gate Tool** (per blueprint §static-analysis): If available locally, run analysis per §build-commands. If not available locally, note deferral to CI pipeline.
 
 Analysis exclusions:
 - Auto-generated files (migrations, generated code)

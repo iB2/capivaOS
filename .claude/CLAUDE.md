@@ -4,7 +4,7 @@
 
 A 6-phase development pipeline for Claude Code that enforces spec-driven, test-first development. The pipeline is state-machine driven — every phase reads and updates `.board/sprint-state.md`, every skill enforces phase guards, and no skill can run out of sequence.
 
-**Three immutable laws:**
+**The credo (the seven laws below, in three lines):**
 1. If it's not on the board, it doesn't get built.
 2. If there's no approved spec, there's no code.
 3. If there's no test, there's no implementation.
@@ -88,6 +88,8 @@ Each blueprint has an associated **real, buildable project** on the local filesy
 IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
 ```
 
+**Mechanically enforced**: the `phase_guard.py` PreToolUse hook denies source-file writes outside IMPLEMENT (test paths also allowed in TEST_VERIFY) and `gh pr create` outside FINISH with passing gates — see [ADR-0008](docs/adr/0008-phase-guard-hook-enforcement.md). The rules below hold even if the conversation drifts.
+
 You CANNOT:
 - Write implementation code unless sprint-state Phase = IMPLEMENT
 - Write test code (beyond TDD in /implement) unless Phase = TEST_VERIFY
@@ -148,7 +150,7 @@ At each gate: present the deliverable clearly, then WAIT. Do not proceed until t
 
 The pipeline is **token-bounded, not time-bounded**. It runs until the board is empty or context is exhausted.
 
-**Enforced**: `context-persistence.py` hooks auto-save session state to `.state/boss-session.md` on every compaction (PreCompact) and session end (Stop). SessionStart:compact restores context automatically after compaction. The `/handover` skill remains available for deliberate, detailed checkpoints — manual handovers take priority over auto-saved state.
+**Enforced**: `context-persistence.py` hooks auto-save session state to `.state/session-state.md` on every compaction (PreCompact) and session end (Stop). SessionStart:compact restores context automatically after compaction. The `/handover` skill remains available for deliberate, detailed checkpoints — manual handovers take priority over auto-saved state.
 
 - **Before EVERY phase transition**: run context budget check (see `.claude/rules/context-management.md`)
 - **When output quality degrades** (forgotten decisions, vague output, repeated questions) = mandatory handover via `/handover` at next phase boundary
@@ -326,7 +328,7 @@ Key gates (summary — refer to quality-gates.md for detailed scoping):
 
 ---
 
-## Law 6: Artifact Quality Standards
+## Law 7: Artifact Quality Standards
 
 Every artifact MUST meet the gold standard defined in `.claude/rules/artifact-standards.md`.
 
@@ -346,7 +348,7 @@ If an artifact's quality is below the standard → the skill that produced it MU
 |------|---------|
 | `docs/DESIGN.md` | **Design philosophy, source attribution, core principles, rationale for every law** |
 | `docs/SCOPE.md` | **What the harness is/isn't, adaptation guide, assumptions** |
-| `docs/adr/0001-*.md` through `0007-*.md` | **Architecture Decision Records for the harness's own design choices** |
+| `docs/adr/*.md` | **Architecture Decision Records for the harness's own design choices** |
 
 ## Rules (detailed)
 

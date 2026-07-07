@@ -2,7 +2,7 @@
 
 A state-machine enforced, 6-phase development pipeline that turns Claude Code into a disciplined development agent. Board-driven, spec-first, test-enforced, artifact-gated. **Stack-agnostic** — works with any technology via pluggable blueprints.
 
-Synthesizes ideas from [grill-with-docs](https://github.com/mattpocock) (adversarial spec interviews), [Superpowers](https://github.com/obra) (SDD+TDD pipeline), and [Claudio](https://github.com/brunoamerico) (board-driven agent orchestration). See [docs/DESIGN.md](docs/DESIGN.md) for full design philosophy, source attribution, and rationale. See [docs/SCOPE.md](docs/SCOPE.md) for what this harness is and isn't.
+Synthesizes ideas from [Matt Pocock's skills](https://github.com/mattpocock/skills) (the `/grill-me` adversarial spec interview), [Superpowers](https://github.com/obra/superpowers) (SDD+TDD pipeline, by obra), and Claudio (Bruno Americo's board-driven agent orchestration framework, not publicly released). See [docs/DESIGN.md](docs/DESIGN.md) for full design philosophy, source attribution, and rationale. See [docs/SCOPE.md](docs/SCOPE.md) for what this harness is and isn't.
 
 ## What This Does
 
@@ -33,6 +33,7 @@ Each 🧑 is a blocking human checkpoint. Silence is NOT approval. `/init` runs 
 |-----------|-----------------|
 | **Init gate** | Running pipeline without project docs or blueprint config |
 | **Phase guards** | Skills running out of sequence |
+| **Phase guard hook** (PreToolUse) | Source edits outside IMPLEMENT; PRs outside FINISH — denied at the tool layer (ADR-0008) |
 | **Artifact gates** | Advancing without required outputs |
 | **Board lock** | Concurrent writes corrupting state |
 | **Sprint state** | Session crashes losing pipeline position |
@@ -80,7 +81,7 @@ The harness requires project documentation before setup. Without it, every downs
 - Fill in `docs/CONTEXT.md` with domain terms, acronyms, and business rules
 - Create `docs/specs/INTAKE-summary.md` with project scope, stakeholders, and requirements (see `templates/intake-summary.md`)
 
-Use `/discovery` to generate these from raw materials (transcripts, requirements docs, emails).
+Draft these from your raw materials (transcripts, requirements docs, emails) — `templates/intake-summary.md` defines the format. You can ask Claude to generate first drafts from those materials before running `/init`.
 
 ### 3. Run init
 
@@ -200,11 +201,13 @@ your-project/
 │   │   └── qa.md                    # QA subagent role
 │   ├── blueprints/
 │   │   ├── dotnet-hexagonal/
+│   │   │   ├── blueprint.md         # Stack summary (quick reference)
 │   │   │   └── reference.md         # .NET stack-specific patterns & commands
 │   │   ├── python-fastapi/
+│   │   │   ├── blueprint.md         # Stack summary (quick reference)
 │   │   │   └── reference.md         # Python stack-specific patterns & commands
 │   │   └── nextjs-typescript/
-│   │       ├── blueprint.md          # Stack summary (quick reference)
+│   │       ├── blueprint.md         # Stack summary (quick reference)
 │   │       └── reference.md         # Next.js stack-specific patterns & commands
 │   ├── rules/
 │   │   ├── artifact-standards.md    # Artifact naming, format, gating rules

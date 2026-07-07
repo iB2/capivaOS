@@ -235,6 +235,11 @@ For **ALL tasks** — validate Release Checklist (`docs/release/TASK-ID-release.
 - [ ] Rollback Trigger Criteria defined (what conditions trigger a rollback)
 - [ ] Environment table filled (per blueprint §ci-cd environments)
 
+For **ALL tasks** — enterprise compliance:
+- [ ] All branch commits follow the commit convention (see `.claude/rules/board-protocol.md`)
+- [ ] Solution document (`docs/solution-document.md`) created (first task per service) or updated
+- [ ] All deviation record files in `docs/deviations/` are referenced in the PR description and follow `templates/deviation-record.md` format
+
 If any SDLC artifact fails validation → iterate before creating PR.
 
 ## Quality Gate Override
@@ -259,48 +264,3 @@ No silent overrides. HARD_FAIL gates cannot be overridden — they block /finish
 - **Jira failures are non-blocking.** Log and continue. PR + board = what matters.
 - **Sprint-state reset to IDLE.** Task is done, state machine returns to start.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
-
----
-
-## When and How to Use /finish
-
-### When to Invoke
-
-`/finish` is invoked ONLY when:
-1. Sprint-state Phase = FINISH
-2. Quality Gate = PASS (or ACCEPTED_SOFT_FAIL)
-3. Quality report exists at `docs/reports/TASK-ID-quality.md`
-
-It is typically invoked by `/sprint` as the last phase of the pipeline, or manually when resuming an interrupted sprint at the FINISH phase.
-
-### What It Produces
-
-| Artifact | Path | Required? |
-|----------|------|-----------|
-| Pull Request | GitHub remote | Always |
-| CAB Ticket | `docs/cab/TASK-ID-cab.md` | P0/P1 only |
-| Release Checklist | `docs/release/TASK-ID-release.md` | Always |
-| Solution Document | `docs/solution-document.md` | First task only (updates for subsequent) |
-| Board update | `.board/tasks.md` → Done section | Always |
-
-### Flow After /finish
-
-```
-/finish completes → Human decides:
-  ├── "merge" → squash merge, branch cleanup, sprint-state → IDLE
-  ├── "review" → PR stays open, sprint-state stays FINISH
-  └── "discard" → PR closed, branch deleted (with confirmation), sprint-state → IDLE
-```
-
-### Enterprise Compliance Checklist
-
-Before marking /finish as complete, verify:
-- [ ] PR description follows artifact-standards.md Artifact 5
-- [ ] All commits follow the project's commit convention
-- [ ] CAB ticket generated (P0/P1)
-- [ ] Release checklist generated
-- [ ] Solution document created or updated
-- [ ] All deviation record files in `docs/deviations/` are referenced in PR description
-- [ ] Each deviation record follows `templates/deviation-record.md` format (metadata, justification, impact analysis)
-- [ ] Quality gate status noted
-- [ ] Linter zero warnings confirmed

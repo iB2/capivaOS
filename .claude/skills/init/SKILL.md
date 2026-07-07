@@ -59,7 +59,8 @@ Missing:
 
 What to do:
 1. Gather your raw materials (transcripts, requirements docs, emails, specs)
-2. Use /discovery to generate these documents from your raw materials
+2. Draft the documents from those materials — templates/intake-summary.md
+   defines the INTAKE format; ask Claude to generate first drafts if useful
 3. Run /init again once the docs are populated
 
 Template structure for INTAKE-summary.md:
@@ -113,7 +114,7 @@ Available blueprints: dotnet-hexagonal, python-fastapi, nextjs-typescript
 
 Options:
 1. Create a custom blueprint: .claude/blueprints/<name>/reference.md
-   (use an existing blueprint as template — all §sections are required)
+   (use an existing blueprint as template — every § section is required)
 2. Proceed without a blueprint (not recommended — skills lose stack context)
 ```
 
