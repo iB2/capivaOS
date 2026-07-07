@@ -30,31 +30,25 @@
   - **Completed**: 2026-07-07
   - **Notes**: Extra finding during implementation: settings.json used a flat hook format that never registered with Claude Code, and the sprint-state parser always fell back to a stub — both worse than audited. Commit 816c0e3.
 
+- [x] **HARN-002** Fix dead references and doc inconsistencies (P0)
+  - **Spec**: docs/audits/2026-07-07-harness-audit.md (findings F1.1, F3.1–F3.7)
+  - **AC**: 6/6 verified — /discovery references removed (README, init, grill-spec), law numbering consistent (7 laws + credo, DESIGN.md agrees with Law 7 rationale added), ADR references made count-free everywhere, SCOPE.md lists all 3 blueprints, canonical ADR template unified (arch + grill-spec identical conventions), attributions point to real repos (mattpocock/skills, obra/superpowers; Claudio marked not public). Also fixed F3.4 (census note in migration map) and F3.7 (finish tail deduplicated, unique items merged)
+  - **Depends**: none
+  - **Assignee**: main
+  - **Status**: Done
+  - **Phase**: IDLE
+  - **Branch**: chore/harness-audit-backlog
+  - **PR**: -- (fast-tracked with owner approval; branch PR covers HARN batch)
+  - **Quality**: verified via grep sweep — zero stale patterns outside audit doc/board quotes
+  - **Started**: 2026-07-07
+  - **Completed**: 2026-07-07
+  - **Notes**: ADR examples in artifact-standards renumbered 0007→0042 to avoid collision with real ADR-0007. Commit d5a62cc.
+
 ## Backlog — P0 Critical
 
 <!-- Blocking other work or requiring immediate attention -->
 
 <!-- HARN-* tasks: harness self-improvement backlog from docs/audits/2026-07-07-harness-audit.md (findings F1-F6 detailed there) -->
-
-- [ ] **HARN-002** Fix dead references and doc inconsistencies (P0)
-  - **Spec**: Remove/resolve every dead reference and stale count. See audit findings F1.1, F3.1–F3.7.
-  - **AC**:
-    1. No reference to nonexistent `/discovery` skill (README, init, grill-spec) — either create the skill or remove the references
-    2. Single consistent law numbering in CLAUDE.md; DESIGN.md agrees on the count
-    3. ADR count references match reality (7 ADRs) in grill-spec, artifact-standards, DESIGN.md index
-    4. SCOPE.md blueprint table lists all 3 blueprints
-    5. One canonical ADR template shared by grill-spec and arch role
-    6. README attribution links point to real project repos
-  - **Depends**: none
-  - **Assignee**: unassigned
-  - **Status**: Backlog
-  - **Phase**: IDLE
-  - **Branch**: --
-  - **PR**: --
-  - **Quality**: --
-  - **Started**: --
-  - **Completed**: --
-  - **Notes**: These would fail the harness's own artifact-standards review.
 
 ## Backlog — P1 Sprint
 

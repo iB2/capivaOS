@@ -30,6 +30,7 @@ ANY  → IDLE (abort)
 | 2026-07-07 | HARN-001..009 | IDLE | IDLE | board-write | Harness improvement backlog added from docs/audits/2026-07-07-harness-audit.md (no phase change) |
 | 2026-07-07 | HARN-001 | IDLE | IDLE | board-write | HARN-001 done (fast-tracked, owner-approved): hook registration + parsers repaired, verified on Windows. Commit 816c0e3 |
 | 2026-07-07 | HARN-010 | IDLE | IDLE | board-write | Added template-cleanup gate (owner-requested): restore pristine board/state/docs before HARN branch merges |
+| 2026-07-07 | HARN-002 | IDLE | IDLE | board-write | HARN-002 done (fast-tracked, owner-approved): dead refs + doc inconsistencies fixed, grep-verified. Commit d5a62cc |
 
 ## Board Lock
 
