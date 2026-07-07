@@ -45,38 +45,42 @@ The harness must handle multi-session execution gracefully.
 
 ---
 
-## Context Tracking
+## Context Tracking — Hook-Enforced
 
-### Compaction Counter
+### Automated State Persistence (hooks)
 
-Track auto-compactions as the primary signal for context pressure:
+Context management is **enforced mechanically** via Claude Code hooks, not by agent self-monitoring:
 
-| Compactions | Status | Action |
-|-------------|--------|--------|
-| 0 | 🟢 Healthy | Continue normally |
-| 1 | 🟡 Caution | Compact strategically at next phase boundary |
-| 2 | 🔴 Critical | Complete current phase step, then HANDOVER |
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `PreCompact` | Before every auto-compaction | Saves sprint state, board snapshot, git state to `.state/boss-session.md` |
+| `SessionStart:compact` | After compaction completes | Restores saved state as `additionalContext`, deletes the file |
+| `Stop` | On session end | Saves final state (skips if manual `/handover` doc exists) |
+
+**Configured in**: `.claude/settings.json` → hooks registered there fire automatically.
+**Script**: `.claude/hooks/context-persistence.py` (always exits 0, never blocks).
+
+This means: the agent does NOT need to "track compaction count" — the hooks save and restore state automatically. The agent's job is to follow the phase boundary rules below.
 
 ### Phase Boundary Checkpoints
 
 **At EVERY phase transition**, before starting the next phase:
 
-1. Check compaction count (if 2+ auto-compactions → handover)
-2. Estimate remaining budget:
-   - How many phases remain?
-   - Is the next phase token-heavy (IMPLEMENT, TEST_VERIFY)?
-   - Are there many micro-tasks in the plan?
-3. If remaining budget is likely insufficient for the next phase → HANDOVER
+1. Estimate remaining budget based on phases remaining and their token cost
+2. If next phase is token-heavy (IMPLEMENT, TEST_VERIFY) and context feels pressured → HANDOVER
+3. If output quality shows signs of degradation (forgotten decisions, vague output) → HANDOVER
 
 ### Decision Matrix
 
 ```
 At phase boundary:
-  IF compactions >= 2 → HANDOVER (non-negotiable)
-  IF compactions == 1 AND next phase is IMPLEMENT or TEST_VERIFY → HANDOVER
-  IF compactions == 1 AND next phase is PLAN, GRILL_SPEC, or FINISH → /compact with focus, continue
-  IF compactions == 0 → continue
+  IF context feels degraded (repeating questions, vague output) → HANDOVER (non-negotiable)
+  IF next phase is IMPLEMENT or TEST_VERIFY and session has been long → HANDOVER
+  IF next phase is PLAN, GRILL_SPEC, or FINISH → /compact with focus, continue
+  IF session is fresh → continue
 ```
+
+**Note**: The PreCompact hook saves state BEFORE compaction fires, so even if the agent doesn't notice degradation, state is preserved. The SessionStart:compact hook restores it, so post-compaction the agent knows what was happening.
 
 ---
 
