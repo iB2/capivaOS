@@ -27,13 +27,6 @@ ANY  → IDLE (abort)
 
 | Timestamp | Task | From | To | Gate | Notes |
 |-----------|------|------|----|------|-------|
-| 2026-07-07 | HARN-001..009 | IDLE | IDLE | board-write | Harness improvement backlog added from docs/audits/2026-07-07-harness-audit.md (no phase change) |
-| 2026-07-07 | HARN-001 | IDLE | IDLE | board-write | HARN-001 done (fast-tracked, owner-approved): hook registration + parsers repaired, verified on Windows. Commit 816c0e3 |
-| 2026-07-07 | HARN-010 | IDLE | IDLE | board-write | Added template-cleanup gate (owner-requested): restore pristine board/state/docs before HARN branch merges |
-| 2026-07-07 | HARN-002 | IDLE | IDLE | board-write | HARN-002 done (fast-tracked, owner-approved): dead refs + doc inconsistencies fixed, grep-verified. Commit d5a62cc |
-| 2026-07-07 | HARN-003 | IDLE | IDLE | board-write | HARN-003 done (fast-tracked, owner-approved): universal layer de-.NETted, orphan blueprint.md stubs, agnostic gitignore, −1389 lines. Commit 9684553 |
-| 2026-07-07 | HARN-004 | IDLE | IDLE | board-write | HARN-004 done (fast-tracked, owner-approved): phase_guard.py PreToolUse enforcement, ADR-0008, 21/21 self-tests. AC1 amended per ADR-0008. Commit 7b80f9b |
-| 2026-07-07 | HARN-005 | IDLE | IDLE | board-write | HARN-005 done (fast-tracked, owner-approved): harness_lint.py + CI workflow, self-test catches 8 seeded defects, repo lint clean. Guard's first live denial during this task. Commit 325d06d |
 
 ## Board Lock
 
