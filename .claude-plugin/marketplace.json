@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "capiva",
+  "owner": {
+    "name": "Capiva",
+    "url": "https://github.com/iB2"
+  },
+  "description": "Capiva's free developer tooling for Claude Code. capivaOS: the spec-driven development harness.",
+  "plugins": [
+    {
+      "name": "capiva",
+      "source": "./",
+      "description": "State-machine-enforced, spec-driven, test-first development pipeline: board-driven tasks, adversarial spec grilling, TDD subagents, machine-readable AC gating, hook-enforced phase guards.",
+      "category": "workflow",
+      "license": "MIT",
+      "strict": true
+    }
+  ]
+}

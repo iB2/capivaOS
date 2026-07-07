@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/phase_guard.py\"",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/phase_guard.py\"",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/phase_guard.py\"",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/phase_guard.py\"",
             "timeout": 10
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-persistence.py\" precompact",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/context-persistence.py\" precompact",
             "timeout": 10
           }
         ]
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-persistence.py\" restore",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/context-persistence.py\" restore",
             "timeout": 10
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-persistence.py\" stop",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/context-persistence.py\" stop",
             "timeout": 10
           }
         ]

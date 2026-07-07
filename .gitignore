@@ -1,5 +1,12 @@
 # ── Harness runtime state (never committed) ─────────────────
-.board/board.lock
+# Root .board/ and root docs artifact dirs are the LIVE dev workspace when
+# dogfooding the harness on itself — the shipped templates live in
+# project-template/. Pristine-by-construction (ADR-0013).
+/.board/
+/docs/specs/
+/docs/reports/
+/docs/tech-context/
+/docs/handover/
 .state/
 .claude_output/
 .worktrees/
@@ -71,3 +78,4 @@ appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
 local.settings.json
+/.claude/hooks/
