@@ -166,6 +166,7 @@ Each arrow = artifact verification. Missing artifact = skill refuses to run.
 ```
 
 - **Git** and your stack's toolchain (per blueprint)
+- **Protected default branch** (require PRs) before enabling auto mode — `/capiva:init` checks and offers to configure it
 
 ## Repository Layout (this repo = the plugin = its own marketplace)
 
