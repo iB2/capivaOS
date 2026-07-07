@@ -20,17 +20,18 @@ Instead of ad-hoc prompting, this harness enforces a strict pipeline via a state
 ## Pipeline State Machine
 
 ```
-IDLE ──→ TRIAGE ──→ GRILL_SPEC ──→ PLAN ──→ IMPLEMENT ──→ TEST_VERIFY ──→ FINISH ──→ IDLE
-                       🧑               🧑                       🧑              🧑
-                    approve spec     approve plan           review report    merge decision
+/init ──→ IDLE ──→ TRIAGE ──→ GRILL_SPEC ──→ PLAN ──→ IMPLEMENT ──→ TEST_VERIFY ──→ FINISH ──→ IDLE
+ 🧑                              🧑               🧑                       🧑              🧑
+docs                          approve spec     approve plan           review report    merge decision
 ```
 
-Each 🧑 is a blocking human checkpoint. Silence is NOT approval.
+Each 🧑 is a blocking human checkpoint. Silence is NOT approval. `/init` runs once per project; the IDLE→FINISH loop runs per task.
 
 ### Enforcement Mechanisms
 
 | Mechanism | What It Prevents |
 |-----------|-----------------|
+| **Init gate** | Running pipeline without project docs or blueprint config |
 | **Phase guards** | Skills running out of sequence |
 | **Artifact gates** | Advancing without required outputs |
 | **Board lock** | Concurrent writes corrupting state |
@@ -47,8 +48,9 @@ The harness separates the **universal pipeline** (phases, state machine, artifac
 |-----------|-------|-------------|
 | `dotnet-hexagonal` | .NET 10 / C# 13 | Hexagonal (Ports & Adapters) |
 | `python-fastapi` | Python 3.13 / FastAPI | Layered (api → services → repositories → db) |
+| `nextjs-typescript` | Node.js 22 / Next.js 15+ / App Router | Feature-based colocation (Server/Client split) |
 
-Set the active blueprint in `.claude/CLAUDE.md`. Agent roles, skills, and rules automatically read the active blueprint's `reference.md` for stack-specific guidance.
+The active blueprint is set automatically by `/init` (or manually in `.claude/CLAUDE.md`). Agent roles, skills, and rules read the active blueprint's `reference.md` for stack-specific guidance.
 
 ### Creating a New Blueprint
 
@@ -115,12 +117,13 @@ The sprint skill reads the board, picks the highest-priority task, and drives it
 | Skill | Phase | Produces | Guards |
 |-------|-------|----------|--------|
 | `/init` | 0 - Setup | Blueprint config, validated docs | Docs gate (CONTEXT.md + INTAKE-summary) |
-| `/sprint` | Orchestrator | Sprint state transitions | Reads state, manages loop |
-| `/grill-spec` | 1 - GRILL_SPEC | `docs/specs/TASK-ID-spec.md`, CONTEXT.md, ADRs | Phase = GRILL_SPEC |
+| `/sprint` | Orchestrator | Sprint state transitions | Init gate + reads state, manages loop |
+| `/grill-spec` | 1 - GRILL_SPEC | `docs/specs/TASK-ID-spec.md`, CONTEXT.md, ADRs | Init gate + Phase = GRILL_SPEC |
 | `/plan` | 2 - PLAN | `PLAN.md`, `docs/tech-context/TASK-ID-tech.md` | Phase = PLAN, Spec Approved |
 | `/implement` | 3 - IMPLEMENT | Code + tests on feature branch | Phase = IMPLEMENT, Plan Approved |
 | `/test-verify` | 4 - TEST_VERIFY | `docs/reports/TASK-ID-quality.md` | Phase = TEST_VERIFY, branch exists |
 | `/finish` | 5 - FINISH | PR, board update, Jira transition | Phase = FINISH, Quality Gate = PASS |
+| `/handover` | Any | `docs/handover/TASK-ID-handover.md` | Context budget exceeded |
 
 ## Artifact Chain
 
@@ -141,12 +144,14 @@ Each arrow = artifact verification. Missing artifact = skill refuses to run.
 | `.board/tasks.md` | Task backlog and status | All skills (with lock) |
 | `.board/sprint-state.md` | Pipeline state machine | All skills (every transition) |
 | `.board/board.lock` | Write concurrency control | Lock protocol (gitignored) |
-| `docs/CONTEXT.md` | Domain glossary | /grill-spec |
+| `docs/specs/INTAKE-summary.md` | Project scope, stakeholders, requirements | /init (gate) |
+| `docs/CONTEXT.md` | Domain glossary | /init (gate), /grill-spec |
 | `docs/adr/*.md` | Architecture decisions | /grill-spec |
+| `docs/specs/*.md` | Formal spec documents | /grill-spec |
 | `PLAN.md` | Micro-task breakdown | /plan |
 | `docs/tech-context/*.md` | Current library docs (Context7) | /plan |
-| `docs/specs/*.md` | Formal spec documents | /grill-spec |
 | `docs/reports/*.md` | Quality reports | /test-verify |
+| `docs/handover/*.md` | Context handover documents | /handover |
 
 ## Quality Gates
 
@@ -196,8 +201,11 @@ your-project/
 │   ├── blueprints/
 │   │   ├── dotnet-hexagonal/
 │   │   │   └── reference.md         # .NET stack-specific patterns & commands
-│   │   └── python-fastapi/
-│   │       └── reference.md         # Python stack-specific patterns & commands
+│   │   ├── python-fastapi/
+│   │   │   └── reference.md         # Python stack-specific patterns & commands
+│   │   └── nextjs-typescript/
+│   │       ├── blueprint.md          # Stack summary (quick reference)
+│   │       └── reference.md         # Next.js stack-specific patterns & commands
 │   ├── rules/
 │   │   ├── artifact-standards.md    # Artifact naming, format, gating rules
 │   │   ├── board-protocol.md        # Task format, write protocol, locking
@@ -208,13 +216,14 @@ your-project/
 │   │   ├── state-management.md      # State machine, board lock, artifacts
 │   │   └── workflow-pipeline.md     # Phase guards, transitions, failures
 │   └── skills/
-│       ├── finish/SKILL.md          # Phase 5 — PR, board update, Jira transition
-│       ├── grill-spec/SKILL.md      # Phase 1 — interrogate requirements
-│       ├── handover/SKILL.md        # Mid-sprint context handover between sessions
-│       ├── implement/SKILL.md       # Phase 3 — TDD code on feature branch
-│       ├── plan/SKILL.md            # Phase 2 — decompose into micro-tasks
+│       ├── init/SKILL.md            # Phase 0 — validate docs, detect stack, configure
 │       ├── sprint/SKILL.md          # Orchestrator — drives the full pipeline
-│       └── test-verify/SKILL.md     # Phase 4 — static analysis + test run
+│       ├── grill-spec/SKILL.md      # Phase 1 — interrogate requirements
+│       ├── plan/SKILL.md            # Phase 2 — decompose into micro-tasks
+│       ├── implement/SKILL.md       # Phase 3 — TDD code on feature branch
+│       ├── test-verify/SKILL.md     # Phase 4 — static analysis + test run
+│       ├── finish/SKILL.md          # Phase 5 — PR, board update, Jira transition
+│       └── handover/SKILL.md        # Mid-sprint context handover between sessions
 ├── docs/
 │   ├── CONTEXT.md                   # Domain glossary (built during grill-spec)
 │   ├── DESIGN.md                    # Design philosophy, source attribution, rationale
@@ -228,6 +237,7 @@ your-project/
 ├── templates/
 │   ├── cab-ticket.md                # Change Advisory Board ticket template
 │   ├── deviation-record.md          # Process deviation record template
+│   ├── intake-summary.md            # Project intake documentation template
 │   ├── release-checklist.md         # Pre-release checklist template
 │   └── solution-document.md         # Solution design document template
 ├── .gitignore
