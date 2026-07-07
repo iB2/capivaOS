@@ -117,7 +117,7 @@ DO NOT restart the pipeline from scratch. The work below has been completed and 
 - Branch: `feature/TASK-ID-slug`
 - Based on: `main` at commit [hash]
 - Commits: [N] (list one-line summaries)
-- Last test run: `dotnet test` — [N] passed, [M] failed, [K] skipped
+- Last test run: [test command per blueprint §build-commands] — [N] passed, [M] failed, [K] skipped
 - Uncommitted changes: [none / description]
 
 ## Current Phase Detail
@@ -147,7 +147,7 @@ knows EXACTLY what to do next.]
 
 **If TEST_VERIFY:**
 - Tests written: [which categories done]
-- Static analysis: [run/not run — StyleCop warnings, SonarQube status if available]
+- Static analysis: [run/not run — linter warnings, quality gate status per blueprint §static-analysis]
 - Report: [drafted/not started]
 - Quality gates: [known status]
 

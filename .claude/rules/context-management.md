@@ -26,7 +26,7 @@ it's the maximum before quality degradation becomes unacceptable.
 | Conversation turn (question + answer) | ~1,000-3,000 |
 | Skill invocation + execution | ~10,000-30,000 |
 | Full test suite output | ~5,000-15,000 |
-| SonarQube / StyleCop analysis output | ~5,000-10,000 |
+| Static analysis output (linter + quality gate) | ~5,000-10,000 |
 
 ### Phase Budget Estimates
 

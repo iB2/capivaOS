@@ -3,23 +3,22 @@
 ## Overview
 - **Service Name**: [name]
 - **Repository**: [GitHub URL]
-- **Pipeline**: [Azure Pipelines URL]
-- **SonarQube Project**: [project key]
+- **Pipeline**: [CI/CD pipeline URL — per blueprint §ci-cd]
+- **Quality Gate Project**: [project key, if a quality gate tool is used — per blueprint §static-analysis]
 - **Owner Team**: [team name]
 
 ## Architecture
 
-### Hexagonal Layer Map
+### Layer Map
+
+[Map the service's directories to the architectural layers defined in the active
+blueprint's reference.md §architecture. Example shape:]
 
 ```
-src/Core/
-  [Project].Domain/           → [entities, interfaces]
-  [Project].Application/      → [use cases, DTOs, validators]
-src/Driven/
-  [Project].Infrastructure/   → [repositories, external clients]
-src/Drivers/
-  [Project].Api/              → [controllers, middleware]
-  [Project].FunctionDriver/   → [triggers] (if applicable)
+[layer 1 path]/    → [what lives here — entities, business logic]
+[layer 2 path]/    → [what lives here — services, use cases]
+[layer 3 path]/    → [what lives here — persistence, external clients]
+[layer 4 path]/    → [what lives here — API surface, entry points]
 ```
 
 ### Component Diagram
@@ -71,13 +70,13 @@ src/Drivers/
 
 ### Pipeline
 
-- **Template**: Standalone Azure Pipelines
+- **Template**: [CI/CD platform per blueprint §ci-cd]
 - **Triggers**: main, release/*, develop
 - **Environments**: DEV → UAT → Production
 
 ### Infrastructure Provisioning
 
-[What Azure resources are needed and how they're provisioned]
+[What cloud/infrastructure resources are needed and how they're provisioned]
 
 ## Monitoring
 

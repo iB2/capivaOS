@@ -200,11 +200,13 @@ your-project/
 │   │   └── qa.md                    # QA subagent role
 │   ├── blueprints/
 │   │   ├── dotnet-hexagonal/
+│   │   │   ├── blueprint.md         # Stack summary (quick reference)
 │   │   │   └── reference.md         # .NET stack-specific patterns & commands
 │   │   ├── python-fastapi/
+│   │   │   ├── blueprint.md         # Stack summary (quick reference)
 │   │   │   └── reference.md         # Python stack-specific patterns & commands
 │   │   └── nextjs-typescript/
-│   │       ├── blueprint.md          # Stack summary (quick reference)
+│   │       ├── blueprint.md         # Stack summary (quick reference)
 │   │       └── reference.md         # Next.js stack-specific patterns & commands
 │   ├── rules/
 │   │   ├── artifact-standards.md    # Artifact naming, format, gating rules

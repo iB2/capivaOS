@@ -148,7 +148,7 @@ Every board update MUST include:
 Example:
 ```markdown
 - [x] **STH-1192** MCP Order API — PR #45 (2026-06-18)
-  - Coverage: 87% | SonarQube: Pass | StyleCop: 0 warnings
+  - Coverage: 87% | Quality gate: Pass | Linter: 0 warnings
   - Completed: 2026-06-18 15:38
 ```
 
@@ -181,7 +181,7 @@ Before starting, each skill verifies its input artifacts:
 | /grill-spec | Task spec loaded in context | sprint-state shows task selected |
 | /plan | `docs/specs/TASK-ID-spec.md` exists | File exists AND was approved (gate in sprint-state) |
 | /implement | `PLAN.md` exists | File exists AND was approved (gate in sprint-state) |
-| /test-verify | Feature branch with green tests | `dotnet test` passes on branch |
+| /test-verify | Feature branch with green tests | Test suite passes on branch (per blueprint §build-commands) |
 | /finish | `docs/reports/TASK-ID-quality.md` exists | File exists AND quality gates pass |
 
 If ANY required artifact is missing → STOP. Report what's missing. Do NOT proceed.

@@ -4,6 +4,11 @@
 > cascades into poor code at Phase 3 and meaningless tests at Phase 4.
 > This file defines the MINIMUM quality bar for every artifact.
 > The examples here are the FLOOR, not the ceiling. Produce richer output when the task warrants it.
+>
+> **Example stack note**: The worked examples in this file use the `dotnet-hexagonal`
+> blueprint stack (C#, xUnit, Testcontainers, StyleCop, SonarQube) for concreteness.
+> The STRUCTURE and DEPTH are what's normative — substitute your active blueprint's
+> equivalents (test framework, linter, quality gate tool, build commands) throughout.
 
 ## Anti-Slop Rules (Apply to ALL Artifacts)
 
@@ -480,7 +485,7 @@ The PR description must include quality metrics and test evidence. It needs:
 - Gate verdicts (pass/soft fail/hard fail) for each metric
 - Specific numbers (not "above threshold")
 - AC traceability matrix (each AC → test names)
-- SonarQube issue analysis (each code smell/vulnerability addressed or justified)
+- Static analysis issue analysis (each code smell/vulnerability addressed or justified)
 
 ### Required Sections
 
@@ -529,7 +534,7 @@ Why are they uncovered? Should they be covered? Or are they legitimately exclude
 | StyleCop | ✅ 0 warnings | 0 | All new code compliant |
 | SonarQube | ✅ Quality Gate Pass | 0 code smells, 0 vulnerabilities | [server URL or "deferred to CI pipeline"] |
 
-### SonarQube Issue Analysis
+### Quality Gate Issue Analysis
 
 [If any issues found, each must be analyzed — not just counted.
 Explain the issue, its impact, and the resolution or justification.]
@@ -783,7 +788,7 @@ Each skill MUST:
 
 **/test-verify checks /implement output:**
 - [ ] Feature branch exists and is checked out
-- [ ] `dotnet test` passes (all green)
+- [ ] Test suite passes — all green (per blueprint §build-commands)
 - [ ] Implementation report lists all files changed
 - [ ] AC coverage status shows what's covered and what's not
 

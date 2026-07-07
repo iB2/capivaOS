@@ -43,7 +43,7 @@ ANY  → IDLE (abort)
 - Tasks completed this sprint: 0
 - PRs created: 0
 - Average coverage: --
-- Average SonarQube status: --
+- Average quality gate status: --
 - Total time: --
 
 ## Artifacts Registry

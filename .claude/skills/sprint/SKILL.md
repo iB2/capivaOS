@@ -203,7 +203,7 @@ INVOKE /test-verify
 
 /test-verify will:
 - Generate integration tests (two-agent pattern)
-- Run static analysis (SonarQube + StyleCop)
+- Run static analysis (per blueprint §static-analysis)
 - Produce `docs/reports/TASK-ID-quality.md`
 - Present quality report
 
@@ -216,7 +216,7 @@ Human reviews the quality report.
 
 ```
 UPDATE sprint-state → Phase: FINISH, Quality Gate: PASS
-LOG: | [now] | [task] | TEST_VERIFY | FINISH | quality-approved | coverage X%, SonarQube pass |
+LOG: | [now] | [task] | TEST_VERIFY | FINISH | quality-approved | coverage X%, quality gate pass |
 ```
 
 #### Phase 5 — FINISH
@@ -265,7 +265,7 @@ On sprint end, produce summary:
 ## Sprint Summary
 
 ### Completed
-- [TASK-ID] Title — PR #N (coverage: X%, SonarQube: pass)
+- [TASK-ID] Title — PR #N (coverage: X%, quality gate: pass)
 
 ### In Progress (if handover or interrupted)
 - [TASK-ID] Title — Phase [N], handover at docs/handover/TASK-ID-handover.md
@@ -277,7 +277,7 @@ On sprint end, produce summary:
 - Tasks completed: N
 - PRs created: N
 - Average coverage: X%
-- SonarQube quality gate: pass/fail
+- Static analysis quality gate: pass/fail
 
 ### Context
 - Auto-compactions this session: N

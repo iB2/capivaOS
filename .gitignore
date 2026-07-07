@@ -1,81 +1,72 @@
-# .NET
-bin/
-obj/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-*.userprefs
+# ── Harness runtime state (never committed) ─────────────────
+.board/board.lock
+.state/
+.claude_output/
+.worktrees/
 
-# Visual Studio
-.vs/
-*.rsuser
-[Dd]ebug/
-[Rr]elease/
-x64/
-x86/
-[Ww][Ii][Nn]32/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
-
-# Rider
-.idea/
-*.sln.iml
-
-# NuGet
-*.nupkg
-*.snupkg
-**/[Pp]ackages/*
-!**/[Pp]ackages/build/
-
-# Build results
-[Dd]ebugPublic/
-[Rr]eleases/
-[Aa]rtifacts/
-build_output/
-TestResults/
-
-# Test reports (generated, not committed)
+# ── Generated reports (produced by /test-verify) ─────────────
 /reports/
 docs/reports/*.md
-
-# Code coverage
 coverage/
 *.coverage
 *.coveragexml
 *.opencover.xml
 
-# Dotnet tools
+# ── .NET (dotnet-hexagonal blueprint) ─────────────────────────
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.user
+*.suo
+*.nupkg
+*.snupkg
+.vs/
 .config/dotnet-tools.json
 
-# OS
+# ── Node.js (nextjs-typescript blueprint) ─────────────────────
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── Python (python-fastapi blueprint) ─────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+htmlcov/
+.coverage.*
+
+# ── IDEs ──────────────────────────────────────────────────────
+.idea/
+*.sln.iml
+*.rsuser
+
+# ── OS ────────────────────────────────────────────────────────
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 .DS_Store
 ._*
 
-# Claude Code
-.claude_output/
-
-# Board runtime state (lock file)
-.board/board.lock
-
-# Hook auto-saved session state (runtime, never committed)
-.state/
-
-# Worktrees
-.worktrees/
-
-# Secrets
+# ── Secrets & local config (all stacks) ───────────────────────
 *.pfx
 *.key
 *.pem
+.env
+.env.*
+!.env.example
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json

@@ -22,7 +22,7 @@ Every task on the board follows this structure:
   - **Phase**: IDLE | TRIAGE | GRILL_SPEC | PLAN | IMPLEMENT | TEST_VERIFY | FINISH
   - **Branch**: [feature/branch-name or "--"]
   - **PR**: [#number or "--"]
-  - **Quality**: [coverage% / SonarQube pass|fail or "--"]
+  - **Quality**: [coverage% / quality gate pass|fail or "--"]
   - **Started**: [ISO date or "--"]
   - **Completed**: [ISO date or "--"]
   - **Notes**: [any additional context]
