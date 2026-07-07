@@ -9,9 +9,9 @@ Entry points:
 
 Always exits 0, never blocks the session.
 
-Requires `python3` on PATH. On Windows this is satisfied by the python.org
-installer or the Microsoft Store build; the hook command in settings.json is a
-plain invocation valid in Git Bash, cmd, and PowerShell alike.
+Invoked via hooks/run-hook.cmd (plugin mode) or directly (dev mode). The
+dispatcher resolves the Python interpreter per platform and exits 0 when
+none is found — this script must also never block (always exits 0).
 """
 
 import json
@@ -142,6 +142,10 @@ def stop():
 
 
 def main():
+    # Inert outside harness projects (ADR-0013): a user-scope plugin install
+    # must never write .state/ into repos that never ran /capiva:init.
+    if not BOARD_DIR.is_dir():
+        sys.exit(0)
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "precompact":
         precompact()
