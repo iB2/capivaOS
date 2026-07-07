@@ -2,21 +2,41 @@
   "hooks": {
     "PreCompact": [
       {
-        "command": "python3 .claude/hooks/context-persistence.py precompact"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-persistence.py\" precompact",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionStart": [
       {
         "matcher": "compact",
-        "command": "python3 .claude/hooks/context-persistence.py restore"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-persistence.py\" restore",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [
       {
-        "command": "python3 .claude/hooks/context-persistence.py stop"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-persistence.py\" stop",
+            "timeout": 10
+          }
+        ]
       }
     ]
   },
-  "allow": [],
-  "deny": []
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
 }

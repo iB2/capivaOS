@@ -66,6 +66,9 @@ Desktop.ini
 # Board runtime state (lock file)
 .board/board.lock
 
+# Hook auto-saved session state (runtime, never committed)
+.state/
+
 # Worktrees
 .worktrees/
 

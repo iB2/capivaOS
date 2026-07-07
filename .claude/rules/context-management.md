@@ -53,7 +53,7 @@ Context management is **enforced mechanically** via Claude Code hooks, not by ag
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| `PreCompact` | Before every auto-compaction | Saves sprint state, board snapshot, git state to `.state/boss-session.md` |
+| `PreCompact` | Before every auto-compaction | Saves sprint state, board snapshot, git state to `.state/session-state.md` |
 | `SessionStart:compact` | After compaction completes | Restores saved state as `additionalContext`, deletes the file |
 | `Stop` | On session end | Saves final state (skips if manual `/handover` doc exists) |
 

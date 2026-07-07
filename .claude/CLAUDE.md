@@ -148,7 +148,7 @@ At each gate: present the deliverable clearly, then WAIT. Do not proceed until t
 
 The pipeline is **token-bounded, not time-bounded**. It runs until the board is empty or context is exhausted.
 
-**Enforced**: `context-persistence.py` hooks auto-save session state to `.state/boss-session.md` on every compaction (PreCompact) and session end (Stop). SessionStart:compact restores context automatically after compaction. The `/handover` skill remains available for deliberate, detailed checkpoints — manual handovers take priority over auto-saved state.
+**Enforced**: `context-persistence.py` hooks auto-save session state to `.state/session-state.md` on every compaction (PreCompact) and session end (Stop). SessionStart:compact restores context automatically after compaction. The `/handover` skill remains available for deliberate, detailed checkpoints — manual handovers take priority over auto-saved state.
 
 - **Before EVERY phase transition**: run context budget check (see `.claude/rules/context-management.md`)
 - **When output quality degrades** (forgotten decisions, vague output, repeated questions) = mandatory handover via `/handover` at next phase boundary
