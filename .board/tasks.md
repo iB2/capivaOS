@@ -96,6 +96,25 @@
   - **Completed**: --
   - **Notes**: Highest-leverage design change in the audit.
 
+- [ ] **HARN-010** Template cleanup: restore distribution-pristine state before merge (P1)
+  - **Spec**: This repo IS the distributed template — every project that adopts the harness copies `.board/`, `docs/`, `.claude/` verbatim. Session-specific tracking artifacts (HARN board entries, phase-history rows, audit docs) must NOT ship to adopters. This task runs LAST, immediately before the HARN branch merges.
+  - **AC**:
+    1. `.board/tasks.md` restored to pristine template: COS example tasks only, all HARN entries removed (git history preserves them)
+    2. `.board/sprint-state.md` restored to clean initial state: empty Phase History, zeroed metrics, Phase = IDLE
+    3. `docs/audits/` removed from the template (audit lives in git history and the PR description; decide whether a permanent `docs/MAINTENANCE.md` distills anything worth keeping)
+    4. No stray session artifacts: no `.state/`, no scratch files, no board.lock
+    5. Final check: `git diff main...HEAD --stat` shows only intentional harness improvements — zero session-tracking noise
+  - **Depends**: HARN-002, HARN-003, HARN-004, HARN-005, HARN-006, HARN-007, HARN-008, HARN-009 (or whichever subset ships in the branch — must be the final commit before merge)
+  - **Assignee**: unassigned
+  - **Status**: Backlog
+  - **Phase**: IDLE
+  - **Branch**: --
+  - **PR**: --
+  - **Quality**: --
+  - **Started**: --
+  - **Completed**: --
+  - **Notes**: Owner-requested 2026-07-07. Rationale: dogfooding the board for harness meta-work is correct for tracking, but the distributed artifact must be clean — adopters should never see another project's history.
+
 - [ ] **HARN-005** Harness self-CI: cross-reference linter + hook tests + blueprint parity (P1)
   - **Spec**: A harness whose thesis is "no test, no implementation" has no tests. See audit finding F6.1.
   - **AC**:
