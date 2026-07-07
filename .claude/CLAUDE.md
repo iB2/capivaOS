@@ -55,7 +55,7 @@ Each blueprint has an associated **real, buildable project** on the local filesy
 
 | Audience | Start Here |
 |----------|-----------|
-| **First-time setup** | Jump to "Project Configuration" → copy directories, configure blueprint, populate `.board/tasks.md`, run `/sprint` |
+| **First-time setup** | Copy harness directories into your project → run `/init` (validates docs, detects stack, selects blueprint) → populate `.board/tasks.md` → run `/sprint` |
 | **As an agent** | Start at "MANDATORY — Pipeline Enforcement" → follow phase guards → read the relevant skill for the current phase |
 | **As a maintainer** | Rules in `.claude/rules/`, skills in `.claude/skills/`, roles in `.claude/agents/roles/`, blueprints in `.claude/blueprints/` |
 
@@ -483,11 +483,12 @@ When starting a new session or resuming after a crash:
 
 ### Adapting for Your Project
 1. Copy `.claude/`, `.board/`, `docs/`, `templates/` directories into your project
-2. Set the Active Blueprint in this file to match your stack
-3. If your stack isn't covered by existing blueprints, create a new `reference.md` following the section format (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands)
-4. Edit this CLAUDE.md for project-specific config (Jira, paths, domain)
-5. Populate `.board/tasks.md` with your backlog
-6. Run `/sprint` to begin
+2. Populate project docs: `docs/CONTEXT.md` (domain glossary) and `docs/specs/INTAKE-summary.md` (project scope — see `templates/intake-summary.md`)
+3. Run `/init` — validates docs, detects your stack, selects the matching blueprint, writes the config
+4. Populate `.board/tasks.md` with your backlog
+5. Run `/sprint` to begin
+
+If your stack isn't covered by existing blueprints, create a new `reference.md` following the section format (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands). See existing blueprints as templates.
 
 ### Creating a New Blueprint
 

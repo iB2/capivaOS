@@ -7,6 +7,26 @@ description: Phase 1 — Adversarial spec validation with phase guard. Produces 
 
 Stress-test a task specification through adversarial questioning. Produces a formal spec document, domain glossary entries, and ADRs.
 
+## Init Gate (MANDATORY — before phase guard)
+
+**Check that the harness has been initialized:**
+
+1. `docs/CONTEXT.md` must have at least one glossary entry or domain rule (not just empty headers)
+2. `docs/specs/INTAKE-summary.md` must exist with content
+
+**If EITHER is missing or empty → STOP:**
+
+```
+⛔ Project docs not found. Run /init before starting the pipeline.
+
+Grill-spec needs domain context and project scope to produce useful specs.
+Without CONTEXT.md and INTAKE-summary.md, the adversarial interview
+starts from zero — questions will be generic, specs will miss constraints.
+
+Run /init to set up the harness, or provide raw materials and use
+/discovery to generate the project docs first.
+```
+
 ## Phase Guard (MANDATORY)
 
 **Before executing ANY step below:**
@@ -21,9 +41,8 @@ Stress-test a task specification through adversarial questioning. Produces a for
 ### Step 1: Load Context
 
 - Read the task spec from sprint-state (Task ID → find in board or linked doc)
-- **Check for project docs** — verify `docs/CONTEXT.md` and `docs/specs/INTAKE-summary.md` exist:
-  - If BOTH exist → read them as starting context (domain terms, requirements, stakeholders, open questions)
-  - If MISSING → **STOP and ask**: "Project docs not found (`docs/CONTEXT.md`, `docs/specs/INTAKE-summary.md`). Please provide raw materials (transcripts, requirements, policies) so project artifacts can be generated first. Without these, grilling starts from zero context."
+- **Read `docs/specs/INTAKE-summary.md`** — load project scope, stakeholders, requirements, constraints as starting context
+- Read `docs/CONTEXT.md` for existing domain terms
 - Read `docs/adr/` for existing architectural decisions
 - Scan relevant source files referenced in the spec
 

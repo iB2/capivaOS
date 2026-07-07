@@ -16,6 +16,33 @@ Invoke `/sprint` to:
 
 ## Process
 
+### Step 0: Init Gate (MANDATORY)
+
+**Before doing anything else, verify the harness has been initialized.**
+
+Check all three conditions:
+
+1. `docs/CONTEXT.md` exists and has **at least one glossary entry or domain rule** (not just empty template headers)
+2. `docs/specs/INTAKE-summary.md` exists and has content
+3. The `Active Blueprint:` line in `.claude/CLAUDE.md` points to a blueprint directory that exists on disk (e.g., `.claude/blueprints/nextjs-typescript/reference.md` is a real file)
+
+**If ANY condition fails → STOP:**
+
+```
+⛔ Harness not initialized. Run /init first.
+
+Missing:
+- [ ] docs/CONTEXT.md (populated)        ← domain context for spec grilling
+- [ ] docs/specs/INTAKE-summary.md       ← project scope and requirements
+- [ ] Active Blueprint configured         ← stack-specific patterns
+
+/init will validate your project docs, detect your stack, and configure the harness.
+Without it, the pipeline starts from zero context — specs will be shallow,
+plans will miss constraints, and implementation will lack stack guidance.
+```
+
+**Do NOT proceed to Step 1 until all three conditions pass.**
+
 ### Step 1: Read State
 
 Read `.board/sprint-state.md` and determine current state:

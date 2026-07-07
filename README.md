@@ -71,15 +71,24 @@ cp .harness-tmp/.gitignore .gitignore  # or merge with existing
 rm -rf .harness-tmp
 ```
 
-### 2. Configure
+### 2. Add project docs
 
-Edit `.claude/CLAUDE.md`:
-- Set the Active Blueprint to match your stack
-- Solution/project path (if not in root)
-- Jira integration (optional)
-- Quality threshold overrides (optional)
+The harness requires project documentation before setup. Without it, every downstream phase starts from zero context.
 
-### 3. Populate the board
+- Fill in `docs/CONTEXT.md` with domain terms, acronyms, and business rules
+- Create `docs/specs/INTAKE-summary.md` with project scope, stakeholders, and requirements (see `templates/intake-summary.md`)
+
+Use `/discovery` to generate these from raw materials (transcripts, requirements docs, emails).
+
+### 3. Run init
+
+```
+/init
+```
+
+The init skill validates your project docs, detects the tech stack, selects the matching blueprint, and writes the harness config. It will stop if docs are missing.
+
+### 4. Populate the board
 
 Add tasks to `.board/tasks.md`:
 
@@ -93,7 +102,7 @@ Add tasks to `.board/tasks.md`:
   - **Status**: Backlog
 ```
 
-### 4. Start
+### 5. Start
 
 ```
 /sprint
@@ -105,6 +114,7 @@ The sprint skill reads the board, picks the highest-priority task, and drives it
 
 | Skill | Phase | Produces | Guards |
 |-------|-------|----------|--------|
+| `/init` | 0 - Setup | Blueprint config, validated docs | Docs gate (CONTEXT.md + INTAKE-summary) |
 | `/sprint` | Orchestrator | Sprint state transitions | Reads state, manages loop |
 | `/grill-spec` | 1 - GRILL_SPEC | `docs/specs/TASK-ID-spec.md`, CONTEXT.md, ADRs | Phase = GRILL_SPEC |
 | `/plan` | 2 - PLAN | `PLAN.md`, `docs/tech-context/TASK-ID-tech.md` | Phase = PLAN, Spec Approved |
