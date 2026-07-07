@@ -186,6 +186,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0009](adr/0009-machine-readable-ac-gating.md) | Machine-readable AC list gating verification; adversarial QA framing |
 | [0010](adr/0010-fast-lane-pipeline.md) | Fast lane as an alternate state-machine path for small, low-risk tasks |
 | [0011](adr/0011-slim-always-loaded-layer.md) | Gold-standard examples moved into skills; always-loaded layer slimmed |
+| [0012](adr/0012-native-agent-primitives.md) | Native agent definitions with tool allowlists; structured subagent reports |
 
 ---
 

@@ -195,7 +195,7 @@ your-project/
 │   └── tasks.md                     # Task board (source of truth)
 ├── .claude/
 │   ├── CLAUDE.md                    # Main config + enforcement rules + active blueprint
-│   ├── agents/roles/
+│   ├── agents/
 │   │   ├── arch.md                  # Architect subagent role
 │   │   ├── dev.md                   # Developer subagent role
 │   │   └── qa.md                    # QA subagent role

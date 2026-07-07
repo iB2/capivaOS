@@ -69,3 +69,7 @@ The asymmetry between heavy phases (IMPLEMENT ~60-100K, TEST_VERIFY ~40-70K) and
 - The `/handover` skill exists specifically to enable zero-loss session transitions
 - Context hygiene rules (surgical reads, subagents for exploration, /clear between tasks) extend the budget within each session
 - The decision matrix is conservative — it prefers a clean handover over pushing through with degraded quality
+
+---
+
+*Amended 2026-07 (ADR-0012 / HARN-009): heuristics re-benchmarked against current Claude Code context management — 200K ceiling confirmed; compaction counting demoted to fallback behind live context usage and observed quality degradation; see context-management.md "2026-07 Re-Benchmark".*

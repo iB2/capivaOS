@@ -11,7 +11,7 @@ A state-machine-driven development pipeline for Claude Code that enforces spec-d
 
 **Why**: Claude Code without structure jumps to code, skips specs, forgets decisions after compaction, and self-approves mediocre quality. This pipeline makes disciplined development the path of least resistance. Rationale and philosophy: `docs/DESIGN.md`. Boundaries and adaptation: `docs/SCOPE.md`. Failure modes: `docs/troubleshooting.md`.
 
-**Reading order**: first-time setup → run `/init`, then `/sprint`. As an agent → the laws below, then the skill for the current phase. As a maintainer → rules in `.claude/rules/`, skills in `.claude/skills/`, roles in `.claude/agents/roles/`, blueprints in `.claude/blueprints/`.
+**Reading order**: first-time setup → run `/init`, then `/sprint`. As an agent → the laws below, then the skill for the current phase. As a maintainer → rules in `.claude/rules/`, skills in `.claude/skills/`, agents in `.claude/agents/`, blueprints in `.claude/blueprints/`.
 
 ---
 
@@ -127,13 +127,15 @@ Thresholds and measurement in `.claude/rules/quality-gates.md` (single source of
 
 ## Agent Roles
 
-| Role | File | Spawned By | Purpose |
-|------|------|-----------|---------|
-| Developer | `.claude/agents/roles/dev.md` | /implement, /test-verify | Executes micro-tasks with TDD enforced |
-| QA Reviewer | `.claude/agents/roles/qa.md` | /test-verify | Adversarially refutes implementation claims |
-| Architect | `.claude/agents/roles/arch.md` | /plan | Validates layer placement, patterns; creates ADRs |
+Roles are native Claude Code agent definitions with platform-enforced tool allowlists ([ADR-0012](docs/adr/0012-native-agent-primitives.md)) — spawn by agent type, don't paste role text.
 
-Each subagent receives the role briefing plus task-specific context (spec, CONTEXT.md, blueprint reference.md). Max 4 concurrent; one micro-task each; three failures → BLOCKED. Spawn mechanics: `.claude/skills/implement/SKILL.md`.
+| Agent | File | Tools (enforced) | Spawned By | Purpose |
+|-------|------|------------------|-----------|---------|
+| dev | `.claude/agents/dev.md` | read + Edit/Write/Bash | /implement, /test-verify | Executes micro-tasks with TDD; returns validated JSON report |
+| qa | `.claude/agents/qa.md` | read-only | /test-verify | Adversarially refutes implementation claims |
+| arch | `.claude/agents/arch.md` | read + Write | /plan | Validates layers/patterns; writes ADRs, deviation records |
+
+Each agent receives task-specific context (spec, CONTEXT.md, blueprint reference.md) in its prompt. Max 4 concurrent; one micro-task each; three failures → BLOCKED. Spawn mechanics: `.claude/skills/implement/SKILL.md`.
 
 ## Rules & Docs Index
 
