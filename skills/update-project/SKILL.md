@@ -33,7 +33,7 @@ edits and format transforms only.
 
 | From → To | Migration |
 |-----------|-----------|
-| (none yet) | v1.0.0 is the first stamped schema. This table grows with releases. |
+| 1.0.0 → 1.1.0 | No project-file migration required. Guard allowlist gained `capiva-blueprints/`; laws text updated (ships with the engine). OPTIONAL: `.board/harness-config.md` MAY add `- **Phase Isolation**: on|off` (absent = off). Re-stamp only. |
 
 Maintainer note: when a release changes anything under
 `${CLAUDE_PLUGIN_ROOT}/project-template/` or any field format that

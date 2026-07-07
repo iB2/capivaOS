@@ -76,11 +76,13 @@ If you use Jira, the harness can transition Jira tickets (optional integration i
 
 You don't import this or add it as a dependency. It installs as a **Claude Code plugin** (`/plugin marketplace add iB2/capivaOS` → `/plugin install capiva@capiva`); the engine lives in the plugin cache and updates centrally, while `/capiva:init` scaffolds your project's mutable state (`.board/`, docs skeleton). Air-gapped: add a local clone as the marketplace — no other network access exists (see SECURITY.md).
 
-### Not Suitable for Fully Autonomous Operation
+### Two Oversight Modes — Attended and Auto ([ADR-0014](adr/0014-autonomy-contract.md))
 
-The harness has four blocking human checkpoints by design. It cannot run unattended through a full task lifecycle. This is intentional — see [DESIGN.md](DESIGN.md) "Human in the Loop, Machine in the Pipeline."
+**Attended** (default): four blocking human checkpoints per full-lane task, exactly as designed — see [DESIGN.md](DESIGN.md) "Human in the Loop, Machine in the Pipeline."
 
-If you need fully autonomous AI development (no human approval gates), this harness is not the right tool. Consider removing the checkpoint enforcement, but understand you're removing the quality guarantee that comes with it.
+**Auto** (opt-in per run): the loop works a backlog of tasks whose specs you already approved (or fast-lane qualifiers), routing gates through your written approval policy and an independent judge, escalating exceptions to `.board/approvals.md`. Hard limits by contract: a never-list no machine may clear (merge, P0/P1 gates, human-less spec approval, policy silence), mandatory task+token budgets, clean parking at phase boundaries.
+
+Honest expectations: per-task output quality in auto mode is somewhat below an attended session — the machine floor (acs.json contract, adversarial QA, judge) catches the worst, and the merge gate remains absolutely yours. Auto mode buys throughput on work that doesn't deserve your live attention; it does not replace the attended grill for ambiguous work — un-specced full-lane tasks are skipped, never improvised.
 
 ---
 

@@ -85,7 +85,7 @@ The AC list (`TASK-ID-acs.json`, [ADR-0009](${CLAUDE_PLUGIN_ROOT}/docs/adr/0009-
 
 Before ANY write to `.board/tasks.md`: check `.board/board.lock` (wait/retry if fresh, 3x max) → acquire lock → read board FRESH → write → release → log in sprint-state Phase History. Full protocol: `${CLAUDE_PLUGIN_ROOT}/rules/board-protocol.md`.
 
-### Law 5: Human Checkpoints Are Blocking
+### Law 5: Human Checkpoints Are Blocking ([ADR-0014](${CLAUDE_PLUGIN_ROOT}/docs/adr/0014-autonomy-contract.md))
 
 Silence is NOT approval. Present the deliverable, then WAIT for explicit approval.
 
@@ -96,6 +96,8 @@ Silence is NOT approval. Present the deliverable, then WAIT for explicit approva
 | Quality review | After /capiva:test-verify | Combined quality+merge gate after /capiva:verify-finish |
 | Merge decision | After /capiva:finish | (combined above) |
 
+**Modes (ADR-0014).** The table above is ATTENDED mode — the default, unchanged. In AUTO mode (opt-in per run via `/capiva:auto`), gates are ROUTED instead of blocking: the human-authored `.board/approval-policy.md` clears what it explicitly covers; an independent judge (never the artifact's producer) clears zero-anomaly cases within explicit bounds; everything else queues in `.board/approvals.md` with an exception-first summary. **The never-list — no machine may clear, ever**: (1) the merge decision, (2) any gate on a P0/P1 task, (3) spec approval for any spec produced without a human interlocutor or with open questions, (4) anything the policy does not explicitly cover — silence means escalate. The never-list is engine-hard-coded; a policy attempting to extend delegation into it is ignored, escalated, and logged. The policy file is human law: agents may not edit it (hook-enforced) — they propose amendments via escalation only. Every delegated decision is logged in Phase History with its rationale.
+
 ### Law 6: Context Budget Is a Hard Limit (200K Tokens) ([ADR-0004](${CLAUDE_PLUGIN_ROOT}/docs/adr/0004-token-bounded-execution.md))
 
 The pipeline is **token-bounded, not time-bounded**. `context-persistence.py` hooks auto-save state on every compaction and session end; SessionStart:compact restores it. Budget model, compaction triggers, and the handover protocol: `${CLAUDE_PLUGIN_ROOT}/rules/context-management.md`.
@@ -103,6 +105,8 @@ The pipeline is **token-bounded, not time-bounded**. `context-persistence.py` ho
 - Before EVERY phase transition: run the context budget check
 - Quality degradation (forgotten decisions, vague output, repeated questions) = mandatory `/capiva:handover` at the next phase boundary; before token-heavy phases (IMPLEMENT, TEST_VERIFY) in a long session = handover; lighter phases = `/compact` with focus
 - Multi-session execution via handover is EXPECTED for complex tasks — the artifact chain persists on disk
+
+**Context strategy (ADR-0014).** Isolation beats survival: each phase CAN run in a fresh subagent context that reads the artifacts, does its one job, writes its outputs, and ends — no context lives long enough to compact. In AUTO mode this is mandatory. In ATTENDED mode it is opt-in via `- **Phase Isolation**: on` in `.board/harness-config.md` (absent = off; today's behavior). **Budget invariants for auto runs**: every run carries BOTH a max-task cap and a token budget — an unlimited value does not exist; the loop parks only at phase boundaries, producing the standard handover document; the morning report leads with why the loop stopped.
 
 ### Law 7: Artifact Quality Standards
 
