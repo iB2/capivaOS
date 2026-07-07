@@ -29,6 +29,9 @@
 | State management | Zustand 5.x (when needed — prefer server state via React Query) |
 | Toasts | Sonner |
 | Animation | Framer Motion 12.x (when needed) |
+| Logging | Pino (structured JSON logging) |
+| Cache | Redis (ioredis) — when server-side caching is needed |
+| Queue | BullMQ (when async job processing is needed) |
 | Package manager | npm |
 
 ---
@@ -157,6 +160,15 @@ app/
 - **Server Components**: Use `error.tsx` boundaries. Log server-side, show user-friendly messages.
 - **Client Components**: Use React Error Boundaries or try/catch in event handlers.
 - **Form validation**: Zod schemas with React Hook Form `zodResolver`. Validate on client AND server.
+
+### SDLC Code Review Standards
+
+1. **Single responsibility** — one concern per function/component
+2. **Function parameters**: 0 ideal, 1-2 normal, 3+ needs a params object
+3. **Component props**: destructure at function signature, max 5 direct props before extracting a sub-component
+4. **No magic values** — named constants only
+5. **Max 2 levels of nesting** per function (extract early returns or helper functions)
+6. **No `any`** — reviewer blocks the PR if `any` is used outside test files
 
 ### Comments
 
@@ -296,6 +308,114 @@ export const config = {
   matcher: ["/dashboard/:path*"],
 }
 ```
+
+### Result Pattern
+
+Service functions in `lib/` return a discriminated union instead of throwing for expected failures:
+
+```ts
+// lib/result.ts
+export type Result<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string }
+
+export function ok<T>(data: T): Result<T> {
+  return { ok: true, data }
+}
+
+export function fail<T>(error: string): Result<T> {
+  return { ok: false, error }
+}
+```
+
+Usage in service functions:
+
+```ts
+// lib/users.ts
+import { ok, fail, type Result } from "@/lib/result"
+
+export async function getUserById(id: string): Promise<Result<User>> {
+  const user = await prisma.user.findUnique({ where: { id, deletedAt: null } })
+  if (!user) return fail("User not found")
+  return ok(user)
+}
+```
+
+- Use `Result<T>` for operations with expected failure modes (not found, validation, business rules)
+- Throw only for unexpected errors (network failures, bugs)
+- API routes convert `Result` to HTTP responses: `ok` → 200, `fail` → 4xx
+
+### Transport Abstractions
+
+Abstract cache and messaging behind typed wrappers so implementations can be swapped:
+
+```ts
+// lib/cache.ts
+import { Redis } from "ioredis"
+
+const redis = new Redis(process.env.REDIS_URL)
+
+export async function cacheGet<T>(key: string): Promise<T | null> {
+  const raw = await redis.get(key)
+  return raw ? (JSON.parse(raw) as T) : null
+}
+
+export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+  const serialized = JSON.stringify(value)
+  if (ttlSeconds) {
+    await redis.set(key, serialized, "EX", ttlSeconds)
+  } else {
+    await redis.set(key, serialized)
+  }
+}
+```
+
+```ts
+// lib/queue.ts (when async processing is needed)
+import { Queue, Worker } from "bullmq"
+
+export const emailQueue = new Queue("email", { connection: { url: process.env.REDIS_URL } })
+
+// Worker — separate process or API route
+new Worker("email", async (job) => {
+  await sendEmail(job.data.to, job.data.subject, job.data.body)
+}, { connection: { url: process.env.REDIS_URL } })
+```
+
+- Cache and queue are optional — add only when the project needs them
+- Always abstract behind `lib/` functions, never use Redis/BullMQ directly in components or route handlers
+
+### Structured Logging (Pino)
+
+```ts
+// lib/logger.ts
+import pino from "pino"
+
+export const logger = pino({
+  level: process.env.LOG_LEVEL ?? "info",
+  transport: process.env.NODE_ENV === "development"
+    ? { target: "pino-pretty", options: { colorize: true } }
+    : undefined,
+})
+```
+
+Usage:
+
+```ts
+import { logger } from "@/lib/logger"
+
+export async function createUser(data: CreateUserInput): Promise<Result<User>> {
+  const user = await prisma.user.create({ data })
+  logger.info({ userId: user.id }, "user_created")
+  return ok(user)
+}
+```
+
+- **Never use `console.log`** in production code — use `logger.info/warn/error`
+- Log structured data (objects), not string interpolation
+- Include context keys (userId, action) for searchability
+- Development: `pino-pretty` for human-readable output
+- Production: JSON output for log aggregation (Datadog, CloudWatch, etc.)
 
 ---
 
@@ -511,6 +631,16 @@ DEV → Staging/Test → Production
 | Docker → Portainer/Swarm | Self-hosted, full control |
 | Azure Container Apps | Enterprise/client deployments |
 | Azure Static Web Apps | SPA-only (no SSR needed) |
+
+### SDLC Compliance Mapping
+
+| Harness Phase | SDLC Phase |
+|---------------|------------|
+| Phase 1 (GRILL_SPEC) | SDLC Phase 3 (Requirement Analysis) |
+| Phase 2 (PLAN) | SDLC Phase 4 (Solution Design) |
+| Phase 3 (IMPLEMENT) | SDLC Phase 6 (Refinement & Development) |
+| Phase 4 (TEST_VERIFY) | SDLC Phase 7 (Testing & QA) |
+| Phase 5 (FINISH) | SDLC Phases 6-8 (Code Review → CAB → Deploy) |
 
 ---
 
