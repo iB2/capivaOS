@@ -60,7 +60,8 @@ The arch role produces:
 2. Verify Phase = PLAN
 3. Verify Spec Approved = Yes
 4. Verify `docs/specs/TASK-ID-spec.md` exists (check Artifacts Registry)
-5. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /grill-spec first."
+5. Verify `docs/specs/TASK-ID-acs.json` exists and parses (the verification contract — see ADR-0009)
+6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /grill-spec first."
 6. If ALL checks pass → proceed
 
 ## Process
@@ -272,6 +273,7 @@ If invoked standalone:
 Before starting decomposition, validate the spec against `.claude/rules/artifact-standards.md` "Artifact 1":
 
 - [ ] Spec file exists at `docs/specs/TASK-ID-spec.md`
+- [ ] `docs/specs/TASK-ID-acs.json` exists, matches the spec's AC list one-to-one, and every status is `pending`
 - [ ] AC section has numbered items with GIVEN/WHEN/THEN structure (not vague one-liners)
 - [ ] Domain Terms table has entries (at least the task's core terms)
 - [ ] Scope section has both In Scope and Out of Scope

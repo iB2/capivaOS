@@ -129,7 +129,7 @@ INVOKE /grill-spec
 
 /grill-spec will:
 - Run adversarial interview
-- Produce `docs/specs/TASK-ID-spec.md`, CONTEXT.md entries, ADRs
+- Produce `docs/specs/TASK-ID-spec.md`, `docs/specs/TASK-ID-acs.json`, CONTEXT.md entries, ADRs
 - Present refined spec to human
 
 **🧑 CHECKPOINT — Spec Approval**

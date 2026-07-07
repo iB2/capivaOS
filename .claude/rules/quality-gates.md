@@ -50,6 +50,18 @@ Static analysis tools are defined in the active blueprint's `reference.md` §sta
 
 ---
 
+## Acceptance Criteria Gate (acs.json)
+
+The AC gate is measured from `docs/specs/TASK-ID-acs.json`, not from prose:
+
+- `/grill-spec` emits the file (all statuses `pending`); after spec approval, `id` and `text` are immutable
+- `/test-verify` flips each `status` to `pass` only when the AC has BOTH a meaningful test AND end-to-end exercise evidence (driving the running feature — endpoint call, UI drive, CLI run)
+- The quality report's AC matrix is GENERATED from this file — a hand-maintained matrix is a standards violation
+- `/finish` blocks while any status is `pending` or `fail`
+
+**End-to-end exercise is a hard gate**: a quality report with no End-to-End Exercise
+section (or with unexplained gaps) cannot be verdict PASS. See ADR-0009.
+
 ## Code Review
 
 | Priority | Review Required | Reviewer |

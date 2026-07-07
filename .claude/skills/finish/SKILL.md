@@ -72,8 +72,9 @@ Create PR using `gh pr create`:
 | Quality gate | Pass | Pass |
 
 ## Acceptance Criteria
-- [x] AC1: [description] — tested by [test name]
-- [x] AC2: [description] — tested by [test name]
+[Generated from docs/specs/TASK-ID-acs.json — one checkbox per entry, text verbatim]
+- [x] AC1: [text] — tested by [test name], exercised end-to-end
+- [x] AC2: [text] — tested by [test name], exercised end-to-end
 
 ## SDLC Artifacts
 - Quality report: `docs/reports/[TASK-ID]-quality.md`
@@ -201,7 +202,9 @@ Before creating the PR, validate /test-verify output against `.claude/rules/arti
 
 - [ ] Quality report exists at `docs/reports/TASK-ID-quality.md`
 - [ ] All quality gates have concrete verdicts (not "--" or "pending")
-- [ ] AC coverage matrix has a row for every AC in the spec AND every AC verdict is ✅ (covered by tests)
+- [ ] `docs/specs/TASK-ID-acs.json`: every entry has `status: "pass"` — any `pending` or `fail` blocks the PR
+- [ ] AC coverage matrix row count equals the acs.json entry count (the matrix is generated from it)
+- [ ] Quality report has an End-to-End Exercise section with evidence per AC (see ADR-0009)
 - [ ] Overall verdict is PASS or ACCEPTED_SOFT_FAIL (not HARD_FAIL)
 - [ ] All static analysis issues in new code are analyzed and addressed or justified
 

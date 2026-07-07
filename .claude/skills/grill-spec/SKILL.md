@@ -200,6 +200,38 @@ Create `docs/specs/TASK-ID-spec.md` with this structure:
 [Any remaining ambiguities — these BLOCK progression to /plan]
 ```
 
+### Step 6b: Emit Machine-Readable AC List
+
+Alongside the spec, write `docs/specs/TASK-ID-acs.json` — the acceptance criteria
+as data. This file is the verification contract: /test-verify generates the
+quality-report AC matrix from it and /finish refuses a PR while any entry is not
+`pass` (see ADR-0009).
+
+```json
+{
+  "task": "COS-042",
+  "spec": "docs/specs/COS-042-spec.md",
+  "acs": [
+    {
+      "id": "AC1",
+      "text": "GIVEN a QUOTE row with status ACTIVE older than quoteExpirationMinutes WHEN the expiration sweep runs THEN status becomes EXPIRED and a QUOTE_EVENT(EXPIRED) row is written",
+      "status": "pending"
+    },
+    {
+      "id": "AC2",
+      "text": "GIVEN a QUOTE row with status EXPIRED WHEN GetActiveQuote(quoteId) is called THEN it returns null without throwing",
+      "status": "pending"
+    }
+  ]
+}
+```
+
+Rules:
+- One entry per AC in the spec, same order, `id` matching the spec's numbering (`AC1`, `AC2`, ...)
+- `text` is the full GIVEN/WHEN/THEN criterion — condensed to one line, but complete (no "see spec")
+- `status` is always `"pending"` at creation. Valid values: `pending` | `pass` | `fail`
+- **Immutable except status.** Once the spec is approved, no skill may edit `id` or `text`, add entries, or remove entries. Only /test-verify (and the fast-lane equivalent, if configured) flips `status`. Scope changes go back through /grill-spec, which regenerates the file and resets all statuses to `pending`.
+
 ### Step 7: Present for Approval
 
 Present the spec document summary to the human:
@@ -211,6 +243,7 @@ Present the spec document summary to the human:
 Then state:
 ```
 Spec document written to docs/specs/[TASK-ID]-spec.md
+AC list written to docs/specs/[TASK-ID]-acs.json ([N] criteria, all pending)
 CONTEXT.md updated with [N] new terms.
 [M] ADRs created.
 
@@ -223,7 +256,7 @@ CONTEXT.md updated with [N] new terms.
 
 1. Update `.board/sprint-state.md`:
    - Spec Approved: Yes
-   - Register artifact: `docs/specs/TASK-ID-spec.md`
+   - Register artifacts: `docs/specs/TASK-ID-spec.md`, `docs/specs/TASK-ID-acs.json`
 2. Add Phase History row: `| [now] | [task] | GRILL_SPEC | PLAN | spec-approved | [summary] |`
 3. **→ Return control to /sprint** which will invoke /plan next.
 
@@ -242,6 +275,7 @@ Before presenting the spec for approval, validate against `.claude/rules/artifac
 - [ ] Technical Context includes Integration Points, Data Model, and Error Scenarios
 - [ ] Error Scenarios have trigger condition, expected behavior, and user/caller impact
 - [ ] Clarifications are numbered Q&A with rationale and implementation impact
+- [ ] `docs/specs/TASK-ID-acs.json` exists, parses as JSON, has one entry per spec AC (matching ids and order), and every status is `pending`
 - [ ] No placeholders ("[TBD]", "as discussed", "various", "etc.") anywhere
 - [ ] Every entity is named specifically (class names, table names, endpoint paths — not "the service")
 - [ ] If ADRs were created: each has Context, Options Considered (2+ options with pros/cons), Decision (with rationale), and Consequences
@@ -259,5 +293,6 @@ If ANY check fails → iterate on the spec before presenting. Do NOT present a b
 - **Flag contradictions.** New answers vs existing glossary/ADR = explicit callout.
 - **No code.** This skill produces specs and documentation only.
 - **Formal spec document is mandatory.** The output is `docs/specs/TASK-ID-spec.md`, not just conversation.
+- **The AC list is data.** `docs/specs/TASK-ID-acs.json` ships with every spec. After approval it is immutable except `status` — scope changes regenerate it through this skill.
 - **Open questions block progression.** If there are unresolved ambiguities, /plan CANNOT start.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.

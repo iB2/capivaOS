@@ -51,7 +51,7 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 
 ### GRILL_SPEC → PLAN
 - **Trigger**: Human approves refined spec
-- **Gate**: `docs/specs/TASK-ID-spec.md` exists, "Spec Approved" = Yes in sprint-state
+- **Gate**: `docs/specs/TASK-ID-spec.md` AND `docs/specs/TASK-ID-acs.json` exist (all statuses `pending`), "Spec Approved" = Yes in sprint-state
 - **Action**: Update sprint-state phase = PLAN, set "Spec Approved" = Yes
 - **Board**: Update task Phase field
 - **🧑 CHECKPOINT**: Human must say "approved" / "sim" / "go ahead". Silence = wait.
@@ -71,7 +71,7 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 
 ### TEST_VERIFY → FINISH
 - **Trigger**: Quality gates pass, human reviews report
-- **Gate**: `docs/reports/TASK-ID-quality.md` exists, gates meet thresholds
+- **Gate**: `docs/reports/TASK-ID-quality.md` exists, gates meet thresholds, every `TASK-ID-acs.json` status = `pass` (or human explicitly accepts a flagged e2e gap), end-to-end exercise evidence in the report
 - **Action**: Update sprint-state phase = FINISH, set "Quality Gate" = PASS
 - **Board**: Update task Quality field
 - **🧑 CHECKPOINT**: Human reviews quality report before proceeding.

@@ -167,10 +167,10 @@ Each phase produces artifacts. The next phase MUST verify these artifacts exist 
 
 ```
 Phase 0 (TRIAGE)    → selects task, loads spec into context
-Phase 1 (GRILL)     → produces: docs/specs/TASK-ID-spec.md, CONTEXT.md entries, ADRs
+Phase 1 (GRILL)     → produces: docs/specs/TASK-ID-spec.md, docs/specs/TASK-ID-acs.json, CONTEXT.md entries, ADRs
 Phase 2 (PLAN)      → produces: PLAN.md (references spec), ordered micro-tasks
 Phase 3 (IMPLEMENT) → produces: code + tests on feature branch (follows PLAN.md)
-Phase 4 (VERIFY)    → produces: docs/reports/TASK-ID-quality.md (references code)
+Phase 4 (VERIFY)    → produces: docs/reports/TASK-ID-quality.md (references code), AC statuses written back to TASK-ID-acs.json
 Phase 5 (FINISH)    → produces: PR (references spec + report), board update
 ```
 
@@ -181,10 +181,10 @@ Before starting, each skill verifies its input artifacts:
 | Skill | Required Artifacts | Check |
 |-------|--------------------|-------|
 | /grill-spec | Task spec loaded in context | sprint-state shows task selected |
-| /plan | `docs/specs/TASK-ID-spec.md` exists | File exists AND was approved (gate in sprint-state) |
+| /plan | `docs/specs/TASK-ID-spec.md` + `TASK-ID-acs.json` exist | Files exist AND spec was approved (gate in sprint-state) |
 | /implement | `PLAN.md` exists | File exists AND was approved (gate in sprint-state) |
 | /test-verify | Feature branch with green tests | Test suite passes on branch (per blueprint §build-commands) |
-| /finish | `docs/reports/TASK-ID-quality.md` exists | File exists AND quality gates pass |
+| /finish | `docs/reports/TASK-ID-quality.md` exists | File exists AND quality gates pass AND every acs.json status = `pass` |
 
 If ANY required artifact is missing → STOP. Report what's missing. Do NOT proceed.
 
