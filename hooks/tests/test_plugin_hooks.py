@@ -78,14 +78,13 @@ def main():
         # sh needs the heredoc terminator + POSIX section CR-free. A normalizing
         # editor or gitattributes change breaks one OS silently — assert bytes.
         raw = (HOOKS_DIR / "run-hook.cmd").read_bytes()
-        cases.append(("dispatcher file: batch block is CRLF", b"@echo off
-" in raw))
+        CR, LF = b"\r", b"\n"
+        cases.append(("dispatcher file: batch block is CRLF",
+                      b"@echo off" + CR + LF in raw))
         cases.append(("dispatcher file: heredoc terminator is LF-only",
-                      b"
-CMDBLOCK
-" in raw and b"CMDBLOCK" not in raw))
+                      LF + b"CMDBLOCK" + LF in raw and b"CMDBLOCK" + CR not in raw))
         cases.append(("dispatcher file: POSIX section is CR-free",
-                      b"" not in raw.split(b"CMDBLOCK", 2)[-1]))
+                      CR not in raw.split(b"CMDBLOCK", 2)[-1]))
 
         # --- dispatcher (AC2) ---
         rc, out, _ = run_dispatcher("phase_guard", [], stdin=json.dumps(
