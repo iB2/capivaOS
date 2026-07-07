@@ -21,6 +21,8 @@ Checks:
   7. Plugin manifests (.claude-plugin/plugin.json + marketplace.json): parse,
      identical plugin/marketplace-entry names, semver version in plugin.json
      ONLY (single version source), self-referencing "./" source.
+  8. Board dependency graphs (.board/tasks.md, live or project-template):
+     every Depends ID exists on that board; the graph is acyclic (LOOP-005).
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -82,6 +84,68 @@ RUNTIME_ARTIFACTS = {
 PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your-", "N-slug")
 ACS_STATUSES = {"pending", "pass", "fail"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+TASK_HEAD_RE = re.compile(r"^- \[[ x]\] \*\*([A-Z]+-\d+)\*\*", re.MULTILINE)
+DEPENDS_RE = re.compile(r"^\s*- \*\*Depends\*\*:\s*(.+)$", re.MULTILINE)
+
+
+def lint_board_dependencies(board: Path, root: Path):
+    """Check 8 (LOOP-005): Depends IDs resolve on-board; graph is acyclic."""
+    findings = []
+    try:
+        text = board.read_text(encoding="utf-8")
+    except OSError:
+        return findings
+    rel = board.resolve()
+    try:
+        rel = board.resolve().relative_to(root.resolve())
+    except ValueError:
+        pass
+    ids = TASK_HEAD_RE.findall(text)
+    id_set = set(ids)
+    graph = {}
+    # pair each task block with its Depends line
+    blocks = re.split(r"(?m)^(?=- \[[ x]\] \*\*[A-Z]+-\d+\*\*)", text)
+    for blk in blocks:
+        head = TASK_HEAD_RE.match(blk)
+        if not head:
+            continue
+        tid = head.group(1)
+        deps = []
+        dm = DEPENDS_RE.search(blk)
+        if dm:
+            raw = dm.group(1)
+            deps = [d.strip() for d in re.split(r"[,;]", raw)
+                    if d.strip() and d.strip().lower() not in ("none", "all", "--")]
+            deps = [d for d in deps if re.fullmatch(r"[A-Z]+-\d+", d)]
+        for d in deps:
+            if d not in id_set:
+                findings.append(f"{rel}: task {tid} depends on unknown task {d}")
+        graph[tid] = [d for d in deps if d in id_set]
+    # cycle detection (iterative DFS, 3-color)
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {k: WHITE for k in graph}
+    for start in graph:
+        if color[start] != WHITE:
+            continue
+        stack = [(start, iter(graph[start]))]
+        color[start] = GRAY
+        while stack:
+            node, it = stack[-1]
+            advanced = False
+            for nxt in it:
+                if color.get(nxt, BLACK) == GRAY:
+                    findings.append(f"{rel}: dependency cycle involving {nxt} and {node}")
+                elif color.get(nxt, BLACK) == WHITE:
+                    color[nxt] = GRAY
+                    stack.append((nxt, iter(graph[nxt])))
+                    advanced = True
+                    break
+            if not advanced:
+                color[node] = BLACK
+                stack.pop()
+    return findings
 
 
 def lint_manifests(root: Path):
@@ -291,6 +355,12 @@ def lint(root: Path):
     # 7. plugin manifest validity and parity
     findings.extend(lint_manifests(root))
 
+    # 8. board dependency graphs (live board is untracked but linted when present)
+    for board in (root / ".board" / "tasks.md",
+                  root / "project-template" / ".board" / "tasks.md"):
+        if board.is_file():
+            findings.extend(lint_board_dependencies(board, root))
+
     return findings
 
 
@@ -332,6 +402,13 @@ def self_test():
             '[{"id": "AC1", "text": "works", "status": "pass"}]}', encoding="utf-8")
         (root / "docs" / "specs" / "BROKEN-1-acs.json").write_text(
             "not json {", encoding="utf-8")
+        (root / ".board").mkdir()
+        (root / ".board" / "tasks.md").write_text(
+            "# Board\n"
+            "- [ ] **AAA-1** first (P1)\n  - **Depends**: BBB-9\n"
+            "- [ ] **AAA-2** second (P1)\n  - **Depends**: AAA-3\n"
+            "- [ ] **AAA-3** third (P1)\n  - **Depends**: AAA-2\n"
+            "- [ ] **AAA-4** ok (P2)\n  - **Depends**: none\n", encoding="utf-8")
         (root / ".claude-plugin").mkdir()
         (root / ".claude-plugin" / "plugin.json").write_text(
             '{"name": "alpha-plug", "version": "1.0"}', encoding="utf-8")
@@ -361,6 +438,8 @@ def self_test():
             "manifest name parity",
             "marketplace entry declares a version",
             "expected \"./\"",
+            "depends on unknown task BBB-9",
+            "dependency cycle involving",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

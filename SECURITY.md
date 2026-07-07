@@ -51,6 +51,14 @@ A plugin named "capiva" from any other source is not ours.
 - **Review before update**: `CHANGELOG.md` describes every release;
   `claude plugin details capiva` shows the component inventory and context cost
 
+## Autonomy prerequisite
+
+Auto mode (`/capiva:auto`, v1.1+) never merges — but that guarantee is only
+mechanical if your default branch requires pull requests. `/capiva:init` checks
+this and offers to configure it; do not enable auto mode on an unprotected
+branch. (The check uses YOUR `gh` authentication — the plugin itself still
+makes no network calls.)
+
 ## Reporting a vulnerability
 
 Open a GitHub Security Advisory on this repository (preferred), or a private

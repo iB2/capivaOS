@@ -69,6 +69,19 @@ Refutation targets (minimum set):
 
 If any claim is REFUTED: iterate once (fix code/tests, re-review). If claims remain refuted after iteration, flag for human.
 
+#### Agent 3: Second Independent Reviewer (optional — Dual Review, LOOP-008)
+
+Only when `- **Dual Review**: on` in `.board/harness-config.md` (absent/off =
+skip this agent entirely; attended behavior unchanged). A second qa-role agent
+reviews the same claims INDEPENDENTLY (no sight of Agent 2's findings). Then:
+- **Deduplicate** findings by file + issue key (same issue within ±5 lines = one
+  finding), preserving both reviewers' attribution
+- **Normalize severity** to P0/P1/P2/Nit before the quality report
+- **Disagreement is a signal**: if the reviewers disagree on a finding's
+  validity, or on any severity ≥ P1 — in auto mode this forces ESCALATE at the
+  quality gate regardless of policy grants; in attended mode, present the
+  disagreement explicitly to the human.
+
 ### Step 3: Test Infrastructure
 
 Follow the test infrastructure setup defined in the blueprint's reference.md §test-stack section. Use the correct:

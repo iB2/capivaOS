@@ -5,6 +5,24 @@ receive updates only when the version in `.claude-plugin/plugin.json` is bumped.
 Schema-affecting changes MUST land with a matching migration row in
 `skills/update-project/SKILL.md`.
 
+## [1.1.0] — unreleased
+
+The autonomy release: capivaOS gains an opt-in AUTO mode under a strict contract
+(ADR-0014), while attended mode remains the unchanged default.
+
+- **ADR-0014 autonomy contract**: gates route through your written approval
+  policy + an independent judge in auto mode; exceptions escalate to
+  `.board/approvals.md`. Hard-coded never-list: merge, P0/P1 gates, human-less
+  spec approval, policy silence. Policy file is human-only (hook-enforced).
+- **Isolation-first context**: fresh subagent context per phase — mandatory in
+  auto mode, opt-in for attended via `Phase Isolation` in harness-config
+  (default off; today's behavior preserved).
+- **Budget invariants**: no uncapped auto runs (task + token limits always);
+  clean parking at phase boundaries with standard handover docs.
+- Guard allowlist gains `capiva-blueprints/` (project blueprint config is
+  writable in any phase); PLAN.md and the self-dev CONTEXT.md are no longer
+  tracked in the harness repo.
+
 ## [1.0.0] — 2026-07-07
 
 First plugin release. capivaOS becomes an installable Claude Code plugin +

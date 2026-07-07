@@ -106,11 +106,28 @@ def _has_manual_handover() -> bool:
     return any(f.suffix == ".md" for f in HANDOVER_DIR.iterdir())
 
 
+def _snapshot_board():
+    """Copy the full board files to .state/board-snapshot/ (LOOP-004).
+
+    The live board is untracked single-copy state; an accidental deletion is
+    unrecoverable without this. Best-effort, never blocks a save."""
+    try:
+        snap = STATE_DIR / "board-snapshot"
+        snap.mkdir(parents=True, exist_ok=True)
+        for name in ("tasks.md", "sprint-state.md", "harness-config.md"):
+            src = BOARD_DIR / name
+            if src.is_file():
+                (snap / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def precompact():
     try:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         content = _gather_state()
         SESSION_STATE_FILE.write_text(content, encoding="utf-8")
+        _snapshot_board()
     except Exception:
         pass
 
@@ -137,6 +154,7 @@ def stop():
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         content = _gather_state()
         SESSION_STATE_FILE.write_text(content, encoding="utf-8")
+        _snapshot_board()
     except Exception:
         pass
 

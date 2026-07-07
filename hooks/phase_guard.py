@@ -10,6 +10,8 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
   - `gh pr create`                           -> only when Phase = FINISH or
     VERIFY_FINISH (fast lane, ADR-0010) and Quality Gate is PASS /
     ACCEPTED_SOFT_FAIL
+  - .board/approval-policy.md                -> agent writes DENIED in every
+    phase (ADR-0014 self-licensing prevention; humans edit it directly)
 
 Pipeline artifacts (.board/, docs/, .claude/, templates/, PLAN.md, root *.md)
 are writable in every phase — the pipeline itself produces them.
@@ -44,7 +46,7 @@ WRITE_TOOLS = {"Edit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
 # Paths writable in ANY phase — pipeline artifacts plus harness/CI tooling.
-ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", ".github", "docs", "scripts", "templates", "reports")
+ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", ".github", "docs", "scripts", "templates", "reports", "capiva-blueprints")
 ALWAYS_ALLOWED_FILES = ("PLAN.md", ".gitignore", ".mcp.json")
 
 # Heuristics for "this is a test file" (blueprint test layouts: tests/,
@@ -58,6 +60,12 @@ TEST_PATH_RE = re.compile(
 )
 
 PASSING_GATES = {"PASS", "ACCEPTED_SOFT_FAIL"}
+
+# Human-only files: agent writes denied in EVERY phase (ADR-0014 self-licensing
+# prevention). The approval policy is the delegated portion of Law 5 — an agent
+# that can edit it can grant itself permissions. Checked BEFORE the
+# always-allowed dirs so .board's general writability doesn't bypass it.
+HUMAN_ONLY_FILES = (".board/approval-policy.md",)
 # Fast lane (ADR-0010): VERIFY_FINISH combines TEST_VERIFY + FINISH.
 TEST_WRITE_PHASES = {"TEST_VERIFY", "VERIFY_FINISH"}
 PR_PHASES = {"FINISH", "VERIFY_FINISH"}
@@ -115,6 +123,16 @@ def _check_file_write(tool_input: dict, phase: str):
     if not raw:
         _allow()
     path = Path(raw) if os.path.isabs(raw) else PROJECT_ROOT / raw
+    try:
+        rel = str(path.resolve().relative_to(PROJECT_ROOT)).replace("\\", "/")
+        if rel in HUMAN_ONLY_FILES:
+            _deny(
+                "Phase guard: .board/approval-policy.md is human-authored law "
+                "(ADR-0014). Agents may not edit it in any phase — propose the "
+                "change as an escalation in .board/approvals.md instead."
+            )
+    except ValueError:
+        pass
     if _is_always_allowed(path):
         _allow()
     if phase == "IMPLEMENT":

@@ -132,15 +132,35 @@ Subagents (spawned by /capiva:implement) have RESTRICTED access:
 
 ---
 
+## Approvals Queue (`.board/approvals.md`, auto mode — ADR-0014)
+
+Escalations from delegated gates queue here; the human resolves them by editing
+Status. One entry per escalation:
+
+```markdown
+## ESC-[N] — [TASK-ID] [gate type] — [timestamp]
+- **Exception**: [one-paragraph exception-first summary from the gate-judge]
+- **Details**: [file:line findings]
+- **Options**: approve as-is | request change | route to attended
+- **Status**: pending | approved | changes-requested: [note] | attended
+```
+
+Rules: agents APPEND entries and READ resolutions — they never edit an entry's
+Status (that is the human's answer). Every resolution the driver acts on is
+logged in Phase History (`gate-escalation-resolved`). Every delegated CLEAR is
+logged too (`gate-delegated`, with the policy/judge basis) — the audit trail
+must show who decided what, human or machine, and on what grounds.
+
 ## Board Integrity Rules
 
 1. **One task in progress.** If "In Progress" has a task, do NOT start another.
+3. **Depends is mechanical.** Triage only selects tasks whose dependencies are all Done; a dependency cycle is a board defect that stops selection (lint check 8). Depends IDs must exist on the board.
 2. **Status = Phase consistency.** In Progress → Phase must be TRIAGE..FINISH. Done → Phase must be IDLE.
-3. **Done is immutable.** Once in Done, never edit. Only append.
-4. **Blocked needs a reason.** No silent blocks. Always include `Blocker:` with description and date.
-5. **Timestamps mandatory.** Started and Completed must have ISO dates.
-6. **Lock always released.** Every lock acquisition MUST have a corresponding release in the same turn.
-7. **Audit trail.** Every board change logged in sprint-state.md Phase History.
+4. **Done is immutable.** Once in Done, never edit. Only append.
+5. **Blocked needs a reason.** No silent blocks. Always include `Blocker:` with description and date.
+6. **Timestamps mandatory.** Started and Completed must have ISO dates.
+7. **Lock always released.** Every lock acquisition MUST have a corresponding release in the same turn.
+8. **Audit trail.** Every board change logged in sprint-state.md Phase History.
 
 ---
 

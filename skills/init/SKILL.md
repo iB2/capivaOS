@@ -43,6 +43,13 @@ Doc templates (CAB ticket, release checklist, deviation record, solution
 document, intake summary) are NOT copied — skills read them from
 `${CLAUDE_PLUGIN_ROOT}/project-template/templates/` at runtime.
 
+**Approval policy (auto mode)**: NOT scaffolded — `.board/approval-policy.md`
+is human-authored law the agent may not write (the guard denies it, ADR-0014).
+Absence simply means every delegated gate escalates. When the user wants
+delegation, tell them to copy
+`${CLAUDE_PLUGIN_ROOT}/project-template/templates/approval-policy.md` to
+`.board/approval-policy.md` themselves and edit the grants.
+
 ### Legacy copy-mode migration (if detected)
 
 If `.claude/skills/sprint/` exists, this project used the pre-plugin copy-mode
@@ -149,6 +156,8 @@ Proceed with this configuration?
 - **Active Blueprint**: [blueprint-name]
 - **Configured**: [ISO date]
 - **Installed Via**: plugin | copy-mode
+- **Phase Isolation**: off
+- **Dual Review**: off
 ```
 
 2. Write `.board/harness-schema-version` containing exactly the plugin's
@@ -159,6 +168,38 @@ Proceed with this configuration?
 3. If `.board/tasks.md` has no tasks, remind the user to populate the backlog
    before running /capiva:sprint.
 
+## Step 5b: Repo Hardening — Branch Protection (ADR-0014 safety prerequisite)
+
+The merge decision is the harness's one never-delegable gate — mechanically real
+only if the forge enforces PR-only merges. Check and offer; **never block init**
+on this step (air-gapped installs must work).
+
+1. Detect: `git remote get-url origin` — if not GitHub, or `gh` unavailable, or
+   the API call fails: warn once ("could not verify branch protection — auto
+   mode requires a protected default branch") and continue to Step 6.
+2. Check: `gh api "repos/OWNER/REPO/rulesets" --jq ...` and/or
+   `gh api "repos/OWNER/REPO/branches/DEFAULT/protection"` — determine
+   whether PRs are required to merge into the default branch.
+3. If unprotected, present:
+
+```
+⚠ Default branch accepts direct pushes. The harness's merge gate — the one
+  decision never delegated to any agent — is only enforced if GitHub requires
+  pull requests. This is the safety prerequisite for auto mode.
+
+  Configure now? [creates a ruleset: require PRs + require the Harness CI check]
+```
+
+4. On explicit confirmation: create the ruleset via `gh api -X POST
+   repos/OWNER/REPO/rulesets` (require pull_request + required_status_checks
+   for the CI workflow). On decline OR insufficient scope: report the manual UI
+   path (Settings → Rules) and record the outcome.
+5. Record in `.board/harness-config.md`:
+   `- **Branch Protection**: configured [date] | verified [date] | declined [date] (+reason)`
+
+Note for auto mode: the auto skill re-checks at run start and refuses (with
+explicit override) on unprotected branches — contract per LOOP-002 AC5.
+
 ## Step 6: Report Readiness
 
 ```
@@ -168,6 +209,7 @@ Proceed with this configuration?
   Schema version: [version] (stamped)
   Project docs: ✓ CONTEXT.md + INTAKE-summary.md
   Board: [✓ populated | ⚠ empty — add tasks before /capiva:sprint]
+  Branch protection: [✓ configured | ⚠ declined/unverified — required before auto mode]
 
 Next: run /capiva:sprint to begin the pipeline.
 Update the harness later with `/capiva:update`.

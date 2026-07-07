@@ -66,6 +66,10 @@ def main():
         cases.append(("IDLE: deny gh pr create", run_guard(root, "Bash", {"command": "gh pr create --title t"})[0] is True))
         cases.append(("IDLE: allow other bash", run_guard(root, "Bash", {"command": "git status"})[0] is False))
 
+        set_state("IDLE")
+        cases.append(("IDLE: allow capiva-blueprints (project blueprint config)",
+                      run_guard(root, "Write", {"file_path": str(root / "capiva-blueprints" / "x" / "reference.md")})[0] is False))
+
         set_state("GRILL_SPEC")
         cases.append(("GRILL_SPEC: deny src edit", run_guard(root, "Edit", {"file_path": src})[0] is True))
 
@@ -103,6 +107,14 @@ def main():
 
         set_state("FINISH", "ACCEPTED_SOFT_FAIL")
         cases.append(("FINISH+SOFT_FAIL: allow gh pr create", run_guard(root, "Bash", {"command": "gh pr create"})[0] is False))
+
+        # approval-policy protection (LOOP-006 / ADR-0014): denied in EVERY phase
+        policy = str(root / ".board" / "approval-policy.md")
+        set_state("IDLE")
+        cases.append(("IDLE: deny approval-policy write", run_guard(root, "Write", {"file_path": policy})[0] is True))
+        set_state("IMPLEMENT")
+        cases.append(("IMPLEMENT: deny approval-policy write (self-licensing)", run_guard(root, "Edit", {"file_path": policy})[0] is True))
+        cases.append(("IMPLEMENT: other board writes still allowed", run_guard(root, "Write", {"file_path": str(root / ".board" / "tasks.md")})[0] is False))
 
         # fail-open: missing state file
         (root / ".board" / "sprint-state.md").unlink()
