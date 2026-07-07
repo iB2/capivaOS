@@ -27,6 +27,7 @@ ANY  → IDLE (abort)
 
 | Timestamp | Task | From | To | Gate | Notes |
 |-----------|------|------|----|------|-------|
+| 2026-07-07 | HARN-001..009 | IDLE | IDLE | board-write | Harness improvement backlog added from docs/audits/2026-07-07-harness-audit.md (no phase change) |
 
 ## Board Lock
 
