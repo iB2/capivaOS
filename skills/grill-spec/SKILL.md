@@ -17,14 +17,14 @@ Stress-test a task specification through adversarial questioning. Produces a for
 **If EITHER is missing or empty → STOP:**
 
 ```
-⛔ Project docs not found. Run /init before starting the pipeline.
+⛔ Project docs not found. Run /capiva:init before starting the pipeline.
 
 Grill-spec needs domain context and project scope to produce useful specs.
 Without CONTEXT.md and INTAKE-summary.md, the adversarial interview
 starts from zero — questions will be generic, specs will miss constraints.
 
-Run /init to set up the harness. If the project docs are missing, draft
-them from your raw materials first (templates/intake-summary.md defines
+Run /capiva:init to set up the harness. If the project docs are missing, draft
+them from your raw materials first (${CLAUDE_PLUGIN_ROOT}/project-template/templates/intake-summary.md defines
 the INTAKE format).
 ```
 
@@ -34,7 +34,7 @@ the INTAKE format).
 
 1. Read `.board/sprint-state.md`
 2. Verify Phase = GRILL_SPEC
-3. If Phase ≠ GRILL_SPEC → **STOP**: "⛔ Phase guard failed. Current: [actual]. Required: GRILL_SPEC. Run /sprint to advance to this phase."
+3. If Phase ≠ GRILL_SPEC → **STOP**: "⛔ Phase guard failed. Current: [actual]. Required: GRILL_SPEC. Run /capiva:sprint to advance to this phase."
 4. If Phase = GRILL_SPEC → proceed
 
 ## Process
@@ -44,7 +44,7 @@ the INTAKE format).
 - Read the task spec from sprint-state (Task ID → find in board or linked doc)
 - **Read `docs/specs/INTAKE-summary.md`** — load project scope, stakeholders, requirements, constraints as starting context
 - Read `docs/CONTEXT.md` for existing domain terms
-- Read `docs/adr/` for existing architectural decisions
+- Read `${CLAUDE_PLUGIN_ROOT}/docs/adr/` for existing architectural decisions
 - Scan relevant source files referenced in the spec
 
 ### Step 2: Adversarial Interview
@@ -87,14 +87,14 @@ As domain terms crystallize, add to `docs/CONTEXT.md`:
 
 ### Step 5: Create ADRs
 
-Create `docs/adr/NNNN-slug.md` ONLY when ALL THREE criteria are met:
+Create `${CLAUDE_PLUGIN_ROOT}/docs/adr/NNNN-slug.md` ONLY when ALL THREE criteria are met:
 1. Hard to reverse (changing requires significant rework)
 2. Non-obvious (reasonable engineers would disagree)
 3. Real trade-offs (not just "best practice")
 
-**Numbering**: Continue from the highest existing ADR number in `docs/adr/` (list the directory — the harness ships with its own exemplar ADRs).
+**Numbering**: Continue from the highest existing ADR number in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` (list the directory — the harness ships with its own exemplar ADRs).
 
-**Exemplars**: Read any of the shipped ADRs in `docs/adr/` as gold-standard examples. Your ADRs must match this depth.
+**Exemplars**: Read any of the shipped ADRs in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` as gold-standard examples. Your ADRs must match this depth.
 
 ADR format:
 ```markdown
@@ -197,14 +197,14 @@ Create `docs/specs/TASK-ID-spec.md` with this structure:
 [Explicitly listed items that are NOT part of this task]
 
 ## Open Questions
-[Any remaining ambiguities — these BLOCK progression to /plan]
+[Any remaining ambiguities — these BLOCK progression to /capiva:plan]
 ```
 
 ### Step 6b: Emit Machine-Readable AC List
 
 Alongside the spec, write `docs/specs/TASK-ID-acs.json` — the acceptance criteria
-as data. This file is the verification contract: /test-verify generates the
-quality-report AC matrix from it and /finish refuses a PR while any entry is not
+as data. This file is the verification contract: /capiva:test-verify generates the
+quality-report AC matrix from it and /capiva:finish refuses a PR while any entry is not
 `pass` (see ADR-0009).
 
 ```json
@@ -230,7 +230,7 @@ Rules:
 - One entry per AC in the spec, same order, `id` matching the spec's numbering (`AC1`, `AC2`, ...)
 - `text` is the full GIVEN/WHEN/THEN criterion — condensed to one line, but complete (no "see spec")
 - `status` is always `"pending"` at creation. Valid values: `pending` | `pass` | `fail`
-- **Immutable except status.** Once the spec is approved, no skill may edit `id` or `text`, add entries, or remove entries. Only /test-verify (and the fast-lane equivalent, if configured) flips `status`. Scope changes go back through /grill-spec, which regenerates the file and resets all statuses to `pending`.
+- **Immutable except status.** Once the spec is approved, no skill may edit `id` or `text`, add entries, or remove entries. Only /capiva:test-verify (and the fast-lane equivalent, if configured) flips `status`. Scope changes go back through /capiva:grill-spec, which regenerates the file and resets all statuses to `pending`.
 
 ### Step 7: Present for Approval
 
@@ -247,7 +247,7 @@ AC list written to docs/specs/[TASK-ID]-acs.json ([N] criteria, all pending)
 CONTEXT.md updated with [N] new terms.
 [M] ADRs created.
 
-🧑 Awaiting spec approval to proceed to /plan phase.
+🧑 Awaiting spec approval to proceed to /capiva:plan phase.
 ```
 
 ## Phase Transition (MANDATORY)
@@ -258,15 +258,15 @@ CONTEXT.md updated with [N] new terms.
    - Spec Approved: Yes
    - Register artifacts: `docs/specs/TASK-ID-spec.md`, `docs/specs/TASK-ID-acs.json`
 2. Add Phase History row: `| [now] | [task] | GRILL_SPEC | PLAN | spec-approved | [summary] |`
-3. **→ Return control to /sprint** which will invoke /plan next.
+3. **→ Return control to /capiva:sprint** which will invoke /capiva:plan next.
 
-If invoked standalone (not from /sprint):
+If invoked standalone (not from /capiva:sprint):
 - Update sprint-state as above
-- State: "Spec approved. Next step: invoke /plan to decompose into micro-tasks."
+- State: "Spec approved. Next step: invoke /capiva:plan to decompose into micro-tasks."
 
 ## Output Quality Gate
 
-Before presenting the spec for approval, validate against `.claude/rules/artifact-standards.md` "Artifact 1: Spec Document":
+Before presenting the spec for approval, validate against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 1: Spec Document":
 
 - [ ] Summary is 3-5 sentences explaining business value (not a rewording of the title)
 - [ ] Every AC uses GIVEN/WHEN/THEN with specific values, inputs, and expected outputs
@@ -279,7 +279,7 @@ Before presenting the spec for approval, validate against `.claude/rules/artifac
 - [ ] No placeholders ("[TBD]", "as discussed", "various", "etc.") anywhere
 - [ ] Every entity is named specifically (class names, table names, endpoint paths — not "the service")
 - [ ] If ADRs were created: each has Context, Options Considered (2+ options with pros/cons), Decision (with rationale), and Consequences
-- [ ] If ADRs were created: they match the depth of the harness exemplar ADRs in `docs/adr/`
+- [ ] If ADRs were created: they match the depth of the harness exemplar ADRs in `${CLAUDE_PLUGIN_ROOT}/docs/adr/`
 
 If ANY check fails → iterate on the spec before presenting. Do NOT present a below-standard spec.
 
@@ -294,7 +294,7 @@ If ANY check fails → iterate on the spec before presenting. Do NOT present a b
 - **No code.** This skill produces specs and documentation only.
 - **Formal spec document is mandatory.** The output is `docs/specs/TASK-ID-spec.md`, not just conversation.
 - **The AC list is data.** `docs/specs/TASK-ID-acs.json` ships with every spec. After approval it is immutable except `status` — scope changes regenerate it through this skill.
-- **Open questions block progression.** If there are unresolved ambiguities, /plan CANNOT start.
+- **Open questions block progression.** If there are unresolved ambiguities, /capiva:plan CANNOT start.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
 
 ---
@@ -345,7 +345,7 @@ wrong synonyms in code.]
 
 ### Out of Scope
 [Explicit list of what this task does NOT deliver. This is as important as in-scope.
-Without it, /plan will over-plan.]
+Without it, /capiva:plan will over-plan.]
 
 ### Deferred
 [Items that are in scope for the project but NOT this task. Reference future task IDs
@@ -383,7 +383,7 @@ during the grill — they're binding unless revisited.]
 [List with file paths and one-line summaries, or "None — no hard-to-reverse decisions in this task"]
 
 ## Open Questions
-[ONLY if there are genuinely unresolved items. These BLOCK /plan.
+[ONLY if there are genuinely unresolved items. These BLOCK /capiva:plan.
 If this section has entries, the spec is NOT approved.]
 ```
 
@@ -417,7 +417,7 @@ If this section has entries, the spec is NOT approved.]
 ```
 
 ### Artifact 1: Spec Document — ADR Quality Bar
-ADRs are optional artifacts — most specs produce zero. But when created, they must meet the same quality standard as any other artifact. The harness ships with exemplar ADRs in `docs/adr/` that define the floor.
+ADRs are optional artifacts — most specs produce zero. But when created, they must meet the same quality standard as any other artifact. The harness ships with exemplar ADRs in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` that define the floor.
 
 **REJECT** — missing options:
 ```

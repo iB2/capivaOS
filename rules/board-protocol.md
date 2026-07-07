@@ -103,7 +103,7 @@ Add entry to `.board/sprint-state.md` Phase History table.
 
 ### Subagent Board Access
 
-Subagents (spawned by /implement) have RESTRICTED access:
+Subagents (spawned by /capiva:implement) have RESTRICTED access:
 
 | Operation | Allowed? |
 |-----------|----------|
@@ -119,16 +119,16 @@ Subagents (spawned by /implement) have RESTRICTED access:
 
 | Event | Skill | Board Change | Sprint State Change |
 |-------|-------|-------------|-------------------|
-| Task selected | /sprint | Move to "In Progress", set Phase | Phase → TRIAGE |
-| Spec approved | /grill-spec | Update Phase field | Phase → GRILL_SPEC → PLAN |
-| Plan approved | /plan | Update Phase field | Phase → PLAN → IMPLEMENT |
-| Implementation started | /implement | Set Branch field | Phase → IMPLEMENT |
+| Task selected | /capiva:sprint | Move to "In Progress", set Phase | Phase → TRIAGE |
+| Spec approved | /capiva:grill-spec | Update Phase field | Phase → GRILL_SPEC → PLAN |
+| Plan approved | /capiva:plan | Update Phase field | Phase → PLAN → IMPLEMENT |
+| Implementation started | /capiva:implement | Set Branch field | Phase → IMPLEMENT |
 | Subtask completed | Subagent | Tick subtask checkbox | (no phase change) |
-| All subtasks done | /implement | Update Phase | Phase → TEST_VERIFY |
-| Quality gates pass | /test-verify | Add Quality field | Phase → FINISH |
-| PR created | /finish | Move to "Done", add PR/Completed | Phase → IDLE |
+| All subtasks done | /capiva:implement | Update Phase | Phase → TEST_VERIFY |
+| Quality gates pass | /capiva:test-verify | Add Quality field | Phase → FINISH |
+| PR created | /capiva:finish | Move to "Done", add PR/Completed | Phase → IDLE |
 | Task blocked | Any skill | Move to "Blocked", add reason | Phase → BLOCKED |
-| Sprint end | /sprint | Summary appended | Phase → IDLE |
+| Sprint end | /capiva:sprint | Summary appended | Phase → IDLE |
 
 ---
 

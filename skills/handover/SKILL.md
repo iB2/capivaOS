@@ -14,8 +14,8 @@ If it's incomplete, the next agent wastes time reconstructing context.
 ## When This Skill Runs
 
 This skill is invoked:
-1. **Automatically by /sprint** when context budget rules trigger (see `.claude/rules/context-management.md`)
-2. **Manually by human** — "hand over", "save and continue later", "pausa", "/handover"
+1. **Automatically by /capiva:sprint** when context budget rules trigger (see `${CLAUDE_PLUGIN_ROOT}/rules/context-management.md`)
+2. **Manually by human** — "hand over", "save and continue later", "pausa", "/capiva:handover"
 3. **Before expensive phases** when context is already pressured (1+ auto-compactions)
 4. **On sprint interruption** — rate limit, timeout, or user stop
 
@@ -86,7 +86,7 @@ Write to `docs/handover/TASK-ID-handover.md`:
 
 1. Read `.board/sprint-state.md` — it has your current state
 2. Read this document — it has the context you need
-3. [Specific next action — e.g., "Run /implement to continue micro-task execution"]
+3. [Specific next action — e.g., "Run /capiva:implement to continue micro-task execution"]
 
 DO NOT restart the pipeline from scratch. The work below has been completed and approved.
 
@@ -107,7 +107,7 @@ DO NOT restart the pipeline from scratch. The work below has been completed and 
 |----------|------|--------|
 | Spec | docs/specs/TASK-ID-spec.md | ✅ Approved |
 | CONTEXT.md | docs/CONTEXT.md | ✅ Updated (N new terms) |
-| ADRs | docs/adr/000N-slug.md | ✅ Written |
+| ADRs | ${CLAUDE_PLUGIN_ROOT}/docs/adr/000N-slug.md | ✅ Written |
 | PLAN.md | PLAN.md | ✅ Approved |
 | Feature branch | feature/TASK-ID-slug | 🔶 4/7 tasks committed |
 | Quality report | — | ⬜ Not started |
@@ -196,7 +196,7 @@ Handover complete.
 📦 Board: task updated with progress notes
 🔀 Branch: [committed and pushed / no branch yet]
 
-To resume: start a new session, run /sprint, and the pipeline will detect
+To resume: start a new session, run /capiva:sprint, and the pipeline will detect
 the in-progress task and resume from Phase [X].
 
 Or a fresh agent can read the handover document directly for full context.
@@ -214,7 +214,7 @@ The handover document follows the same anti-slop rules as all artifacts:
 
 ## Rules
 
-- **Handover is not optional when triggered.** Context budget rules are hard limits. See `.claude/rules/context-management.md`.
+- **Handover is not optional when triggered.** Context budget rules are hard limits. See `${CLAUDE_PLUGIN_ROOT}/rules/context-management.md`.
 - **Persist everything before documenting.** Save artifacts → commit code → update board → THEN write handover doc.
 - **The document must be self-contained.** A fresh agent reads ONLY the handover doc + sprint-state to resume. If they'd need to ask "what happened?", the handover is incomplete.
 - **Don't restart the pipeline.** The handover explicitly tells the next agent which phases are DONE. Redoing approved work wastes time and may produce different (worse) results.

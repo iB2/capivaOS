@@ -46,7 +46,7 @@ Static analysis tools are defined in the active blueprint's `reference.md` §sta
 
 - Zero linter warnings in new code
 - Accepted suppressions documented in the blueprint reference
-- Any new suppression requires a Deviation Record (`templates/deviation-record.md`)
+- Any new suppression requires a Deviation Record (`${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md`)
 
 ---
 
@@ -120,7 +120,7 @@ TDD compliance is verified through commit structure and QA review:
 
 1. **Commit order**: Each micro-task should produce at least two commits — test commit before implementation commit.
 2. **QA review**: The QA role (Stage 3) checks for TDD evidence — tests that are clearly written to describe behavior, not retrofitted to match existing code.
-3. **Orchestrator spot-check**: /implement samples the last 3 commits from each subagent and verifies at least one test file was committed before or alongside each implementation file.
+3. **Orchestrator spot-check**: /capiva:implement samples the last 3 commits from each subagent and verifies at least one test file was committed before or alongside each implementation file.
 
 If TDD violation is detected:
 - The subagent's code is reverted

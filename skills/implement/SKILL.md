@@ -17,9 +17,9 @@ Execute an approved plan by spawning subagents for each micro-task. TDD is enfor
 4. Verify `PLAN.md` exists in working directory
 5. Check if `docs/tech-context/TASK-ID-tech.md` exists:
    - If YES → include in each subagent's context alongside spec and PLAN.md
-   - If NO and Lane = fast with PLAN.md noting "fast lane: tech context inline" → proceed (fast lane embeds tech findings in PLAN.md; see /spec-plan)
-   - If NO otherwise → check sprint-state Notes for "domain-only" flag. If flagged, proceed. If NOT flagged → **WARN**: "Tech context missing. Consider running /plan Step 1.5 (Context7 discovery) to avoid using stale API docs."
-6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /plan first."
+   - If NO and Lane = fast with PLAN.md noting "fast lane: tech context inline" → proceed (fast lane embeds tech findings in PLAN.md; see /capiva:spec-plan)
+   - If NO otherwise → check sprint-state Notes for "domain-only" flag. If flagged, proceed. If NOT flagged → **WARN**: "Tech context missing. Consider running /capiva:plan Step 1.5 (Context7 discovery) to avoid using stale API docs."
+6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /capiva:plan first."
 7. If ALL checks pass → proceed
 
 ## Process
@@ -29,7 +29,7 @@ Execute an approved plan by spawning subagents for each micro-task. TDD is enfor
 1. Read `PLAN.md` for the complete task list
 2. Read `docs/CONTEXT.md` for domain terms
 3. Read `docs/specs/TASK-ID-spec.md` for acceptance criteria reference
-4. Read `docs/tech-context/TASK-ID-tech.md` for current library documentation (produced by /plan)
+4. Read `docs/tech-context/TASK-ID-tech.md` for current library documentation (produced by /capiva:plan)
 5. Read the active blueprint's `reference.md` for stack-specific commands and patterns
 6. Create feature branch:
    ```bash
@@ -47,7 +47,7 @@ For each task in PLAN.md, in dependency order:
 
 #### a. Spawn Subagent
 
-Launch a **dev** subagent (native agent definition `.claude/agents/dev.md` — spawn by
+Launch a **dev** subagent (native agent definition `${CLAUDE_PLUGIN_ROOT}/agents/dev.md` — spawn by
 agent type so the platform enforces its tool allowlist; do NOT paste the role file
 into the prompt) with:
 - The task description from PLAN.md (verbatim)
@@ -64,9 +64,9 @@ Each subagent gets fresh context — no bleed from previous tasks.
 #### a2. Collect & Validate the Structured Report (ADR-0012)
 
 Every dev subagent ends with one fenced JSON completion report (schema in
-`.claude/agents/dev.md`). On completion:
+`${CLAUDE_PLUGIN_ROOT}/agents/dev.md`). On completion:
 
-1. Extract the JSON block; validate it: `python scripts/validate_impl_report.py report.json`
+1. Extract the JSON block; validate it: `python ${CLAUDE_PLUGIN_ROOT}/scripts/validate_impl_report.py report.json`
 2. Missing or invalid → respawn ONCE asking for the report only (no code changes). Still invalid → the attempt counts as a failure (three-strike rule).
 3. Cross-check claims mechanically:
    - `files_changed` vs `git diff --name-status` for the task's commits — any mismatch is a REFUTED claim: fix the report or the code
@@ -130,7 +130,7 @@ After ALL tasks complete, run build and test commands from the blueprint §build
 
 Both must succeed. If any fail → diagnose and fix before proceeding.
 
-**Deviation Record Verification:** If PLAN.md includes any "Create Deviation Record" tasks, verify that the corresponding files exist in `docs/deviations/` and follow the `templates/deviation-record.md` format. Missing deviation record files → STOP and report. These are mandatory artifacts.
+**Deviation Record Verification:** If PLAN.md includes any "Create Deviation Record" tasks, verify that the corresponding files exist in `docs/deviations/` and follow the `${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md` format. Missing deviation record files → STOP and report. These are mandatory artifacts.
 
 ### Step 5: Commit & Report
 
@@ -164,7 +164,7 @@ Both must succeed. If any fail → diagnose and fix before proceeding.
 ### Flags
 - [Any deviations from plan]
 - [Any tasks that required multiple attempts]
-- [Any spec ambiguities discovered — these need /grill-spec revisit]
+- [Any spec ambiguities discovered — these need /capiva:grill-spec revisit]
 ```
 
 ## Phase Transition (MANDATORY)
@@ -178,15 +178,15 @@ The next phase depends on the lane: TEST_VERIFY (Lane = full) or VERIFY_FINISH (
 2. Update `.board/tasks.md` (with lock):
    - Set Branch field on the task
    - Update Phase field
-3. **→ Return control to /sprint** which will invoke /test-verify (full lane) or /verify-finish (fast lane) next.
+3. **→ Return control to /capiva:sprint** which will invoke /capiva:test-verify (full lane) or /capiva:verify-finish (fast lane) next.
 
 If invoked standalone:
 - Update sprint-state as above
-- State: "Implementation complete. [N] tasks done, [M] tests added, all green. Next: invoke /test-verify (or /verify-finish in the fast lane)."
+- State: "Implementation complete. [N] tasks done, [M] tests added, all green. Next: invoke /capiva:test-verify (or /capiva:verify-finish in the fast lane)."
 
 ## Input Quality Validation
 
-Before beginning implementation, validate PLAN.md against `.claude/rules/artifact-standards.md` "Artifact 2":
+Before beginning implementation, validate PLAN.md against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 2":
 
 - [ ] PLAN.md exists in working directory
 - [ ] Every task has Files, Context, Implementation, Test, and Verify sections
@@ -195,11 +195,11 @@ Before beginning implementation, validate PLAN.md against `.claude/rules/artifac
 - [ ] Each task's Test section has a complete failing test skeleton
 - [ ] Dependency graph is present and task ordering matches it
 
-If ANY check fails → STOP. Report: "Plan quality below standard: [specific issue]. Return to /plan."
+If ANY check fails → STOP. Report: "Plan quality below standard: [specific issue]. Return to /capiva:plan."
 
 ## Output Quality Gate
 
-Before advancing to /test-verify, validate the implementation report against `.claude/rules/artifact-standards.md` "Artifact 3":
+Before advancing to /capiva:test-verify, validate the implementation report against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 3":
 
 - [ ] Branch name and base commit documented
 - [ ] Tasks completed table has all columns: Task, Files Changed, Tests Added, Commits, Attempts, Status
@@ -214,7 +214,7 @@ Before advancing to /test-verify, validate the implementation report against `.c
 - **TDD is mandatory.** Code before test = code deleted. No exceptions.
 - **One subagent per task.** Fresh context per task prevents accumulated confusion.
 - **Two-stage review between tasks.** Spec compliance first, code quality second.
-- **Feature branch isolation.** Main branch untouched until /finish.
+- **Feature branch isolation.** Main branch untouched until /capiva:finish.
 - **Three-strike escalation.** Task fails 3 times → STOP, set Phase = BLOCKED, escalate to human.
 - **No plan deviation.** Changes not in PLAN.md → stop and flag. The plan was approved.
 - **Clean commits.** Each task gets its own commit referencing the task number.
@@ -276,7 +276,7 @@ The normative template and quality bar for this skill's artifact — the FLOOR, 
 ### Flags & Deviations
 - Task 3 required 2 attempts (first subagent misconfigured NSubstitute returns)
 - No deviations from PLAN.md
-- AC 3 (timeout handling) partially deferred to /test-verify — requires Testcontainers with fault injection
+- AC 3 (timeout handling) partially deferred to /capiva:test-verify — requires Testcontainers with fault injection
 
 ### Test Results
 ```

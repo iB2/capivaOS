@@ -16,7 +16,7 @@ run recently.
 | Spec not found after TRIAGE | Task on board has no spec file yet | `/grill-spec` will create one — this is normal for new tasks |
 | Tests fail in IMPLEMENT | RED-GREEN cycle incomplete | Fix failing tests before transitioning to TEST_VERIFY |
 | Handover doc missing on resume | Previous session crashed before `/handover` | Read sprint-state for current phase, reconstruct context from artifacts on disk |
-| acs.json fails lint | Hand-edited `id`/`text`, bad status value, or duplicate ids | Regenerate through /grill-spec (scope change) or fix status to `pending`/`pass`/`fail` |
+| acs.json fails lint | Hand-edited `id`/`text`, bad status value, or duplicate ids | Regenerate through /capiva:grill-spec (scope change) or fix status to `pending`/`pass`/`fail` |
 | Fast-lane task grows scope | New file/schema/arch need discovered mid-lane | Mandatory abort to full lane (SPEC_PLAN → GRILL_SPEC or VERIFY_FINISH → TEST_VERIFY), logged in Phase History |
 
 ## Sprint Anti-Patterns

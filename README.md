@@ -20,7 +20,7 @@ Instead of ad-hoc prompting, this harness enforces a strict pipeline via a state
 ## Pipeline State Machine
 
 ```
-/init ──→ IDLE ──→ TRIAGE ──→ GRILL_SPEC ──→ PLAN ──→ IMPLEMENT ──→ TEST_VERIFY ──→ FINISH ──→ IDLE
+/capiva:init ──→ IDLE ──→ TRIAGE ──→ GRILL_SPEC ──→ PLAN ──→ IMPLEMENT ──→ TEST_VERIFY ──→ FINISH ──→ IDLE
  🧑                              🧑               🧑                       🧑              🧑
 docs                          approve spec     approve plan           review report    merge decision
 ```
@@ -51,11 +51,11 @@ The harness separates the **universal pipeline** (phases, state machine, artifac
 | `python-fastapi` | Python 3.13 / FastAPI | Layered (api → services → repositories → db) |
 | `nextjs-typescript` | Node.js 22 / Next.js 15+ / App Router | Feature-based colocation (Server/Client split) |
 
-The active blueprint is set automatically by `/init` (or manually in `.claude/CLAUDE.md`). Agent roles, skills, and rules read the active blueprint's `reference.md` for stack-specific guidance.
+The active blueprint is set automatically by `/init` (or manually in `rules/laws.md`). Agent roles, skills, and rules read the active blueprint's `reference.md` for stack-specific guidance.
 
 ### Creating a New Blueprint
 
-1. Create `.claude/blueprints/<stack-name>/reference.md` with sections: §project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands
+1. Create `blueprints/<stack-name>/reference.md` with sections: §project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands
 2. Create a real, buildable reference project locally
 3. Set it as the active blueprint in CLAUDE.md
 
@@ -79,14 +79,14 @@ rm -rf .harness-tmp
 The harness requires project documentation before setup. Without it, every downstream phase starts from zero context.
 
 - Fill in `docs/CONTEXT.md` with domain terms, acronyms, and business rules
-- Create `docs/specs/INTAKE-summary.md` with project scope, stakeholders, and requirements (see `templates/intake-summary.md`)
+- Create `docs/specs/INTAKE-summary.md` with project scope, stakeholders, and requirements (see `project-template/templates/intake-summary.md`)
 
-Draft these from your raw materials (transcripts, requirements docs, emails) — `templates/intake-summary.md` defines the format. You can ask Claude to generate first drafts from those materials before running `/init`.
+Draft these from your raw materials (transcripts, requirements docs, emails) — `project-template/templates/intake-summary.md` defines the format. You can ask Claude to generate first drafts from those materials before running `/init`.
 
 ### 3. Run init
 
 ```
-/init
+/capiva:init
 ```
 
 The init skill validates your project docs, detects the tech stack, selects the matching blueprint, and writes the harness config. It will stop if docs are missing.
@@ -108,7 +108,7 @@ Add tasks to `.board/tasks.md`:
 ### 5. Start
 
 ```
-/sprint
+/capiva:sprint
 ```
 
 The sprint skill reads the board, picks the highest-priority task, and drives it through all 6 phases with human checkpoints.
@@ -129,11 +129,11 @@ The sprint skill reads the board, picks the highest-priority task, and drives it
 ## Artifact Chain
 
 ```
-GRILL_SPEC → docs/specs/TASK-ID-spec.md  ──→  /plan reads it
-PLAN       → PLAN.md + tech-context.md    ──→  /implement reads both
-IMPLEMENT  → feature branch (green tests) ──→  /test-verify runs on it
-TEST_VERIFY→ docs/reports/TASK-ID-quality.md → /finish includes in PR
-FINISH     → PR #N on remote              ──→  /sprint resets to IDLE
+GRILL_SPEC → docs/specs/TASK-ID-spec.md  ──→  /capiva:plan reads it
+PLAN       → PLAN.md + tech-context.md    ──→  /capiva:implement reads both
+IMPLEMENT  → feature branch (green tests) ──→  /capiva:test-verify runs on it
+TEST_VERIFY→ docs/reports/TASK-ID-quality.md → /capiva:finish includes in PR
+FINISH     → PR #N on remote              ──→  /capiva:sprint resets to IDLE
 ```
 
 Each arrow = artifact verification. Missing artifact = skill refuses to run.
@@ -145,14 +145,14 @@ Each arrow = artifact verification. Missing artifact = skill refuses to run.
 | `.board/tasks.md` | Task backlog and status | All skills (with lock) |
 | `.board/sprint-state.md` | Pipeline state machine | All skills (every transition) |
 | `.board/board.lock` | Write concurrency control | Lock protocol (gitignored) |
-| `docs/specs/INTAKE-summary.md` | Project scope, stakeholders, requirements | /init (gate) |
-| `docs/CONTEXT.md` | Domain glossary | /init (gate), /grill-spec |
-| `docs/adr/*.md` | Architecture decisions | /grill-spec |
-| `docs/specs/*.md` | Formal spec documents | /grill-spec |
-| `PLAN.md` | Micro-task breakdown | /plan |
-| `docs/tech-context/*.md` | Current library docs (Context7) | /plan |
-| `docs/reports/*.md` | Quality reports | /test-verify |
-| `docs/handover/*.md` | Context handover documents | /handover |
+| `docs/specs/INTAKE-summary.md` | Project scope, stakeholders, requirements | /capiva:init (gate) |
+| `docs/CONTEXT.md` | Domain glossary | /capiva:init (gate), /capiva:grill-spec |
+| `docs/adr/*.md` | Architecture decisions | /capiva:grill-spec |
+| `docs/specs/*.md` | Formal spec documents | /capiva:grill-spec |
+| `PLAN.md` | Micro-task breakdown | /capiva:plan |
+| `docs/tech-context/*.md` | Current library docs (Context7) | /capiva:plan |
+| `docs/reports/*.md` | Quality reports | /capiva:test-verify |
+| `docs/handover/*.md` | Context handover documents | /capiva:handover |
 
 ## Quality Gates
 
@@ -184,7 +184,7 @@ Each arrow = artifact verification. Missing artifact = skill refuses to run.
 }
 ```
 
-Place `.mcp.json` in your project root. Context7 provides current library documentation during the /plan phase, preventing stale API usage from training data.
+Place `.mcp.json` in your project root. Context7 provides current library documentation during the /capiva:plan phase, preventing stale API usage from training data.
 
 ## Directory Structure
 
@@ -237,7 +237,7 @@ your-project/
 │   ├── specs/.gitkeep               # Formal spec documents from grill-spec
 │   ├── tech-context/.gitkeep        # Current library docs (Context7 MCP)
 │   └── workflow-complete.mmd        # Mermaid diagram of the full pipeline
-├── templates/
+├── project-template/templates/
 │   ├── cab-ticket.md                # Change Advisory Board ticket template
 │   ├── deviation-record.md          # Process deviation record template
 │   ├── intake-summary.md            # Project intake documentation template
@@ -249,7 +249,7 @@ your-project/
 
 ### Templates
 
-The `templates/` directory contains universal process document templates (CAB tickets, deviation records, release checklists, solution documents). Stack-specific templates (editor config, build props, CI pipelines) are part of the blueprint project, not the harness.
+The `project-template/templates/` directory contains universal process document templates (CAB tickets, deviation records, release checklists, solution documents). Stack-specific templates (editor config, build props, CI pipelines) are part of the blueprint project, not the harness.
 
 ---
 

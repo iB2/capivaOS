@@ -36,7 +36,7 @@ Pocock's insight: the biggest source of bugs isn't bad code — it's ambiguous r
 
 obra's framework demonstrates that Claude Code produces dramatically better output when forced into a structured pipeline: understand → specify → implement → verify. The key insight is that spec-first development isn't just about documentation — it's about forcing the agent to think before it acts.
 
-**How we adapted it**: Our 6-phase pipeline extends this with explicit phase guards, a state machine, and artifact gating. Where Superpowers relies on convention ("you should write a spec first"), our harness enforces it mechanically ("the /plan skill refuses to run unless a spec file exists and sprint-state says Spec Approved = Yes").
+**How we adapted it**: Our 6-phase pipeline extends this with explicit phase guards, a state machine, and artifact gating. Where Superpowers relies on convention ("you should write a spec first"), our harness enforces it mechanically ("the /capiva:plan skill refuses to run unless a spec file exists and sprint-state says Spec Approved = Yes").
 
 ### 3. Claudio (Bruno Americo)
 
@@ -179,7 +179,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0002](adr/0002-state-machine-governance.md) | State machine over trust-based enforcement |
 | [0003](adr/0003-board-lock-file-based.md) | File-based board lock over git-based alternatives |
 | [0004](adr/0004-token-bounded-execution.md) | Token-bounded sprints over time-bounded |
-| [0005](adr/0005-context7-in-plan-phase.md) | Context7 documentation lookup in /plan, not /grill-spec |
+| [0005](adr/0005-context7-in-plan-phase.md) | Context7 documentation lookup in /capiva:plan, not /capiva:grill-spec |
 | [0006](adr/0006-artifact-gating.md) | File-existence gating over conversation-state gating |
 | [0007](adr/0007-blueprint-plugin-architecture.md) | Pluggable blueprint architecture for stack-agnosticism |
 | [0008](adr/0008-phase-guard-hook-enforcement.md) | Hook-enforced phase guards parsing sprint-state.md directly |

@@ -28,11 +28,11 @@
 
 ## Artifact 1: Spec Document
 
-**Produced by**: /grill-spec (Phase 1)
-**Consumed by**: /plan (Phase 2)
+**Produced by**: /capiva:grill-spec (Phase 1)
+**Consumed by**: /capiva:plan (Phase 2)
 **File**: `docs/specs/TASK-ID-spec.md`
 
-### What /plan Needs From This
+### What /capiva:plan Needs From This
 
 The plan skill must decompose the spec into implementable micro-tasks. It needs:
 - Unambiguous acceptance criteria that map to testable assertions
@@ -42,7 +42,7 @@ The plan skill must decompose the spec into implementable micro-tasks. It needs:
 - Error scenarios so it can plan error handling paths and their tests
 
 
-**Gold-standard template and worked examples**: moved to `.claude/skills/grill-spec/SKILL.md` ("Gold Standard" section — spec template, AC quality bar, ADR quality bar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
+**Gold-standard template and worked examples**: moved to `${CLAUDE_PLUGIN_ROOT}/skills/grill-spec/SKILL.md` ("Gold Standard" section — spec template, AC quality bar, ADR quality bar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
 
 ### Machine-Readable AC Companion (`TASK-ID-acs.json`)
 
@@ -53,21 +53,21 @@ data (see ADR-0009). Schema:
 - Each entry: `id` (matches the spec's AC numbering: "AC1", "AC2", ...), `text`
   (the full criterion, one line, complete — no "see spec"), `status`
   (`pending` | `pass` | `fail`; always `pending` at creation)
-- Validated by `scripts/harness_lint.py` (schema check runs in CI)
+- Validated by `${CLAUDE_PLUGIN_ROOT}/scripts/harness_lint.py` (schema check runs in CI)
 
 **Immutability rule**: after spec approval, `id` and `text` are frozen and entries
-may not be added or removed. Only /test-verify flips `status` — and only to `pass`
+may not be added or removed. Only /capiva:test-verify flips `status` — and only to `pass`
 when the AC has BOTH a meaningful test AND end-to-end exercise evidence. Scope
-changes route back through /grill-spec, which regenerates the file with all
+changes route back through /capiva:grill-spec, which regenerates the file with all
 statuses reset to `pending`.
 
 ## Artifact 2: PLAN.md
 
-**Produced by**: /plan (Phase 2)
-**Consumed by**: /implement (Phase 3) — specifically, subagents with ZERO prior context
+**Produced by**: /capiva:plan (Phase 2)
+**Consumed by**: /capiva:implement (Phase 3) — specifically, subagents with ZERO prior context
 **File**: `PLAN.md` (working directory root)
 
-### What /implement Needs From This
+### What /capiva:implement Needs From This
 
 Each micro-task is executed by a fresh subagent that has never seen the codebase. The plan must contain:
 - The exact file path to create or modify (not "somewhere in services")
@@ -78,15 +78,15 @@ Each micro-task is executed by a fresh subagent that has never seen the codebase
 - Reference to `docs/tech-context/TASK-ID-tech.md` with current library docs (verified via Context7 at planning time)
 
 
-**Gold-standard template and worked examples**: moved to `.claude/skills/plan/SKILL.md` ("Gold Standard" section — plan template, task quality bar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
+**Gold-standard template and worked examples**: moved to `${CLAUDE_PLUGIN_ROOT}/skills/plan/SKILL.md` ("Gold Standard" section — plan template, task quality bar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
 
 ## Artifact 3: Implementation Report
 
-**Produced by**: /implement (Phase 3)
-**Consumed by**: /test-verify (Phase 4)
+**Produced by**: /capiva:implement (Phase 3)
+**Consumed by**: /capiva:test-verify (Phase 4)
 **Format**: Terminal output + sprint-state update (not a separate file)
 
-### What /test-verify Needs From This
+### What /capiva:test-verify Needs From This
 
 Test-verify must know what was built to know what to test. It needs:
 - Complete list of files changed with their purpose
@@ -96,15 +96,15 @@ Test-verify must know what was built to know what to test. It needs:
 - Any known gaps or flags from implementation
 
 
-**Gold-standard template and worked examples**: moved to `.claude/skills/implement/SKILL.md` ("Gold Standard" section — implementation report exemplar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
+**Gold-standard template and worked examples**: moved to `${CLAUDE_PLUGIN_ROOT}/skills/implement/SKILL.md` ("Gold Standard" section — implementation report exemplar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
 
 ## Artifact 4: Quality Report
 
-**Produced by**: /test-verify (Phase 4)
-**Consumed by**: /finish (Phase 5) — included in PR description
+**Produced by**: /capiva:test-verify (Phase 4)
+**Consumed by**: /capiva:finish (Phase 5) — included in PR description
 **File**: `docs/reports/TASK-ID-quality.md`
 
-### What /finish Needs From This
+### What /capiva:finish Needs From This
 
 The PR description must include quality metrics and test evidence. It needs:
 - Gate verdicts (pass/soft fail/hard fail) for each metric
@@ -114,23 +114,23 @@ The PR description must include quality metrics and test evidence. It needs:
 - Static analysis issue analysis (each code smell/vulnerability addressed or justified)
 
 
-**Gold-standard template and worked examples**: moved to `.claude/skills/test-verify/SKILL.md` ("Gold Standard" section — quality report exemplar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
+**Gold-standard template and worked examples**: moved to `${CLAUDE_PLUGIN_ROOT}/skills/test-verify/SKILL.md` ("Gold Standard" section — quality report exemplar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
 
 ## Artifact 5: PR Description
 
-**Produced by**: /finish (Phase 5)
+**Produced by**: /capiva:finish (Phase 5)
 **Consumed by**: Human reviewers, CI pipeline, future archaeology
 **Format**: GitHub PR body via `gh pr create`
 
 
-**Gold-standard template and worked examples**: moved to `.claude/skills/finish/SKILL.md` ("Gold Standard" section — PR description exemplar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
+**Gold-standard template and worked examples**: moved to `${CLAUDE_PLUGIN_ROOT}/skills/finish/SKILL.md` ("Gold Standard" section — PR description exemplar) per ADR-0011, so they load only when that phase runs. The structure and depth shown there are normative.
 
 ## Artifact 6: CAB Ticket
 
-**Produced by**: /finish (Phase 5) — P0/P1 tasks only
+**Produced by**: /capiva:finish (Phase 5) — P0/P1 tasks only
 **Consumed by**: Tech Lead, Engineering Manager, CAB reviewers
 **File**: `docs/cab/TASK-ID-cab.md`
-**Template**: `templates/cab-ticket.md`
+**Template**: `${CLAUDE_PLUGIN_ROOT}/project-template/templates/cab-ticket.md`
 
 The CAB (Change Advisory Board) ticket documents the change for production deployment approval. It must include:
 - Change description with business impact
@@ -146,10 +146,10 @@ The CAB (Change Advisory Board) ticket documents the change for production deplo
 
 ## Artifact 7: Release Checklist
 
-**Produced by**: /finish (Phase 5)
+**Produced by**: /capiva:finish (Phase 5)
 **Consumed by**: DevOps, on-call team, deployment engineer
 **File**: `docs/release/TASK-ID-release.md`
-**Template**: `templates/release-checklist.md`
+**Template**: `${CLAUDE_PLUGIN_ROOT}/project-template/templates/release-checklist.md`
 
 The release checklist tracks every step before, during, and after deployment. It includes:
 - Pre-deployment verification (CAB, quality gates, UAT sign-off)
@@ -161,10 +161,10 @@ The release checklist tracks every step before, during, and after deployment. It
 
 ## Artifact 8: Solution Document
 
-**Produced by**: /finish (Phase 5) — first task per service creates it, subsequent tasks update it
+**Produced by**: /capiva:finish (Phase 5) — first task per service creates it, subsequent tasks update it
 **Consumed by**: New team members, Tech Lead, DevOps
 **File**: `docs/solution-document.md`
-**Template**: `templates/solution-document.md`
+**Template**: `${CLAUDE_PLUGIN_ROOT}/project-template/templates/solution-document.md`
 
 The solution document is the living reference for a service. It includes:
 - Architecture (Hexagonal layer map, component diagram, data model)
@@ -180,10 +180,10 @@ The solution document is the living reference for a service. It includes:
 
 ## Artifact 9: Deviation Record
 
-**Produced by**: /plan or /implement (when blueprint deviation is needed)
+**Produced by**: /capiva:plan or /capiva:implement (when blueprint deviation is needed)
 **Consumed by**: Tech Lead, PR reviewers
 **File**: `docs/deviations/DEV-NNN-[slug].md`
-**Template**: `templates/deviation-record.md`
+**Template**: `${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md`
 
 Required whenever code deviates from the enterprise blueprint constraints defined in `enterprise-blueprint.md`. Must justify WHY the deviation is necessary, WHAT alternative approach is used, and what the IMPACT is.
 
@@ -219,7 +219,7 @@ Each skill MUST:
 
 ### Input Validation Checklist
 
-**/plan checks /grill-spec output:**
+**/capiva:plan checks /capiva:grill-spec output:**
 - [ ] Spec file exists at expected path
 - [ ] `TASK-ID-acs.json` exists, matches the spec's ACs one-to-one, all statuses `pending`
 - [ ] AC section has numbered items with GIVEN/WHEN/THEN structure
@@ -227,7 +227,7 @@ Each skill MUST:
 - [ ] Scope section has both In Scope and Out of Scope
 - [ ] No "Open Questions" section (or section is empty)
 
-**/implement checks /plan output:**
+**/capiva:implement checks /capiva:plan output:**
 - [ ] PLAN.md exists
 - [ ] `docs/tech-context/TASK-ID-tech.md` exists (Context7 library docs)
 - [ ] Every task has Files, Implementation, Test, and Verify sections
@@ -236,13 +236,13 @@ Each skill MUST:
 - [ ] Code snippets use API patterns consistent with tech context (not stale training data)
 - [ ] Dependency graph is present and consistent with task ordering
 
-**/test-verify checks /implement output:**
+**/capiva:test-verify checks /capiva:implement output:**
 - [ ] Feature branch exists and is checked out
 - [ ] Test suite passes — all green (per blueprint §build-commands)
 - [ ] Implementation report lists all files changed
 - [ ] AC coverage status shows what's covered and what's not
 
-**/finish checks /test-verify output:**
+**/capiva:finish checks /capiva:test-verify output:**
 - [ ] Quality report file exists at expected path
 - [ ] All quality gates show verdict (not "--" or "pending")
 - [ ] Every `TASK-ID-acs.json` entry has status `pass`

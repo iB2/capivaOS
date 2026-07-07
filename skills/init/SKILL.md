@@ -1,11 +1,11 @@
 ---
 name: init
-description: Phase 0 — First-time project setup. Validates project docs exist, detects stack, selects blueprint, configures harness. Must run before /sprint.
+description: Phase 0 — First-time project setup. Validates project docs exist, detects stack, selects blueprint, configures harness. Must run before /capiva:sprint.
 ---
 
 # Init — Phase 0: Project Setup
 
-First-time harness configuration for a new project. This skill is the entry point — it runs once, before `/sprint` ever executes.
+First-time harness configuration for a new project. This skill is the entry point — it runs once, before `/capiva:sprint` ever executes.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ The harness directories must already be copied into the project:
 - `.claude/` (skills, rules, blueprints, agents)
 - `.board/` (task board, sprint state)
 - `docs/` (context, ADRs, specs)
-- `templates/` (deviation records, solution docs)
+- `${CLAUDE_PLUGIN_ROOT}/project-template/templates/` (deviation records, solution docs)
 
 If these don't exist, tell the user:
 ```
@@ -26,7 +26,7 @@ Harness directories not found. Copy them first:
   cp -r .harness-tmp/templates templates
   rm -rf .harness-tmp
 
-Then run /init again.
+Then run /capiva:init again.
 ```
 
 ## Process
@@ -59,9 +59,9 @@ Missing:
 
 What to do:
 1. Gather your raw materials (transcripts, requirements docs, emails, specs)
-2. Draft the documents from those materials — templates/intake-summary.md
+2. Draft the documents from those materials — ${CLAUDE_PLUGIN_ROOT}/project-template/templates/intake-summary.md
    defines the INTAKE format; ask Claude to generate first drafts if useful
-3. Run /init again once the docs are populated
+3. Run /capiva:init again once the docs are populated
 
 Template structure for INTAKE-summary.md:
 
@@ -87,7 +87,7 @@ Now that docs exist, read them to understand the project:
 
 - Read `docs/CONTEXT.md` — extract domain terms, acronyms, business rules
 - Read `docs/specs/INTAKE-summary.md` — extract project name, scope, stakeholders, requirements, constraints
-- Read `docs/adr/` — check for any existing architectural decisions
+- Read `${CLAUDE_PLUGIN_ROOT}/docs/adr/` — check for any existing architectural decisions
 
 Note the project name, domain, and any technology constraints mentioned.
 
@@ -113,7 +113,7 @@ No matching blueprint found for this stack.
 Available blueprints: dotnet-hexagonal, python-fastapi, nextjs-typescript
 
 Options:
-1. Create a custom blueprint: .claude/blueprints/<name>/reference.md
+1. Create a custom blueprint: ${CLAUDE_PLUGIN_ROOT}/blueprints/<name>/reference.md
    (use an existing blueprint as template — every § section is required)
 2. Proceed without a blueprint (not recommended — skills lose stack context)
 ```
@@ -141,13 +141,13 @@ Proceed with this configuration?
 
 After approval:
 
-1. **Set Active Blueprint** in `.claude/CLAUDE.md`:
-   - Find the line `Active Blueprint: .claude/blueprints/dotnet-hexagonal` (or whatever the current default is)
-   - Replace with `Active Blueprint: .claude/blueprints/[detected-blueprint]`
+1. **Set Active Blueprint** in `${CLAUDE_PLUGIN_ROOT}/rules/laws.md`:
+   - Find the line `Active Blueprint: ${CLAUDE_PLUGIN_ROOT}/blueprints/dotnet-hexagonal` (or whatever the current default is)
+   - Replace with `Active Blueprint: ${CLAUDE_PLUGIN_ROOT}/blueprints/[detected-blueprint]`
 
 2. **Verify board exists** — check `.board/tasks.md` exists. If empty, remind the user to populate it:
    ```
-   .board/tasks.md is empty. Add your backlog before running /sprint:
+   .board/tasks.md is empty. Add your backlog before running /capiva:sprint:
 
      ## Backlog
      - [ ] P1: [first task description] #TASK-001
@@ -163,10 +163,10 @@ After approval:
 
   Active Blueprint: [blueprint name]
   Project docs: ✓ CONTEXT.md + INTAKE-summary.md
-  Board: [✓ populated | ⚠ empty — add tasks before /sprint]
+  Board: [✓ populated | ⚠ empty — add tasks before /capiva:sprint]
   Sprint state: ✓ ready
 
-Next step: Run /sprint to begin the development pipeline.
+Next step: Run /capiva:sprint to begin the development pipeline.
 ```
 
 ## Rules

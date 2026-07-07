@@ -39,7 +39,7 @@ The harness has two state-machine paths (see [ADR-0010](adr/0010-fast-lane-pipel
 
 Lane rules:
 - The human can always force the full lane; nothing can force a non-qualifying task fast.
-- Scope growth mid-lane (a new file, schema change, architectural decision, or >4 micro-tasks discovered during /spec-plan or later) is a **mandatory abort to the full lane** — logged in Phase History, never silent.
+- Scope growth mid-lane (a new file, schema change, architectural decision, or >4 micro-tasks discovered during /capiva:spec-plan or later) is a **mandatory abort to the full lane** — logged in Phase History, never silent.
 - P4 (spike/exploratory) remains outside both lanes: no spec, no quality gates, explicitly experimental.
 
 ### Target Team Size
@@ -86,7 +86,7 @@ If you need fully autonomous AI development (no human approval gates), this harn
 
 ## Blueprint System
 
-The harness is stack-agnostic. Technology-specific patterns, commands, and standards are defined in **blueprint reference files** at `.claude/blueprints/<stack-name>/reference.md`.
+The harness is stack-agnostic. Technology-specific patterns, commands, and standards are defined in **blueprint reference files** at `blueprints/<stack-name>/reference.md`.
 
 ### What's in the Harness (Universal)
 
@@ -94,7 +94,7 @@ The harness is stack-agnostic. Technology-specific patterns, commands, and stand
 - Artifact gating and quality gate thresholds
 - Board protocol and lock mechanism
 - Agent roles (dev, qa, arch) — reference the active blueprint for stack-specific patterns
-- Skills (/grill-spec, /plan, /implement, /test-verify, /finish) — use blueprint commands
+- Skills (/capiva:grill-spec, /capiva:plan, /capiva:implement, /capiva:test-verify, /capiva:finish) — use blueprint commands
 - Templates (CAB tickets, deviation records, release checklists)
 - Context management and handover protocol
 
@@ -118,7 +118,7 @@ The harness is stack-agnostic. Technology-specific patterns, commands, and stand
 
 ### Adding a New Blueprint
 
-1. Create `.claude/blueprints/<stack-name>/reference.md` following the section format (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands)
+1. Create `blueprints/<stack-name>/reference.md` following the section format (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands)
 2. Create a real, buildable reference project locally (blueprint projects stay local, never committed)
 3. Set as active in CLAUDE.md
 4. The harness will automatically use the new blueprint's patterns
@@ -145,13 +145,13 @@ The harness assumes:
 
 ## Project Setup (moved from CLAUDE.md, ADR-0011)
 
-1. Copy `.claude/`, `.board/`, `docs/`, `templates/` into your project
-2. Populate project docs: `docs/CONTEXT.md` (domain glossary) and `docs/specs/INTAKE-summary.md` (project scope — see `templates/intake-summary.md`)
+1. Copy `.claude/`, `.board/`, `docs/`, `project-template/templates/` into your project
+2. Populate project docs: `docs/CONTEXT.md` (domain glossary) and `docs/specs/INTAKE-summary.md` (project scope — see `project-template/templates/intake-summary.md`)
 3. Run `/init` — validates docs, detects your stack, selects the matching blueprint, writes the config
 4. Populate `.board/tasks.md` with your backlog
 5. Run `/sprint` to begin
 
-Optional: Jira integration (add project key, board ID, transition IDs to CLAUDE.md), quality-threshold overrides (edit `.claude/rules/quality-gates.md` + ADR), custom blueprints (below).
+Optional: Jira integration (add project key, board ID, transition IDs to CLAUDE.md), quality-threshold overrides (edit `rules/quality-gates.md` + ADR), custom blueprints (below).
 
 ## Adaptation Guide
 
@@ -159,10 +159,10 @@ Optional: Jira integration (add project key, board ID, transition IDs to CLAUDE.
 
 If you need to add a phase (e.g., SECURITY_REVIEW between TEST_VERIFY and FINISH):
 
-1. Update the state machine in `.claude/rules/state-management.md` — add the new state and its valid transitions
-2. Update the phase guard matrix in `.claude/rules/workflow-pipeline.md`
-3. Create the new skill in `.claude/skills/your-phase/SKILL.md` with phase guard
-4. Update `.claude/CLAUDE.md` — pipeline diagram, Law 2 transitions, phase table
+1. Update the state machine in `rules/state-management.md` — add the new state and its valid transitions
+2. Update the phase guard matrix in `rules/workflow-pipeline.md`
+3. Create the new skill in `skills/your-phase/SKILL.md` with phase guard
+4. Update `rules/laws.md` — pipeline diagram, Law 2 transitions, phase table
 5. Update `docs/workflow-complete.mmd` — Mermaid diagram
 6. Create an ADR in `docs/adr/` explaining why the new phase was needed
 
@@ -176,7 +176,7 @@ Not recommended — each phase solves a specific problem (see [DESIGN.md](DESIGN
 
 ### Changing Quality Thresholds
 
-Edit `.claude/rules/quality-gates.md`. The thresholds are:
+Edit `rules/quality-gates.md`. The thresholds are:
 - **Target**: what you aim for (soft ceiling)
 - **Hard fail**: below this, the PR cannot proceed (hard floor)
 

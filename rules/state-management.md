@@ -13,16 +13,16 @@ The file uses Markdown field syntax: `- **Field Name**: Value`. All phase guards
 
 | Field | Values | Set By |
 |-------|--------|--------|
-| Task ID | Board task ID or `(none)` | /sprint |
-| Lane | full, fast | /sprint (TRIAGE, per ADR-0010 predicate) |
-| Task Title | Task name or `(none)` | /sprint |
-| Priority | P0-P4 or `--` | /sprint |
+| Task ID | Board task ID or `(none)` | /capiva:sprint |
+| Lane | full, fast | /capiva:sprint (TRIAGE, per ADR-0010 predicate) |
+| Task Title | Task name or `(none)` | /capiva:sprint |
+| Priority | P0-P4 or `--` | /capiva:sprint |
 | Phase | IDLE, TRIAGE, GRILL_SPEC, PLAN, IMPLEMENT, TEST_VERIFY, FINISH, SPEC_PLAN, VERIFY_FINISH, BLOCKED | Every skill |
 | Phase Started | ISO timestamp or `--` | Every skill |
-| Spec Approved | Yes / No | /sprint (after human approval) |
-| Plan Approved | Yes / No | /sprint (after human approval) |
-| Quality Gate | PASS, ACCEPTED_SOFT_FAIL, HARD_FAIL, or `--` | /test-verify |
-| Branch | `feature/TASK-ID-slug` or `--` | /implement |
+| Spec Approved | Yes / No | /capiva:sprint (after human approval) |
+| Plan Approved | Yes / No | /capiva:sprint (after human approval) |
+| Quality Gate | PASS, ACCEPTED_SOFT_FAIL, HARD_FAIL, or `--` | /capiva:test-verify |
+| Branch | `feature/TASK-ID-slug` or `--` | /capiva:implement |
 
 Phase guards check: `Phase`, `Spec Approved`, `Plan Approved`, `Quality Gate`.
 Template: `.board/sprint-state.md` (initialized with IDLE state, empty history, and artifacts registry).
@@ -50,15 +50,15 @@ Special transitions:
 
 | Phase | Owner Skill | Can Write Code? | Can Write Board? | Can Create PR? |
 |-------|------------|-----------------|------------------|----------------|
-| IDLE | /sprint | No | Yes (pick task) | No |
-| TRIAGE | /sprint | No | Yes (assign task) | No |
-| GRILL_SPEC | /grill-spec | No | No | No |
-| PLAN | /plan | No | No | No |
-| IMPLEMENT | /implement | YES | Yes (progress) | No |
-| TEST_VERIFY | /test-verify | Yes (tests only) | No | No |
-| FINISH | /finish | No | Yes (complete) | YES |
-| SPEC_PLAN | /spec-plan | No | No | No |
-| VERIFY_FINISH | /verify-finish | Yes (tests only) | Yes (complete) | YES |
+| IDLE | /capiva:sprint | No | Yes (pick task) | No |
+| TRIAGE | /capiva:sprint | No | Yes (assign task) | No |
+| GRILL_SPEC | /capiva:grill-spec | No | No | No |
+| PLAN | /capiva:plan | No | No | No |
+| IMPLEMENT | /capiva:implement | YES | Yes (progress) | No |
+| TEST_VERIFY | /capiva:test-verify | Yes (tests only) | No | No |
+| FINISH | /capiva:finish | No | Yes (complete) | YES |
+| SPEC_PLAN | /capiva:spec-plan | No | No | No |
+| VERIFY_FINISH | /capiva:verify-finish | Yes (tests only) | Yes (complete) | YES |
 | BLOCKED | (none) | No | Yes (flag) | No |
 
 ### Phase Guard Protocol
@@ -69,11 +69,11 @@ Every skill includes this guard at the top:
 1. Read `.board/sprint-state.md`
 2. Parse the "Phase" field from "Current Task" section
 3. Compare against this skill's required phase
-4. If MISMATCH → STOP. Print: "⛔ Phase guard failed. Current: [X]. Required: [Y]. Run /sprint to check state."
+4. If MISMATCH → STOP. Print: "⛔ Phase guard failed. Current: [X]. Required: [Y]. Run /capiva:sprint to check state."
 5. If MATCH → proceed with skill steps
 ```
 
-**No exceptions.** Even if the human says "just run /implement" — if the phase isn't IMPLEMENT, refuse.
+**No exceptions.** Even if the human says "just run /capiva:implement" — if the phase isn't IMPLEMENT, refuse.
 
 **Hook backstop**: independent of skill discipline, the `phase_guard.py` PreToolUse hook parses this file's `- **Field**:` format and denies source-file writes outside IMPLEMENT and `gh pr create` outside FINISH at the tool layer (see ADR-0008). The field format above is therefore a load-bearing interface — changing it requires updating `phase_guard.py` and `context-persistence.py` in the same commit.
 
@@ -140,13 +140,13 @@ After completing the write to `.board/tasks.md`:
 
 | Event | Who Updates Board | What Changes |
 |-------|------------------|--------------|
-| Sprint start | /sprint | Task moved from Backlog → In Progress |
+| Sprint start | /capiva:sprint | Task moved from Backlog → In Progress |
 | Phase transition | Current skill | Status field updated with phase name |
-| Subtask complete | /implement (subagent) | Checklist item ticked |
-| Quality report ready | /test-verify | Quality metrics added to task |
-| Task done | /finish | Task moved to Done, PR link added |
+| Subtask complete | /capiva:implement (subagent) | Checklist item ticked |
+| Quality report ready | /capiva:test-verify | Quality metrics added to task |
+| Task done | /capiva:finish | Task moved to Done, PR link added |
 | Task blocked | Any skill | Task status → BLOCKED, reason added |
-| Sprint end | /sprint | Summary appended, metrics updated |
+| Sprint end | /capiva:sprint | Summary appended, metrics updated |
 
 ### Board Write Format
 
@@ -189,13 +189,13 @@ Before starting, each skill verifies its input artifacts:
 
 | Skill | Required Artifacts | Check |
 |-------|--------------------|-------|
-| /grill-spec | Task spec loaded in context | sprint-state shows task selected |
-| /plan | `docs/specs/TASK-ID-spec.md` + `TASK-ID-acs.json` exist | Files exist AND spec was approved (gate in sprint-state) |
-| /implement | `PLAN.md` exists | File exists AND was approved (gate in sprint-state) |
-| /test-verify | Feature branch with green tests | Test suite passes on branch (per blueprint §build-commands) |
-| /finish | `docs/reports/TASK-ID-quality.md` exists | File exists AND quality gates pass AND every acs.json status = `pass` |
-| /spec-plan | Task selected, Lane = fast | Fast-lane predicate re-verified (abort to full on failure) |
-| /verify-finish | Feature branch + `TASK-ID-acs.json` | Tests green, gates at full-lane thresholds, e2e evidence |
+| /capiva:grill-spec | Task spec loaded in context | sprint-state shows task selected |
+| /capiva:plan | `docs/specs/TASK-ID-spec.md` + `TASK-ID-acs.json` exist | Files exist AND spec was approved (gate in sprint-state) |
+| /capiva:implement | `PLAN.md` exists | File exists AND was approved (gate in sprint-state) |
+| /capiva:test-verify | Feature branch with green tests | Test suite passes on branch (per blueprint §build-commands) |
+| /capiva:finish | `docs/reports/TASK-ID-quality.md` exists | File exists AND quality gates pass AND every acs.json status = `pass` |
+| /capiva:spec-plan | Task selected, Lane = fast | Fast-lane predicate re-verified (abort to full on failure) |
+| /capiva:verify-finish | Feature branch + `TASK-ID-acs.json` | Tests green, gates at full-lane thresholds, e2e evidence |
 
 If ANY required artifact is missing → STOP. Report what's missing. Do NOT proceed.
 

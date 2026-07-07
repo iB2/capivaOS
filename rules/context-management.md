@@ -60,8 +60,8 @@ Context management is **enforced mechanically** via Claude Code hooks, not by ag
 | `SessionStart:compact` | After compaction completes | Restores saved state as `additionalContext`, deletes the file |
 | `Stop` | On session end | Saves final state (skips if manual `/handover` doc exists) |
 
-**Configured in**: `.claude/settings.json` → hooks registered there fire automatically.
-**Script**: `.claude/hooks/context-persistence.py` (always exits 0, never blocks).
+**Configured in**: the plugin's `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` (dev/copy mode: the project's `.claude/settings.json`) → hooks registered there fire automatically.
+**Script**: `${CLAUDE_PLUGIN_ROOT}/hooks/context-persistence.py` (always exits 0, never blocks).
 
 This means: the agent does NOT need to "track compaction count" — the hooks save and restore state automatically. The agent's job is to follow the phase boundary rules below.
 
@@ -151,7 +151,7 @@ instead of continuing with degraded quality.
 ### What Handover Produces
 
 The `/handover` skill produces a self-contained handover document that a fresh agent
-can read to resume work with zero loss of context. See `.claude/skills/handover/SKILL.md`.
+can read to resume work with zero loss of context. See `${CLAUDE_PLUGIN_ROOT}/skills/handover/SKILL.md`.
 
 ### What Handover Updates
 
@@ -179,7 +179,7 @@ For complex tasks that span multiple sessions:
 
 ### Session 3: TEST_VERIFY → FINISH
 - Budget: ~50K typical
-- Natural handover point: after quality report (before /finish)
+- Natural handover point: after quality report (before /capiva:finish)
 - Fresh agent reads: sprint-state + quality report + branch
 
 ### Recovery from Unclean Exit

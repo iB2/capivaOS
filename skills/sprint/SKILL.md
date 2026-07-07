@@ -24,19 +24,19 @@ Check all three conditions:
 
 1. `docs/CONTEXT.md` exists and has **at least one glossary entry or domain rule** (not just empty template headers)
 2. `docs/specs/INTAKE-summary.md` exists and has content
-3. The `Active Blueprint:` line in `.claude/CLAUDE.md` points to a blueprint directory that exists on disk (e.g., `.claude/blueprints/nextjs-typescript/reference.md` is a real file)
+3. The `Active Blueprint:` line in `${CLAUDE_PLUGIN_ROOT}/rules/laws.md` points to a blueprint directory that exists on disk (e.g., `${CLAUDE_PLUGIN_ROOT}/blueprints/nextjs-typescript/reference.md` is a real file)
 
 **If ANY condition fails → STOP:**
 
 ```
-⛔ Harness not initialized. Run /init first.
+⛔ Harness not initialized. Run /capiva:init first.
 
 Missing:
 - [ ] docs/CONTEXT.md (populated)        ← domain context for spec grilling
 - [ ] docs/specs/INTAKE-summary.md       ← project scope and requirements
 - [ ] Active Blueprint configured         ← stack-specific patterns
 
-/init will validate your project docs, detect your stack, and configure the harness.
+/capiva:init will validate your project docs, detect your stack, and configure the harness.
 Without it, the pipeline starts from zero context — specs will be shallow,
 plans will miss constraints, and implementation will lack stack guidance.
 ```
@@ -70,7 +70,7 @@ Sprint state: [IDLE | Resuming TASK-ID at phase IMPLEMENT | BLOCKED on...]
 
    ALL hold → Lane = fast. ANY fails (or P0/P1, or you cannot tell from the task) → Lane = full. **Full is the default; when in doubt, full.**
 
-5. **Acquire board lock** (follow `.claude/rules/board-protocol.md` protocol)
+5. **Acquire board lock** (follow `${CLAUDE_PLUGIN_ROOT}/rules/board-protocol.md` protocol)
 6. Move task to "In Progress" section
 7. Set task Status = "In Progress", Phase = TRIAGE, Started = now
 8. **Release board lock**
@@ -98,14 +98,14 @@ be forced fast).
 
 - If task has a linked spec document: read it into context
 - If task has inline spec: extract it
-- If task has no spec: note that /grill-spec will need to create one from the acceptance criteria
+- If task has no spec: note that /capiva:grill-spec will need to create one from the acceptance criteria
 
 ### Step 4: Execute Pipeline
 
 Run each phase in strict sequence. Between each phase:
 1. Update sprint-state
 2. **Run context budget check** (see Step 4a)
-3. If budget check triggers handover → invoke /handover instead of next phase
+3. If budget check triggers handover → invoke /capiva:handover instead of next phase
 
 #### Step 4a — Context Budget Check (BEFORE EVERY PHASE)
 
@@ -126,9 +126,9 @@ COMPACT FOCUS (when compacting between phases):
 
 **If HANDOVER triggered:**
 ```
-INVOKE /handover
+INVOKE /capiva:handover
 STOP sprint loop (do not continue to next phase)
-Report: "Context budget reached. Handover document written. Resume with /sprint in a new session."
+Report: "Context budget reached. Handover document written. Resume with /capiva:sprint in a new session."
 ```
 
 #### Fast Lane (Lane = fast) — SPEC_PLAN → IMPLEMENT → VERIFY_FINISH
@@ -136,18 +136,18 @@ Report: "Context budget reached. Handover document written. Resume with /sprint 
 When Lane = fast, the loop runs the alternate path (ADR-0010) instead of Phases 1-5:
 
 ```
-SPEC_PLAN:     CONTEXT CHECK → UPDATE state → Phase: SPEC_PLAN → INVOKE /spec-plan
+SPEC_PLAN:     CONTEXT CHECK → UPDATE state → Phase: SPEC_PLAN → INVOKE /capiva:spec-plan
                🧑 ONE gate: approve spec+plan → Spec Approved = Yes, Plan Approved = Yes
                → UPDATE state → IMPLEMENT
-IMPLEMENT:     CONTEXT CHECK → INVOKE /implement   (unchanged — TDD enforced)
+IMPLEMENT:     CONTEXT CHECK → INVOKE /capiva:implement   (unchanged — TDD enforced)
                → UPDATE state → VERIFY_FINISH
-VERIFY_FINISH: CONTEXT CHECK → INVOKE /verify-finish
+VERIFY_FINISH: CONTEXT CHECK → INVOKE /capiva:verify-finish
                🧑 ONE gate: quality review + merge decision → PR created
                → UPDATE state → IDLE, Lane reset to full
 ```
 
-Transitions are logged in Phase History like any other. If /spec-plan or
-/verify-finish aborts to the full lane (scope growth), the loop continues from
+Transitions are logged in Phase History like any other. If /capiva:spec-plan or
+/capiva:verify-finish aborts to the full lane (scope growth), the loop continues from
 the phase they set (GRILL_SPEC or TEST_VERIFY) — do not restart.
 
 #### Phase 1 — GRILL_SPEC
@@ -156,10 +156,10 @@ the phase they set (GRILL_SPEC or TEST_VERIFY) — do not restart.
 CONTEXT CHECK → (see Step 4a)
 UPDATE sprint-state → Phase: GRILL_SPEC, Phase Started: [now]
 LOG phase transition in Phase History
-INVOKE /grill-spec
+INVOKE /capiva:grill-spec
 ```
 
-/grill-spec will:
+/capiva:grill-spec will:
 - Run adversarial interview
 - Produce `docs/specs/TASK-ID-spec.md`, `docs/specs/TASK-ID-acs.json`, CONTEXT.md entries, ADRs
 - Present refined spec to human
@@ -168,7 +168,7 @@ INVOKE /grill-spec
 
 Wait for human to say "approved" / "sim" / "go ahead" / "ok".
 - If approved: SET Spec Approved = Yes in sprint-state. Continue.
-- If rejected: iterate with /grill-spec. Do NOT advance.
+- If rejected: iterate with /capiva:grill-spec. Do NOT advance.
 - If "stop": end sprint gracefully (Step 6).
 
 ```
@@ -180,10 +180,10 @@ LOG: | [now] | [task] | GRILL_SPEC | PLAN | spec-approved | [summary] |
 
 ```
 CONTEXT CHECK → (see Step 4a)
-INVOKE /plan
+INVOKE /capiva:plan
 ```
 
-/plan will:
+/capiva:plan will:
 - Read approved spec
 - Decompose into micro-tasks
 - Write PLAN.md
@@ -204,10 +204,10 @@ LOG: | [now] | [task] | PLAN | IMPLEMENT | plan-approved | [N] micro-tasks |
 
 ```
 CONTEXT CHECK → (see Step 4a — IMPLEMENT is the most expensive phase)
-INVOKE /implement
+INVOKE /capiva:implement
 ```
 
-/implement will:
+/capiva:implement will:
 - Create feature branch
 - Execute micro-tasks via subagents (TDD enforced)
 - Run final test verification
@@ -222,7 +222,7 @@ LOG: | [now] | [task] | IMPLEMENT | TEST_VERIFY | tests-green | [N] tasks, [M] t
 REGISTER artifact: Branch = [branch-name]
 ```
 
-**Note**: /implement delegates to subagents, which have their own context windows.
+**Note**: /capiva:implement delegates to subagents, which have their own context windows.
 The main context consumes tokens for orchestration, not implementation.
 However, collecting subagent results and running reviews is still ~30-60K.
 
@@ -230,10 +230,10 @@ However, collecting subagent results and running reviews is still ~30-60K.
 
 ```
 CONTEXT CHECK → (see Step 4a — TEST_VERIFY is the second most expensive phase)
-INVOKE /test-verify
+INVOKE /capiva:test-verify
 ```
 
-/test-verify will:
+/capiva:test-verify will:
 - Generate integration tests (two-agent pattern)
 - Run static analysis (per blueprint §static-analysis)
 - Produce `docs/reports/TASK-ID-quality.md`
@@ -255,10 +255,10 @@ LOG: | [now] | [task] | TEST_VERIFY | FINISH | quality-approved | coverage X%, q
 
 ```
 CONTEXT CHECK → (see Step 4a — FINISH is lightweight, usually safe to continue)
-INVOKE /finish
+INVOKE /capiva:finish
 ```
 
-/finish will:
+/capiva:finish will:
 - Create PR with structured description
 - Update board (move to Done)
 - Transition Jira if configured
@@ -289,7 +289,7 @@ After completing a task:
 Sprint ends when:
 - **Board empty**: No more P0-P2 tasks
 - **Human stop**: "stop", "pause", "enough", "para"
-- **Context handover**: /handover was triggered (sprint continues in next session)
+- **Context handover**: /capiva:handover was triggered (sprint continues in next session)
 
 On sprint end, produce summary:
 
@@ -314,13 +314,13 @@ On sprint end, produce summary:
 ### Context
 - Auto-compactions this session: N
 - Handover triggered: Yes/No
-- Resume: /sprint in new session (reads sprint-state to continue)
+- Resume: /capiva:sprint in new session (reads sprint-state to continue)
 ```
 
 ## Rules
 
 - **Sprint-state is the source of truth.** If it says IMPLEMENT, you're in IMPLEMENT. No overrides.
-- **One task at a time.** Sequential by design. Parallelism happens WITHIN /implement, not across tasks.
+- **One task at a time.** Sequential by design. Parallelism happens WITHIN /capiva:implement, not across tasks.
 - **`/clear` between tasks.** Non-negotiable. Context hygiene prevents quality degradation.
 - **Never skip phases.** Even for "trivial" tasks. The pipeline IS the quality guarantee. (The fast lane is not a skip — it is an alternate state-machine path with its own guarded phases; see ADR-0010.)
 - **Lane selection is mechanical.** The predicate decides; the human can force full but cannot force fast for a non-qualifying task.

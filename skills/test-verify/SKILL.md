@@ -16,7 +16,7 @@ Generate integration tests beyond what TDD produced, run static analysis, and pr
 3. Verify a feature branch exists (Branch field in sprint-state is not "--")
 4. Verify `docs/specs/TASK-ID-acs.json` exists and parses (the verification contract — see ADR-0009)
 5. Run the test command from blueprint §build-commands — all tests must pass (implementation is green)
-6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /implement first."
+6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /capiva:implement first."
 7. If ALL checks pass → proceed
 
 ## Process
@@ -38,7 +38,7 @@ Generate integration tests beyond what TDD produced, run static analysis, and pr
 Spawn two subagents:
 
 #### Agent 1: Test Writer
-- Agent: **dev** (native definition `.claude/agents/dev.md`, spawned by type — platform-enforced tool allowlist), with test-writing focus
+- Agent: **dev** (native definition `${CLAUDE_PLUGIN_ROOT}/agents/dev.md`, spawned by type — platform-enforced tool allowlist), with test-writing focus
 - Input: Spec + implementation diff + existing tests + blueprint reference.md
 - Produces: New test files following existing patterns and blueprint §test-stack conventions
 
@@ -49,7 +49,7 @@ Test categories to cover:
 4. **Edge case tests**: Null inputs, boundary values, concurrent access, timeouts
 
 #### Agent 2: Adversarial Reviewer
-- Agent: **qa** (native definition `.claude/agents/qa.md`, spawned by type — READ-ONLY tool allowlist: the reviewer mechanically cannot modify what it reviews)
+- Agent: **qa** (native definition `${CLAUDE_PLUGIN_ROOT}/agents/qa.md`, spawned by type — READ-ONLY tool allowlist: the reviewer mechanically cannot modify what it reviews)
 - Input: The implementation report's CLAIMS + all tests (existing + new from Agent 1) + the diff + `docs/specs/TASK-ID-acs.json` + blueprint reference.md
 - Produces: Review with CLAIMS VERIFIED or REFUTED verdict
 
@@ -200,9 +200,9 @@ status now recorded in the file. Row count MUST equal the JSON entry count.]
 | All ACs `pass` in acs.json | Yes | Any `pending` or `fail` |
 | End-to-end exercise evidence | Every AC | Missing section or unflagged gap |
 
-- **PASS**: All targets met → proceed to /finish
+- **PASS**: All targets met → proceed to /capiva:finish
 - **SOFT FAIL**: Between target and hard fail → flag issues, recommend fixes, present to human
-- **HARD FAIL**: Below hard fail → BLOCK /finish, require additional tests, iterate
+- **HARD FAIL**: Below hard fail → BLOCK /capiva:finish, require additional tests, iterate
 
 ### Step 8: Present to Human
 
@@ -224,7 +224,7 @@ Gate Results:
 
 Overall: PASS — all gates met.
 
-🧑 Awaiting quality review to proceed to /finish phase.
+🧑 Awaiting quality review to proceed to /capiva:finish phase.
 ```
 
 ## Phase Transition (MANDATORY)
@@ -237,26 +237,26 @@ Overall: PASS — all gates met.
 2. Add Phase History: `| [now] | [task] | TEST_VERIFY | FINISH | quality-[verdict] | coverage X%, [quality gate status] |`
 3. Update `.board/tasks.md` (with lock):
    - Set Quality field: `X% / [quality gate pass/fail]`
-4. **→ Return control to /sprint** which will invoke /finish next.
+4. **→ Return control to /capiva:sprint** which will invoke /capiva:finish next.
 
 If invoked standalone:
 - Update sprint-state as above
-- State: "Quality gates [PASS/SOFT FAIL]. Next: invoke /finish to create PR and update board."
+- State: "Quality gates [PASS/SOFT FAIL]. Next: invoke /capiva:finish to create PR and update board."
 
 ## Input Quality Validation
 
-Before starting test generation, validate /implement output against `.claude/rules/artifact-standards.md` "Artifact 3":
+Before starting test generation, validate /capiva:implement output against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 3":
 
 - [ ] Feature branch exists and is checked out
 - [ ] Test suite passes (all green — implementation is complete)
 - [ ] Files changed are documented (know what was built to know what to test)
 - [ ] AC coverage status shows what TDD covered and what still needs coverage
 
-If tests fail → STOP. Report: "Implementation has failing tests. Return to /implement."
+If tests fail → STOP. Report: "Implementation has failing tests. Return to /capiva:implement."
 
 ## Output Quality Gate
 
-Before presenting the quality report, validate against `.claude/rules/artifact-standards.md` "Artifact 4: Quality Report":
+Before presenting the quality report, validate against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 4: Quality Report":
 
 - [ ] Executive summary is 2-3 sentences with verdict, key findings, and concerns
 - [ ] Coverage table has Lines, Branches, Coverage, Target, and Verdict per scope
@@ -279,12 +279,12 @@ If ANY check fails → iterate on the report and/or add more tests before presen
 - **Real dependencies where required.** Follow blueprint §test-stack for when to use real containers vs mocks.
 - **Two-agent pattern.** Writer and reviewer are separate roles — and the reviewer's job is to REFUTE, not confirm.
 - **Every AC needs a test AND an end-to-end exercise.** `acs.json` status flips to `pass` only when both hold.
-- **acs.json is immutable except status.** Never edit `id` or `text`, never add or remove entries. Scope changes go back through /grill-spec.
+- **acs.json is immutable except status.** Never edit `id` or `text`, never add or remove entries. Scope changes go back through /capiva:grill-spec.
 - **Verify by driving the system.** "Tests pass" is not "the feature works" — Step 5b is not optional.
 - **Static analysis per blueprint.** Run the tools specified in blueprint §static-analysis.
 - **Zero new linter warnings.** No new warnings in changed files.
-- **Report is mandatory artifact.** `docs/reports/TASK-ID-quality.md` must exist before /finish.
-- **Hard fail blocks progression.** Cannot proceed to /finish with hard fail.
+- **Report is mandatory artifact.** `docs/reports/TASK-ID-quality.md` must exist before /capiva:finish.
+- **Hard fail blocks progression.** Cannot proceed to /capiva:finish with hard fail.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
 - **Static analysis issue analysis is MANDATORY.** Each code smell or issue in new code must be analyzed and addressed or justified.
 

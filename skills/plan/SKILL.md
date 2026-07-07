@@ -9,7 +9,7 @@ Decompose an approved spec into implementable micro-tasks. Each task is self-con
 
 ## Architecture Enforcement — Arch Role
 
-Before decomposing into tasks, the /plan skill MUST validate architectural compliance using the **arch** agent (native definition `.claude/agents/arch.md` — read + Write allowlist for ADRs and deviation records; it cannot touch source).
+Before decomposing into tasks, the /capiva:plan skill MUST validate architectural compliance using the **arch** agent (native definition `${CLAUDE_PLUGIN_ROOT}/agents/arch.md` — read + Write allowlist for ADRs and deviation records; it cannot touch source).
 
 ### Pre-Decomposition Architecture Check
 
@@ -21,7 +21,7 @@ Before decomposing into tasks, the /plan skill MUST validate architectural compl
 
 If any deviation is identified:
 1. Create a dedicated task in PLAN.md: "Create Deviation Record: DEV-NNN-[slug]"
-2. The task must reference `templates/deviation-record.md` as the template
+2. The task must reference `${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md` as the template
 3. The task produces: `docs/deviations/DEV-NNN-[slug].md`
 4. This task is MANDATORY — it cannot be deferred or skipped
 
@@ -34,20 +34,20 @@ IF any task in the plan creates new files (CREATE operation):
 
 IF all tasks only modify existing files (MODIFY operation):
   → Arch role spawn is **OPTIONAL**
-  → /plan orchestrator performs lightweight check: are modifications in the correct layer?
+  → /capiva:plan orchestrator performs lightweight check: are modifications in the correct layer?
 
 When spawning the arch role:
 
 ```
 Agent(
-  subagent_type: "arch"          // native definition .claude/agents/arch.md
+  subagent_type: "arch"          // native definition ${CLAUDE_PLUGIN_ROOT}/agents/arch.md
   input: spec + existing architecture + CONTEXT.md + blueprint reference.md
   output: ADRs + layer assignments + interface definitions
 )
 ```
 
 The arch role produces:
-- ADRs for significant decisions → `docs/adr/`
+- ADRs for significant decisions → `${CLAUDE_PLUGIN_ROOT}/docs/adr/`
 - Layer placement table (every new class → correct project per blueprint §architecture)
 - Interface definitions (precise enough for dev role implementation)
 - Deviation Records for any blueprint non-compliance → `docs/deviations/`
@@ -61,7 +61,7 @@ The arch role produces:
 3. Verify Spec Approved = Yes
 4. Verify `docs/specs/TASK-ID-spec.md` exists (check Artifacts Registry)
 5. Verify `docs/specs/TASK-ID-acs.json` exists and parses (the verification contract — see ADR-0009)
-6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /grill-spec first."
+6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /capiva:grill-spec first."
 6. If ALL checks pass → proceed
 
 ## Process
@@ -70,7 +70,7 @@ The arch role produces:
 
 - Read `docs/specs/TASK-ID-spec.md` (the approved spec — NOT just the board task)
 - Read `docs/CONTEXT.md` for domain terms
-- Read `docs/adr/` for architectural constraints
+- Read `${CLAUDE_PLUGIN_ROOT}/docs/adr/` for architectural constraints
 - Read the active blueprint's `reference.md` for stack-specific patterns
 - Scan the codebase for existing patterns to follow
 
@@ -249,7 +249,7 @@ Plan written to PLAN.md ([N] tasks, ~[M] minutes estimated).
 Dependency graph shows [X] parallel groups.
 Riskiest task: [description].
 
-🧑 Awaiting plan approval to proceed to /implement phase.
+🧑 Awaiting plan approval to proceed to /capiva:implement phase.
 ```
 
 Human can: approve, reorder, cut, expand, or reject.
@@ -262,15 +262,15 @@ Human can: approve, reorder, cut, expand, or reject.
    - Plan Approved: Yes
    - Register artifacts: PLAN.md, docs/tech-context/TASK-ID-tech.md
 2. Add Phase History row: `| [now] | [task] | PLAN | IMPLEMENT | plan-approved | [N] tasks, ~[M] min |`
-3. **→ Return control to /sprint** which will invoke /implement next.
+3. **→ Return control to /capiva:sprint** which will invoke /capiva:implement next.
 
 If invoked standalone:
 - Update sprint-state as above
-- State: "Plan approved. Next step: invoke /implement to begin subagent-driven development."
+- State: "Plan approved. Next step: invoke /capiva:implement to begin subagent-driven development."
 
 ## Input Quality Validation
 
-Before starting decomposition, validate the spec against `.claude/rules/artifact-standards.md` "Artifact 1":
+Before starting decomposition, validate the spec against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 1":
 
 - [ ] Spec file exists at `docs/specs/TASK-ID-spec.md`
 - [ ] `docs/specs/TASK-ID-acs.json` exists, matches the spec's AC list one-to-one, and every status is `pending`
@@ -279,11 +279,11 @@ Before starting decomposition, validate the spec against `.claude/rules/artifact
 - [ ] Scope section has both In Scope and Out of Scope
 - [ ] No "Open Questions" section with unresolved items
 
-If ANY check fails → STOP. Report: "Spec quality below standard: [specific issue]. Return to /grill-spec."
+If ANY check fails → STOP. Report: "Spec quality below standard: [specific issue]. Return to /capiva:grill-spec."
 
 ## Output Quality Gate
 
-Before presenting the plan for approval, validate against `.claude/rules/artifact-standards.md` "Artifact 2: PLAN.md":
+Before presenting the plan for approval, validate against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 2: PLAN.md":
 
 - [ ] Every task has Purpose, Files, Context, Implementation, Test, and Verify sections
 - [ ] File paths are absolute from project root (not vague "in the domain folder")

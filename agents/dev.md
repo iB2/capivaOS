@@ -1,6 +1,6 @@
 ---
 name: dev
-description: Harness developer role — executes exactly one micro-task from an approved PLAN.md with TDD enforced (RED-GREEN-REFACTOR). Spawned by /implement (one per micro-task) and /test-verify (test-writing focus). Returns a structured JSON completion report.
+description: Harness developer role — executes exactly one micro-task from an approved PLAN.md with TDD enforced (RED-GREEN-REFACTOR). Spawned by /capiva:implement (one per micro-task) and /capiva:test-verify (test-writing focus). Returns a structured JSON completion report.
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
@@ -72,7 +72,7 @@ Read `docs/CONTEXT.md` before writing any code. Use the terms EXACTLY as defined
 
 Your FINAL message MUST end with exactly one fenced ```json block containing the
 completion report. The orchestrator validates it with
-`scripts/validate_impl_report.py` — an invalid report is treated as an incomplete
+`${CLAUDE_PLUGIN_ROOT}/scripts/validate_impl_report.py` — an invalid report is treated as an incomplete
 task. Schema:
 
 ```json

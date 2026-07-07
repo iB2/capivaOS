@@ -97,14 +97,14 @@ When a project needs to deviate from ANY blueprint constraint, a Deviation Recor
 
 ### Process
 
-1. Create `docs/deviations/DEV-NNN-[slug].md` using the template at `templates/deviation-record.md`
+1. Create `docs/deviations/DEV-NNN-[slug].md` using the template at `${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md`
 2. Reference the deviation in the PR description
 3. The deviation is reviewed as part of the PR code review
 4. Approved deviations are binding — future work follows the deviation, not the blueprint
 
 ### Template Location
 
-`templates/deviation-record.md` — use this for all deviation records.
+`${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md` — use this for all deviation records.
 
 ---
 
@@ -113,7 +113,7 @@ When a project needs to deviate from ANY blueprint constraint, a Deviation Recor
 Stack-specific patterns, commands, and configurations are in the active blueprint's `reference.md`:
 
 ```
-.claude/blueprints/<blueprint-name>/reference.md
+${CLAUDE_PLUGIN_ROOT}/blueprints/<blueprint-name>/reference.md
 ```
 
 The active blueprint is configured in CLAUDE.md under the "Active Blueprint" section. The blueprint reference IS the source of truth for all stack-specific rules.

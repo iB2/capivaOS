@@ -15,7 +15,7 @@ Required phase: [PHASE_NAME]
 3. IF Phase ≠ [PHASE_NAME]:
    → STOP: "⛔ Phase guard failed. Current: [actual]. Required: [PHASE_NAME]."
    → Do NOT proceed under any circumstances.
-   → Suggest: "Run /sprint to check state" or "Complete [previous skill] first."
+   → Suggest: "Run /capiva:sprint to check state" or "Complete [previous skill] first."
 4. IF Phase = [PHASE_NAME]:
    → Proceed with skill steps.
 ```
@@ -24,14 +24,14 @@ Required phase: [PHASE_NAME]
 
 | Skill | Required Phase | Sets Phase To |
 |-------|---------------|---------------|
-| /sprint | IDLE (or any for resume) | TRIAGE |
-| /grill-spec | GRILL_SPEC | (stays GRILL_SPEC until approved) |
-| /plan | PLAN | (stays PLAN until approved) |
-| /implement | IMPLEMENT | (stays IMPLEMENT until all tasks done) |
-| /test-verify | TEST_VERIFY | (stays TEST_VERIFY until gates pass) |
-| /finish | FINISH | IDLE (task complete) |
-| /spec-plan | SPEC_PLAN (fast lane) | IMPLEMENT on approval; GRILL_SPEC on abort |
-| /verify-finish | VERIFY_FINISH (fast lane) | IDLE on completion; TEST_VERIFY on escalation |
+| /capiva:sprint | IDLE (or any for resume) | TRIAGE |
+| /capiva:grill-spec | GRILL_SPEC | (stays GRILL_SPEC until approved) |
+| /capiva:plan | PLAN | (stays PLAN until approved) |
+| /capiva:implement | IMPLEMENT | (stays IMPLEMENT until all tasks done) |
+| /capiva:test-verify | TEST_VERIFY | (stays TEST_VERIFY until gates pass) |
+| /capiva:finish | FINISH | IDLE (task complete) |
+| /capiva:spec-plan | SPEC_PLAN (fast lane) | IMPLEMENT on approval; GRILL_SPEC on abort |
+| /capiva:verify-finish | VERIFY_FINISH (fast lane) | IDLE on completion; TEST_VERIFY on escalation |
 
 ---
 
@@ -40,13 +40,13 @@ Required phase: [PHASE_NAME]
 Each transition has a trigger (what causes it), a gate (what must be true), and an action (what changes).
 
 ### IDLE → TRIAGE
-- **Trigger**: /sprint picks a task from the board
+- **Trigger**: /capiva:sprint picks a task from the board
 - **Gate**: Board has uncompleted tasks in P0-P2
 - **Action**: Update sprint-state (task ID, title, priority, phase = TRIAGE)
 - **Board**: Move task to "In Progress"
 
 ### TRIAGE → GRILL_SPEC
-- **Trigger**: /sprint loads task spec and begins adversarial interview
+- **Trigger**: /capiva:sprint loads task spec and begins adversarial interview
 - **Gate**: Task spec exists (inline or linked document)
 - **Action**: Update sprint-state phase = GRILL_SPEC
 - **Board**: Update task Phase field
@@ -80,7 +80,7 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 
 ### Fast-Lane Transitions (Lane = fast, ADR-0010)
 
-- **TRIAGE → SPEC_PLAN** — /sprint's qualifying predicate passed (P2/P3, no new files, no schema/arch changes, no new dependencies). 🧑 override to full always honored at task pickup.
+- **TRIAGE → SPEC_PLAN** — /capiva:sprint's qualifying predicate passed (P2/P3, no new files, no schema/arch changes, no new dependencies). 🧑 override to full always honored at task pickup.
 - **SPEC_PLAN → IMPLEMENT** — 🧑 ONE gate approves spec-lite + PLAN.md together. Gate: `docs/specs/TASK-ID-spec.md` + `TASK-ID-acs.json` + `PLAN.md` exist; Spec Approved = Yes AND Plan Approved = Yes set together.
 - **SPEC_PLAN → GRILL_SPEC** (abort) — scope grew (new file, schema change, arch decision, >4 micro-tasks). Lane reset to full. Logged in Phase History.
 - **IMPLEMENT → VERIFY_FINISH** — all micro-tasks done, tests green (identical gate to IMPLEMENT → TEST_VERIFY).
@@ -189,29 +189,29 @@ LOOP:
 
     // Phase 1: GRILL_SPEC
     UPDATE sprint-state → GRILL_SPEC
-    INVOKE /grill-spec
+    INVOKE /capiva:grill-spec
     WAIT human approval → SET "Spec Approved" = Yes
     UPDATE sprint-state → PLAN
 
     // Phase 2: PLAN
-    INVOKE /plan
+    INVOKE /capiva:plan
     WAIT human approval → SET "Plan Approved" = Yes
     UPDATE sprint-state → IMPLEMENT
 
     // Phase 3: IMPLEMENT
-    INVOKE /implement
+    INVOKE /capiva:implement
     (autonomous — subagents execute micro-tasks)
     VERIFY all tests green (per blueprint §build-commands)
     UPDATE sprint-state → TEST_VERIFY
 
     // Phase 4: TEST_VERIFY
-    INVOKE /test-verify
+    INVOKE /capiva:test-verify
     VERIFY quality gates
     WAIT human review
     UPDATE sprint-state → FINISH
 
     // Phase 5: FINISH
-    INVOKE /finish
+    INVOKE /capiva:finish
     WAIT human merge decision
     UPDATE sprint-state → IDLE
     UPDATE board → Done

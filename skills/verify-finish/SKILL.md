@@ -27,7 +27,7 @@ exercise (ADR-0009) all apply at full-lane thresholds.
 3. Verify Lane = fast
 4. Verify a feature branch exists (Branch field is not "--")
 5. Verify `docs/specs/TASK-ID-acs.json` exists and parses
-6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /implement first."
+6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /capiva:implement first."
 7. If ALL checks pass → proceed
 
 ## Process
@@ -46,7 +46,7 @@ exercise (ADR-0009) all apply at full-lane thresholds.
 Drive the built change the way its caller will (per blueprint tooling): call the
 endpoint, run the CLI, trigger the job. Record command + observed output per AC.
 Then update `TASK-ID-acs.json` statuses to `pass`/`fail` — the ONLY edit allowed
-to that file. Any `fail` → fix and re-exercise. See /test-verify Step 5b for the
+to that file. Any `fail` → fix and re-exercise. See /capiva:test-verify Step 5b for the
 full protocol, which applies verbatim.
 
 ### Step 3: Compact Quality Report
@@ -90,12 +90,12 @@ Fast lane quality gates: [PASS/...]
   Tests: N/N | Linter: 0 warnings | ACs: N/N pass | E2E: N/N exercised
 
 🧑 ONE gate: approve to create the PR (merge options presented immediately after),
-   request fixes, or escalate to the full /test-verify if something looks off.
+   request fixes, or escalate to the full /capiva:test-verify if something looks off.
 ```
 
 - Approved → update sprint-state Quality Gate = PASS, create the PR (Step 5)
 - HARD FAIL → cannot be approved; fix and re-verify
-- Human says "full pipeline" → set Phase = TEST_VERIFY, Lane = full, log the transition, hand to /test-verify
+- Human says "full pipeline" → set Phase = TEST_VERIFY, Lane = full, log the transition, hand to /capiva:test-verify
 
 ### Step 5: PR + Board + Reset
 
@@ -108,13 +108,13 @@ Fast lane quality gates: [PASS/...]
 5. After the human decides:
    - Sprint-state: Phase = IDLE, Lane = full (reset to default), Current Task = (none), metrics incremented
    - Phase History: `| [now] | [task] | VERIFY_FINISH | IDLE | quality-pass+[merge/review/discard] | fast lane, PR #[N] |`
-6. **→ Return control to /sprint**
+6. **→ Return control to /capiva:sprint**
 
 ## Rules
 
 - **Thresholds are full-lane thresholds.** Compression is in ceremony, not standards.
 - **acs.json statuses gate the PR.** Any `pending` or `fail` → no PR. Immutable except status.
-- **E2E exercise is not optional.** Same protocol as /test-verify Step 5b.
+- **E2E exercise is not optional.** Same protocol as /capiva:test-verify Step 5b.
 - **CAB/release artifacts are skipped for P2/P3** — if the task were P0/P1 it would not be in this lane.
-- **Escalation is always available.** Human can route to full /test-verify at the gate; scope surprises follow the same abort-to-full-lane rule as /spec-plan.
+- **Escalation is always available.** Human can route to full /capiva:test-verify at the gate; scope surprises follow the same abort-to-full-lane rule as /capiva:spec-plan.
 - **Never merge without explicit human approval.**

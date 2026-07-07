@@ -15,7 +15,7 @@ Wrap up a completed task: create a PR, update the board, transition Jira, and cl
 2. Verify Phase = FINISH
 3. Verify Quality Gate = PASS (or ACCEPTED_SOFT_FAIL)
 4. Verify `docs/reports/TASK-ID-quality.md` exists
-5. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /test-verify first."
+5. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /capiva:test-verify first."
 6. If ALL checks pass → proceed
 
 ## Process
@@ -89,7 +89,7 @@ Create PR using `gh pr create`:
 
 For P0 and P1 tasks, generate a Change Advisory Board ticket:
 
-1. Copy template from `templates/cab-ticket.md`
+1. Copy template from `${CLAUDE_PLUGIN_ROOT}/project-template/templates/cab-ticket.md`
 2. Fill with task-specific information:
    - Change description from spec summary
    - Risk assessment based on quality report
@@ -105,7 +105,7 @@ For P0 and P1 tasks, generate a Change Advisory Board ticket:
 
 For ALL tasks that will deploy to production:
 
-1. Copy template from `templates/release-checklist.md`
+1. Copy template from `${CLAUDE_PLUGIN_ROOT}/project-template/templates/release-checklist.md`
 2. Fill with task-specific deployment details
 3. Save to `docs/release/TASK-ID-release.md`
 4. Include link in PR description
@@ -114,7 +114,7 @@ For ALL tasks that will deploy to production:
 
 If this is the FIRST task for a new service, generate the solution document:
 
-1. Copy template from `templates/solution-document.md`
+1. Copy template from `${CLAUDE_PLUGIN_ROOT}/project-template/templates/solution-document.md`
 2. Fill with service architecture, dependencies, configuration
 3. Save to `docs/solution-document.md`
 
@@ -126,7 +126,7 @@ If the solution document already exists, UPDATE it with:
 
 ### Step 3: Update Board
 
-**Acquire board lock** (follow `.claude/rules/board-protocol.md`):
+**Acquire board lock** (follow `${CLAUDE_PLUGIN_ROOT}/rules/board-protocol.md`):
 
 1. Read `.board/tasks.md` FRESH
 2. Move task from "In Progress" to "Done"
@@ -190,7 +190,7 @@ Options:
    - Increment sprint metrics (tasks completed, PRs created)
 5. Add Phase History: `| [now] | [task] | FINISH | IDLE | [merge/review/discard] | PR #[N] |`
 
-6. **→ Return control to /sprint** which will `/clear` and pick the next task.
+6. **→ Return control to /capiva:sprint** which will `/clear` and pick the next task.
 
 If invoked standalone:
 - Update sprint-state as above
@@ -198,7 +198,7 @@ If invoked standalone:
 
 ## Input Quality Validation
 
-Before creating the PR, validate /test-verify output against `.claude/rules/artifact-standards.md` "Artifact 4":
+Before creating the PR, validate /capiva:test-verify output against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 4":
 
 - [ ] Quality report exists at `docs/reports/TASK-ID-quality.md`
 - [ ] All quality gates have concrete verdicts (not "--" or "pending")
@@ -208,11 +208,11 @@ Before creating the PR, validate /test-verify output against `.claude/rules/arti
 - [ ] Overall verdict is PASS or ACCEPTED_SOFT_FAIL (not HARD_FAIL)
 - [ ] All static analysis issues in new code are analyzed and addressed or justified
 
-If ANY check fails → STOP. Report: "Quality report incomplete. Return to /test-verify."
+If ANY check fails → STOP. Report: "Quality report incomplete. Return to /capiva:test-verify."
 
 ## Output Quality Gate
 
-Before presenting the PR for merge decision, validate the PR description against `.claude/rules/artifact-standards.md` "Artifact 5: PR Description":
+Before presenting the PR for merge decision, validate the PR description against `${CLAUDE_PLUGIN_ROOT}/rules/artifact-standards.md` "Artifact 5: PR Description":
 
 - [ ] Summary has 2-3 bullets explaining WHAT and WHY (not just file lists)
 - [ ] Spec & Decisions section references spec file path and any ADRs
@@ -239,9 +239,9 @@ For **ALL tasks** — validate Release Checklist (`docs/release/TASK-ID-release.
 - [ ] Environment table filled (per blueprint §ci-cd environments)
 
 For **ALL tasks** — enterprise compliance:
-- [ ] All branch commits follow the commit convention (see `.claude/rules/board-protocol.md`)
+- [ ] All branch commits follow the commit convention (see `${CLAUDE_PLUGIN_ROOT}/rules/board-protocol.md`)
 - [ ] Solution document (`docs/solution-document.md`) created (first task per service) or updated
-- [ ] All deviation record files in `docs/deviations/` are referenced in the PR description and follow `templates/deviation-record.md` format
+- [ ] All deviation record files in `docs/deviations/` are referenced in the PR description and follow `${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md` format
 
 If any SDLC artifact fails validation → iterate before creating PR.
 
@@ -249,12 +249,12 @@ If any SDLC artifact fails validation → iterate before creating PR.
 
 If the human requests an override for a SOFT_FAIL gate:
 
-1. Follow the protocol in `.claude/rules/quality-gates.md` "Gate Override" section
+1. Follow the protocol in `${CLAUDE_PLUGIN_ROOT}/rules/quality-gates.md` "Gate Override" section
 2. Document the reason in the PR description: `Quality gate override: [gate] -- [reason] -- [follow-up task]`
 3. Create a follow-up task on `.board/tasks.md` for the deferred fix
 4. Update `.board/sprint-state.md` Quality Gate to `ACCEPTED_SOFT_FAIL`
 
-No silent overrides. HARD_FAIL gates cannot be overridden — they block /finish entirely.
+No silent overrides. HARD_FAIL gates cannot be overridden — they block /capiva:finish entirely.
 
 ## Rules
 
@@ -287,7 +287,7 @@ The normative template and quality bar for this skill's artifact — the FLOOR, 
 
 ## Spec & Decisions
 - Spec: `docs/specs/STH-1192-spec.md`
-- ADRs: `docs/adr/0003-quote-expiration-batch-strategy.md` — batch sweep chosen over
+- ADRs: `docs/adr/0003-quote-expiration-batch-strategy.md` (project ADR from the example task) — batch sweep chosen over
   per-quote timer (lower SQL load, simpler recovery)
 
 ## Changes

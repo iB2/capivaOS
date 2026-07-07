@@ -26,7 +26,7 @@ Stack-specific coding standards are defined in the active blueprint's `reference
 
 ## Code Review Standards (Universal)
 
-These are enforced during /test-verify and /finish, regardless of stack:
+These are enforced during /capiva:test-verify and /capiva:finish, regardless of stack:
 
 1. **SOLID principles** — every class has a single responsibility
 2. **Method parameters**: 0 ideal, 1-2 normal, 3+ needs justification
@@ -42,12 +42,12 @@ These are enforced during /test-verify and /finish, regardless of stack:
 
 ## Commit Convention
 
-Commit format follows Karma convention. See `.claude/rules/board-protocol.md` for format, scopes, and examples.
+Commit format follows Karma convention. See `${CLAUDE_PLUGIN_ROOT}/rules/board-protocol.md` for format, scopes, and examples.
 
 ## Blueprint Reference Location
 
 ```
-.claude/blueprints/<blueprint-name>/reference.md
+${CLAUDE_PLUGIN_ROOT}/blueprints/<blueprint-name>/reference.md
 ```
 
 The active blueprint is configured in CLAUDE.md under the "Active Blueprint" section.
