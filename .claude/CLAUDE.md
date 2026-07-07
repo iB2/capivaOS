@@ -107,10 +107,10 @@ Each phase produces artifacts. The next phase MUST verify these exist:
 
 | Phase | Produces | Next Phase Checks |
 |-------|----------|-------------------|
-| GRILL_SPEC | `docs/specs/TASK-ID-spec.md`, CONTEXT.md entries | /plan verifies spec file exists |
+| GRILL_SPEC | `docs/specs/TASK-ID-spec.md`, `docs/specs/TASK-ID-acs.json`, CONTEXT.md entries | /plan verifies spec + AC list exist |
 | PLAN | `PLAN.md`, `docs/tech-context/TASK-ID-tech.md` | /implement verifies PLAN.md exists, tech context available |
 | IMPLEMENT | Code + tests on feature branch | /test-verify verifies branch exists, tests pass |
-| TEST_VERIFY | `docs/reports/TASK-ID-quality.md` | /finish verifies report exists, gates pass |
+| TEST_VERIFY | `docs/reports/TASK-ID-quality.md`, AC statuses in acs.json | /finish verifies report exists, gates pass, all ACs `pass` |
 | FINISH | PR on remote | /sprint verifies task in Done |
 
 If ANY artifact is missing → STOP. Report what's missing. Do NOT improvise.
@@ -195,7 +195,7 @@ Pick highest-priority uncompleted task. Load spec. If no spec exists, create one
 Adversarial interview. One question at a time. Concurrent domain modeling — while interviewing the human, also explore existing codebase patterns and the domain glossary to ground decisions in what already exists.
 
 - **Entry**: Sprint-state Phase = GRILL_SPEC
-- **Produces**: `docs/specs/TASK-ID-spec.md`, CONTEXT.md entries, ADRs
+- **Produces**: `docs/specs/TASK-ID-spec.md`, `docs/specs/TASK-ID-acs.json` (machine-readable AC list — immutable except status after approval), CONTEXT.md entries, ADRs
 
 #### Domain Glossary (CONTEXT.md)
 
@@ -241,10 +241,10 @@ Subagent-Driven Development. One subagent per micro-task. TDD enforced.
 
 ### Phase 4 — Test & Verify (/test-verify)
 
-Two-agent pattern. Integration tests, static analysis (per blueprint §static-analysis), quality reports.
+Two-agent pattern. Integration tests, static analysis (per blueprint §static-analysis), a mandatory end-to-end exercise of the built feature, and quality reports. The reviewer agent is framed adversarially — it REFUTES the implementation report's claims rather than confirming them (ADR-0009).
 
 - **Entry**: Sprint-state Phase = TEST_VERIFY
-- **Produces**: `docs/reports/TASK-ID-quality.md`
+- **Produces**: `docs/reports/TASK-ID-quality.md` (AC matrix generated from acs.json), AC statuses written to `docs/specs/TASK-ID-acs.json`
 - **Gate**: 🧑 Human reviews quality report
 - **State**: TEST_VERIFY → FINISH (on review + gates pass)
 - **Exit**: Quality gates pass, report registered
@@ -323,7 +323,7 @@ Key gates (summary — refer to quality-gates.md for detailed scoping):
 - **Unit coverage**: Business logic >= 80%, Infrastructure >= 60%, Overall >= 75%
 - **Static analysis**: Zero linter warnings in new code, quality gate pass (per blueprint §static-analysis)
 - **Integration tests**: All pass (using test infrastructure per blueprint §test-stack)
-- **AC coverage**: Every acceptance criterion mapped to at least one passing test
+- **AC coverage**: Every acceptance criterion `pass` in `docs/specs/TASK-ID-acs.json` — requires a passing test AND end-to-end exercise evidence
 - **Hard fail**: Any gate below minimum blocks progression to /finish
 
 ---

@@ -117,6 +117,8 @@ Several design elements don't exist in any of the source frameworks:
 
 **Why**: Without traceability, it's impossible to verify that what was shipped matches what was requested. "All tests pass" is meaningless if you can't map tests back to acceptance criteria. The AC coverage matrix in the quality report is the single most important table in the pipeline — it proves that every requirement has a corresponding test.
 
+**How this is enforced**: The AC list is data, not prose. `/grill-spec` emits `docs/specs/TASK-ID-acs.json` (one entry per AC: `id`, `text`, `status`); after spec approval only `status` may change. `/test-verify` generates the quality-report matrix FROM this file and writes verdicts back to it, and `/finish` refuses to create a PR while any AC is not `pass`. A dropped or paraphrased AC is a mechanical failure, not an oversight (see [ADR-0009](adr/0009-machine-readable-ac-gating.md)).
+
 ---
 
 ## The Seven Laws — Rationale
@@ -181,6 +183,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0006](adr/0006-artifact-gating.md) | File-existence gating over conversation-state gating |
 | [0007](adr/0007-blueprint-plugin-architecture.md) | Pluggable blueprint architecture for stack-agnosticism |
 | [0008](adr/0008-phase-guard-hook-enforcement.md) | Hook-enforced phase guards parsing sprint-state.md directly |
+| [0009](adr/0009-machine-readable-ac-gating.md) | Machine-readable AC list gating verification; adversarial QA framing |
 
 ---
 

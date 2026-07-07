@@ -153,6 +153,23 @@ If this section has entries, the spec is NOT approved.]
    AND does NOT mark any quotes as expired from the failed batch (no partial updates)
 ```
 
+### Machine-Readable AC Companion (`TASK-ID-acs.json`)
+
+Every spec ships with `docs/specs/TASK-ID-acs.json` — the acceptance criteria as
+data (see ADR-0009). Schema:
+
+- Top level: `task` (board ID), `spec` (repo-relative spec path), `acs` (non-empty list)
+- Each entry: `id` (matches the spec's AC numbering: "AC1", "AC2", ...), `text`
+  (the full criterion, one line, complete — no "see spec"), `status`
+  (`pending` | `pass` | `fail`; always `pending` at creation)
+- Validated by `scripts/harness_lint.py` (schema check runs in CI)
+
+**Immutability rule**: after spec approval, `id` and `text` are frozen and entries
+may not be added or removed. Only /test-verify flips `status` — and only to `pass`
+when the AC has BOTH a meaningful test AND end-to-end exercise evidence. Scope
+changes route back through /grill-spec, which regenerates the file with all
+statuses reset to `pending`.
+
 ### ADR Quality Bar
 
 ADRs are optional artifacts — most specs produce zero. But when created, they must meet the same quality standard as any other artifact. The harness ships with exemplar ADRs in `docs/adr/` that define the floor.
@@ -484,7 +501,8 @@ Build: 0 warnings
 The PR description must include quality metrics and test evidence. It needs:
 - Gate verdicts (pass/soft fail/hard fail) for each metric
 - Specific numbers (not "above threshold")
-- AC traceability matrix (each AC → test names)
+- AC traceability matrix generated from `TASK-ID-acs.json` (each AC → test names + e2e evidence)
+- End-to-end exercise evidence (the built feature was DRIVEN, not just unit-tested)
 - Static analysis issue analysis (each code smell/vulnerability addressed or justified)
 
 ### Required Sections
@@ -577,8 +595,11 @@ Explain the issue, its impact, and the resolution or justification.]
 
 ## Acceptance Criteria Coverage Matrix
 
-[THE most important table in this report. Every AC maps to specific tests.
-If an AC has no test → quality gate FAILS.]
+[THE most important table in this report. GENERATED from `docs/specs/TASK-ID-acs.json`
+— never hand-maintained. One row per JSON entry, criterion text verbatim from the
+`text` field, status from the `status` field. Row count MUST equal the JSON entry
+count. If an AC has no test or no end-to-end evidence → its status stays `fail`
+and the quality gate FAILS.]
 
 | AC# | Criterion | Tests | Verdict |
 |-----|-----------|-------|---------|
@@ -747,7 +768,7 @@ Required whenever code deviates from the enterprise blueprint constraints define
 The full chain from spec to PR must be traceable:
 
 ```
-AC in spec.md  →  task in PLAN.md  →  test in implementation  →  row in quality report  →  checkbox in PR
+AC in spec.md  →  entry in TASK-ID-acs.json  →  task in PLAN.md  →  test in implementation  →  generated row in quality report (status: pass)  →  checkbox in PR
 ```
 
 Every acceptance criterion must appear in ALL five artifacts:
@@ -772,6 +793,7 @@ Each skill MUST:
 
 **/plan checks /grill-spec output:**
 - [ ] Spec file exists at expected path
+- [ ] `TASK-ID-acs.json` exists, matches the spec's ACs one-to-one, all statuses `pending`
 - [ ] AC section has numbered items with GIVEN/WHEN/THEN structure
 - [ ] Domain Terms table has entries (at least the task's core terms)
 - [ ] Scope section has both In Scope and Out of Scope
@@ -795,5 +817,7 @@ Each skill MUST:
 **/finish checks /test-verify output:**
 - [ ] Quality report file exists at expected path
 - [ ] All quality gates show verdict (not "--" or "pending")
-- [ ] AC coverage matrix has a row for every AC in the spec
+- [ ] Every `TASK-ID-acs.json` entry has status `pass`
+- [ ] AC coverage matrix row count equals the acs.json entry count
+- [ ] End-to-End Exercise section has evidence per AC (or an explicitly flagged gap)
 - [ ] Overall verdict is PASS or ACCEPTED_SOFT_FAIL

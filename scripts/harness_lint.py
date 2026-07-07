@@ -15,6 +15,9 @@ Checks:
   4. Every blueprint directory is mentioned in CLAUDE.md, README.md, SCOPE.md.
   5. The three blueprint reference.md files share an IDENTICAL §-section set,
      and every §section referenced anywhere in docs exists in ALL blueprints.
+  6. docs/specs/*-acs.json files (machine-readable AC lists, ADR-0009) conform
+     to the schema: task/spec strings, non-empty acs list, unique ids, every
+     entry has id/text, status in {pending, pass, fail}.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -26,6 +29,7 @@ docs/SCOPE.md, templates/*.md. Excluded: docs/audits/ (session artifacts),
 docs/blueprint-migration-map.md (historical record), .board/ (mutable).
 """
 
+import json
 import re
 import sys
 import tempfile
@@ -58,6 +62,43 @@ RUNTIME_ARTIFACTS = {
     "docs/CONTEXT.md",
 }
 PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your-", "N-slug")
+ACS_STATUSES = {"pending", "pass", "fail"}
+
+
+def lint_acs_file(path: Path, root: Path):
+    """Validate one machine-readable AC list (docs/specs/*-acs.json, ADR-0009)."""
+    rel = path.relative_to(root)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        return [f"{rel}: unreadable or invalid JSON ({e})"]
+    findings = []
+    for key in ("task", "spec"):
+        if not isinstance(data.get(key), str) or not data.get(key):
+            findings.append(f"{rel}: missing or non-string '{key}' field")
+    acs = data.get("acs")
+    if not isinstance(acs, list) or not acs:
+        findings.append(f"{rel}: 'acs' must be a non-empty list")
+        return findings
+    seen_ids = set()
+    for i, entry in enumerate(acs):
+        if not isinstance(entry, dict):
+            findings.append(f"{rel}: acs[{i}] is not an object")
+            continue
+        ac_id = entry.get("id")
+        if not isinstance(ac_id, str) or not ac_id:
+            findings.append(f"{rel}: acs[{i}] missing 'id'")
+        elif ac_id in seen_ids:
+            findings.append(f"{rel}: duplicate AC id '{ac_id}'")
+        else:
+            seen_ids.add(ac_id)
+        if not isinstance(entry.get("text"), str) or not entry.get("text"):
+            findings.append(f"{rel}: acs[{i}] missing 'text'")
+        if entry.get("status") not in ACS_STATUSES:
+            findings.append(
+                f"{rel}: acs[{i}] status {entry.get('status')!r} not in "
+                f"{sorted(ACS_STATUSES)}")
+    return findings
 
 
 def scanned_files(root: Path):
@@ -157,6 +198,12 @@ def lint(root: Path):
         for s in sorted(referenced - common):
             findings.append(f"§-reference: {s} is referenced in docs but missing from at least one blueprint reference.md")
 
+    # 6. machine-readable AC lists conform to the ADR-0009 schema
+    specs_dir = root / "docs" / "specs"
+    if specs_dir.is_dir():
+        for acs_file in sorted(specs_dir.glob("*-acs.json")):
+            findings.extend(lint_acs_file(acs_file, root))
+
     return findings
 
 
@@ -185,6 +232,16 @@ def self_test():
             "## §stack\n## §build-commands\n", encoding="utf-8")
         (root / ".claude" / "blueprints" / "beta" / "reference.md").write_text(
             "## §stack\n## §extra-section\n", encoding="utf-8")
+        (root / "docs" / "specs").mkdir()
+        (root / "docs" / "specs" / "BAD-1-acs.json").write_text(
+            '{"task": "BAD-1", "acs": ['
+            '{"id": "AC1", "text": "x", "status": "pending"},'
+            '{"id": "AC1", "status": "maybe"}]}', encoding="utf-8")
+        (root / "docs" / "specs" / "GOOD-1-acs.json").write_text(
+            '{"task": "GOOD-1", "spec": "docs/specs/GOOD-1-spec.md", "acs": '
+            '[{"id": "AC1", "text": "works", "status": "pass"}]}', encoding="utf-8")
+        (root / "docs" / "specs" / "BROKEN-1-acs.json").write_text(
+            "not json {", encoding="utf-8")
 
         findings = lint(root)
         expected_fragments = [
@@ -196,12 +253,18 @@ def self_test():
             "beta/reference.md is missing §build-commands",
             "beta/reference.md has §extra-section",
             "§ghost-section is referenced",
+            "BAD-1-acs.json: missing or non-string 'spec'",
+            "duplicate AC id 'AC1'",
+            "missing 'text'",
+            "status 'maybe' not in",
+            "BROKEN-1-acs.json: unreadable or invalid JSON",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]
         false_neg_free = not missed
-        # /plan must NOT be flagged (skill exists)
-        no_false_pos = not any("/plan" in f for f in findings)
+        # /plan must NOT be flagged (skill exists); GOOD acs must not be flagged
+        no_false_pos = (not any("/plan" in f for f in findings)
+                        and not any("GOOD-1-acs.json" in f for f in findings))
 
         print(f"self-test: {len(findings)} findings on seeded fixture")
         for frag in expected_fragments:
