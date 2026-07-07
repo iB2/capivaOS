@@ -1,0 +1,7 @@
+# All changes to the capivaOS plugin require maintainer review.
+# Hooks and manifests are the security-sensitive surface — extra scrutiny.
+* @iB2
+/hooks/ @iB2
+/.claude-plugin/ @iB2
+/scripts/ @iB2
+/.github/ @iB2
