@@ -26,6 +26,7 @@
 | Type checking | mypy (strict mode) |
 | Logging | structlog (structured JSON logging) |
 | Rate limiting | slowapi (based on limits) |
+| Queue | arq / Celery (via `app/core/queue.py` abstraction) |
 | Observability | OpenTelemetry (traces + metrics) |
 
 ### Dependency Pinning
@@ -150,6 +151,17 @@ class CustomerService:
         logger.info("customer_created", customer_id=row["id"])
         return CustomerResponse.model_validate(row)
 ```
+
+### SDLC Code Review Standards
+
+Every PR must pass these checks before merge:
+
+1. **Single Responsibility** — each function/method does one thing; each module owns one domain concept
+2. **Max 4 parameters** per function — use a Pydantic model or dataclass for groups beyond 4
+3. **Max 2 indent levels** in any function body — extract helpers or use early returns
+4. **No bare `except`** — always catch specific exception types; `except Exception` only at middleware boundary
+5. **Type hints enforced** — all function signatures fully annotated (params + return); mypy strict passes
+6. **No business logic in route handlers** — handlers delegate to services, never contain domain rules
 
 ### Error Handling
 
@@ -373,6 +385,131 @@ def setup_telemetry(app: FastAPI, settings: Settings) -> None:
     FastAPIInstrumentor.instrument_app(app)
 ```
 
+### Result Pattern
+
+Service methods that handle expected failures return a `Result` instead of raising exceptions. Reserve exceptions for unexpected errors (DB down, network failure). Expected failures (not found, validation, conflict) flow through the result.
+
+```python
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
+
+@dataclass(frozen=True, slots=True)
+class Ok(Generic[T]):
+    data: T
+
+    @property
+    def is_ok(self) -> bool:
+        return True
+
+
+@dataclass(frozen=True, slots=True)
+class Err:
+    error: str
+    code: str = "UNKNOWN"
+
+    @property
+    def is_ok(self) -> bool:
+        return False
+
+
+Result = Ok[T] | Err
+
+
+def ok(data: T) -> Ok[T]:
+    return Ok(data=data)
+
+
+def fail(error: str, code: str = "UNKNOWN") -> Err:
+    return Err(error=error, code=code)
+```
+
+Usage in services:
+
+```python
+async def get_by_id(self, customer_id: str) -> Result[CustomerResponse]:
+    row = await self._repository.get_by_id(customer_id)
+    if not row:
+        return fail(f"Customer '{customer_id}' not found", code="NOT_FOUND")
+    return ok(CustomerResponse.model_validate(row))
+```
+
+Route handlers match on `is_ok`:
+
+```python
+result = await service.get_by_id(customer_id)
+if not result.is_ok:
+    raise HTTPException(status_code=404, detail=result.error)
+return result.data
+```
+
+### Transport Abstractions
+
+Wrap external transports behind thin modules in `app/core/`. Direct redis-py or queue client usage in services is prohibited.
+
+**`app/core/cache.py`** — Redis wrapper:
+
+```python
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from redis.asyncio import Redis
+
+_client: Redis | None = None
+
+
+async def init_cache(url: str) -> None:
+    global _client
+    _client = Redis.from_url(url, decode_responses=True)
+
+
+async def close_cache() -> None:
+    if _client:
+        await _client.aclose()
+
+
+async def cache_get(key: str) -> Any | None:
+    if not _client:
+        return None
+    raw = await _client.get(key)
+    return json.loads(raw) if raw else None
+
+
+async def cache_set(key: str, value: Any, ttl: int = 300) -> None:
+    if _client:
+        await _client.set(key, json.dumps(value), ex=ttl)
+
+
+async def cache_delete(key: str) -> None:
+    if _client:
+        await _client.delete(key)
+```
+
+**`app/core/queue.py`** — Async job dispatch (arq, celery, or custom):
+
+```python
+from __future__ import annotations
+
+from typing import Any, Protocol
+
+
+class JobQueue(Protocol):
+    async def enqueue(self, task_name: str, payload: dict[str, Any]) -> str: ...
+
+
+class InMemoryQueue:
+    """Dev/test stub. Replace with arq or Celery adapter in production."""
+
+    async def enqueue(self, task_name: str, payload: dict[str, Any]) -> str:
+        return f"inmemory-{task_name}"
+```
+
 ---
 
 ## §test-stack — Test Frameworks & Conventions
@@ -460,6 +597,14 @@ module = "tests.*"
 disallow_untyped_defs = false
 ```
 
+### Accepted Suppressions
+
+| Rule | Scope | Rationale |
+|------|-------|-----------|
+| `# type: ignore[override]` | Repository subclasses | psycopg cursor factory signatures don't align with strict overrides |
+| `# noqa: A003` | Pydantic schema fields | Field names like `id`, `type` shadow builtins but match DB columns |
+| `TCH` (ruff) | `conftest.py` | Test fixtures import at runtime, not type-checking time |
+
 ---
 
 ## §ci-cd — Pipeline Configuration
@@ -473,6 +618,37 @@ Stages:
 2. **Test**: `pytest --cov=app --cov-report=xml`
 3. **Build**: `docker build -t app .`
 4. **Deploy**: Push to container registry, deploy to Azure App Service
+
+### Environment Progression
+
+```
+DEV (local) → UAT (staging) → Prod
+```
+
+| Environment | Purpose | Deploy Trigger |
+|-------------|---------|---------------|
+| DEV | Local development (`uvicorn --reload`) | Manual |
+| UAT | Integration testing, stakeholder review | PR merge to `develop` |
+| Prod | Live traffic | Release tag on `main` |
+
+### SDLC Compliance Mapping
+
+| Harness Phase | SDLC Phase | Artifact | Gate |
+|--------------|-----------|----------|------|
+| `/grill-spec` | Requirements & Design | Spec document, CONTEXT.md, ADRs | Human approval |
+| `/plan` | Technical Design | PLAN.md, tech-context | Human approval |
+| `/implement` | Development | Feature branch, unit tests | Tests green |
+| `/test-verify` | QA & Verification | Quality report | Coverage + lint + type check |
+| `/finish` | Release | PR, board update | Human merge decision |
+
+### SDLC Code Review Standards (CI Gate)
+
+Every PR pipeline validates:
+1. `ruff check .` — zero lint issues
+2. `ruff format --check .` — formatting consistent
+3. `mypy app/` — zero type errors
+4. `pytest --cov=app` — coverage meets threshold
+5. Docker build succeeds — no broken imports or missing deps
 
 ### Dockerfile (Multi-stage, non-root)
 
@@ -562,7 +738,24 @@ docker build -t blueprint-fastapi .
 
 ## §deviation-rules — Accepted Deviations
 
-None currently defined. All deviations from this reference require a formal Deviation Record.
+### Accepted (no Deviation Record needed)
+
+| Deviation | Rationale |
+|-----------|-----------|
+| `Any` type in test fixtures | Test factories and parametrize data don't benefit from strict typing |
+| `dict` return from repositories | Raw SQL returns dicts; Pydantic conversion happens in service layer |
+| Sync functions in `conftest.py` | pytest fixtures for non-I/O setup don't need async |
+
+### Requires Deviation Record
+
+| Deviation | Why It's Flagged |
+|-----------|-----------------|
+| Adding an ORM (SQLAlchemy, Tortoise) | Contradicts raw SQL architecture decision |
+| `except Exception` outside middleware | Masks bugs; must justify specific scenario |
+| Skipping mypy strict on app/ modules | Type safety is a core quality gate |
+| Using `print()` instead of structlog | Breaks structured logging pipeline |
+| Mutable global state | Contradicts DI-via-Depends pattern |
+| Unpinned dependency versions | Supply chain risk; must justify with upgrade plan |
 
 ---
 
