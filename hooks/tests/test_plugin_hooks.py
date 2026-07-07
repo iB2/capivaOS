@@ -79,8 +79,12 @@ def main():
         # editor or gitattributes change breaks one OS silently — assert bytes.
         raw = (HOOKS_DIR / "run-hook.cmd").read_bytes()
         CR, LF = b"\r", b"\n"
+        cases.append(("dispatcher file: line 1 ends LF-only (dash glues CR onto the heredoc delimiter)",
+                      raw.startswith(b": <<'CMDBLOCK'" + LF)))
         cases.append(("dispatcher file: batch block is CRLF",
                       b"@echo off" + CR + LF in raw))
+        cases.append(("dispatcher file: batch block is ASCII-only",
+                      max(raw.split(b"CMDBLOCK")[1]) < 128))
         cases.append(("dispatcher file: heredoc terminator is LF-only",
                       LF + b"CMDBLOCK" + LF in raw and b"CMDBLOCK" + CR not in raw))
         cases.append(("dispatcher file: POSIX section is CR-free",
