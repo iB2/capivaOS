@@ -21,7 +21,9 @@ Stress-test a task specification through adversarial questioning. Produces a for
 ### Step 1: Load Context
 
 - Read the task spec from sprint-state (Task ID → find in board or linked doc)
-- Read `docs/CONTEXT.md` for existing domain terms
+- **Check for project docs** — verify `docs/CONTEXT.md` and `docs/specs/INTAKE-summary.md` exist:
+  - If BOTH exist → read them as starting context (domain terms, requirements, stakeholders, open questions)
+  - If MISSING → **STOP and ask**: "Project docs not found (`docs/CONTEXT.md`, `docs/specs/INTAKE-summary.md`). Please provide raw materials (transcripts, requirements, policies) so project artifacts can be generated first. Without these, grilling starts from zero context."
 - Read `docs/adr/` for existing architectural decisions
 - Scan relevant source files referenced in the spec
 

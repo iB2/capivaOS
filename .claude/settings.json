@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "command": "python3 .claude/hooks/context-persistence.py precompact"
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "command": "python3 .claude/hooks/context-persistence.py restore"
+      }
+    ],
+    "Stop": [
+      {
+        "command": "python3 .claude/hooks/context-persistence.py stop"
+      }
+    ]
+  },
+  "allow": [],
+  "deny": []
+}

@@ -110,11 +110,12 @@ At each gate: present the deliverable clearly, then WAIT. Do not proceed until t
 
 The pipeline is **token-bounded, not time-bounded**. It runs until the board is empty or context is exhausted.
 
+**Enforced**: `context-persistence.py` hooks auto-save session state to `.state/boss-session.md` on every compaction (PreCompact) and session end (Stop). SessionStart:compact restores context automatically after compaction. The `/handover` skill remains available for deliberate, detailed checkpoints — manual handovers take priority over auto-saved state.
+
 - **Before EVERY phase transition**: run context budget check (see `.claude/rules/context-management.md`)
-- **2+ auto-compactions** in one session = mandatory handover via `/handover` at next phase boundary
-- **1 auto-compaction** + next phase is IMPLEMENT or TEST_VERIFY = mandatory handover
-- **1 auto-compaction** + next phase is lighter = `/compact` with focus, continue
-- **0 auto-compactions** = continue normally
+- **When output quality degrades** (forgotten decisions, vague output, repeated questions) = mandatory handover via `/handover` at next phase boundary
+- **Before token-heavy phases** (IMPLEMENT, TEST_VERIFY) in a long session = mandatory handover
+- **Before lighter phases** = `/compact` with focus, continue
 
 When handover triggers:
 1. Complete the current phase step (never hand over mid-skill)
@@ -251,10 +252,11 @@ LOOP:
   CONTINUE LOOP
 
 CONTEXT CHECK (before each phase):
-  IF 2+ auto-compactions → INVOKE /handover → STOP
-  IF 1 compaction + heavy phase → INVOKE /handover → STOP
-  IF 1 compaction + light phase → /compact with focus → CONTINUE
-  IF 0 compactions → CONTINUE
+  IF quality degraded (vague output, repeated questions) → INVOKE /handover → STOP
+  IF long session + next phase is IMPLEMENT or TEST_VERIFY → INVOKE /handover → STOP
+  IF long session + next phase is lighter → /compact with focus → CONTINUE
+  IF session is fresh → CONTINUE
+  NOTE: PreCompact hook auto-saves state on every compaction. Manual check is a safety net.
 
 STOP WHEN: board empty | human says stop | context budget triggers handover
 ```
@@ -397,8 +399,8 @@ Agent(
 | Don't | Why | Instead |
 |-------|-----|---------|
 | Read entire files when you need 10 lines | Burns context budget, triggers early compaction | Use `offset`/`limit` on Read, delegate exploration to subagents |
-| Skip `/compact` or `/handover` | Quality degrades silently after 2+ compactions | Follow the context budget rules in Law 6 |
-| Exceed 2 auto-compactions | Output quality drops measurably | `/handover` at next phase boundary, resume fresh |
+| Skip `/handover` when quality degrades | Quality degrades silently in long sessions | Follow context budget rules in Law 6; hooks auto-save state but `/handover` is the deliberate checkpoint |
+| Ignore quality degradation signals | Vague output, repeated questions, forgotten decisions | `/handover` at next phase boundary, resume fresh |
 | Load all rules/roles into main context | Wastes tokens on reference material | Load into subagent prompts where they're needed |
 
 ### Code Anti-Patterns
