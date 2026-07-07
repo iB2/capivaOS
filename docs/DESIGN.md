@@ -85,11 +85,11 @@ Several design elements don't exist in any of the source frameworks:
 - Sprint state is a file, not remembered context
 - Tech context (library docs) are files, not training data assumptions
 
-### 3. One Task, Full Pipeline, No Shortcuts
+### 3. One Task, One Lane, No Shortcuts
 
-**Principle**: Every task, regardless of perceived simplicity, goes through all 6 phases.
+**Principle**: Every task goes through a complete state-machine path. The full 6-phase pipeline is the default; a qualifying small task may take the fast lane (combined SPEC_PLAN and VERIFY_FINISH phases) — but never an ad-hoc path outside the state machine.
 
-**Why**: "This is simple enough to skip the spec" is how spec amnesia starts. "This doesn't need mutation testing" is how quality decay begins. The pipeline exists precisely because humans (and agents) are bad at predicting which tasks are truly simple. The cost of running a simple task through the full pipeline is low (maybe 30 minutes). The cost of a "simple" task that skips phases and introduces a subtle bug is days of debugging.
+**Why**: "This is simple enough to skip the spec" is how spec amnesia starts. But identical ceremony for every task size produces the opposite failure — lane evasion, where small fixes get batched OUTSIDE the harness with no spec, no board entry, and no gate at all. The answer is a scaled lane, not a bypass: the fast lane compresses interviews and gate count while keeping the board, sprint-state, TDD, the acs.json contract, and the quality gate intact (see [ADR-0010](adr/0010-fast-lane-pipeline.md)). Lane selection is a mechanical predicate, not a judgment call — anything P0/P1, creating files, or touching schema/architecture takes the full pipeline.
 
 **Exception**: P4 tasks (backlog/spike) can skip specs and quality gates — they're explicitly marked as exploratory.
 
@@ -184,6 +184,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0007](adr/0007-blueprint-plugin-architecture.md) | Pluggable blueprint architecture for stack-agnosticism |
 | [0008](adr/0008-phase-guard-hook-enforcement.md) | Hook-enforced phase guards parsing sprint-state.md directly |
 | [0009](adr/0009-machine-readable-ac-gating.md) | Machine-readable AC list gating verification; adversarial QA framing |
+| [0010](adr/0010-fast-lane-pipeline.md) | Fast lane as an alternate state-machine path for small, low-risk tasks |
 
 ---
 

@@ -79,6 +79,21 @@ def main():
         cases.append(("TEST_VERIFY: allow x.spec.ts", run_guard(root, "Edit", {"file_path": str(root / "src" / "auth.spec.ts")})[0] is False))
         cases.append(("TEST_VERIFY: deny src edit", run_guard(root, "Edit", {"file_path": src})[0] is True))
 
+        # fast lane (ADR-0010): SPEC_PLAN behaves like PLAN; VERIFY_FINISH
+        # combines TEST_VERIFY (test writes) + FINISH (gated pr create)
+        set_state("SPEC_PLAN")
+        cases.append(("SPEC_PLAN: deny src edit", run_guard(root, "Edit", {"file_path": src})[0] is True))
+        cases.append(("SPEC_PLAN: allow PLAN.md", run_guard(root, "Write", {"file_path": str(root / "PLAN.md")})[0] is False))
+        cases.append(("SPEC_PLAN: deny gh pr create", run_guard(root, "Bash", {"command": "gh pr create"})[0] is True))
+
+        set_state("VERIFY_FINISH", "--")
+        cases.append(("VERIFY_FINISH: allow test edit", run_guard(root, "Edit", {"file_path": test})[0] is False))
+        cases.append(("VERIFY_FINISH: deny src edit", run_guard(root, "Edit", {"file_path": src})[0] is True))
+        cases.append(("VERIFY_FINISH+no-gate: deny gh pr create", run_guard(root, "Bash", {"command": "gh pr create"})[0] is True))
+
+        set_state("VERIFY_FINISH", "PASS")
+        cases.append(("VERIFY_FINISH+PASS: allow gh pr create", run_guard(root, "Bash", {"command": "gh pr create --fill"})[0] is False))
+
         set_state("FINISH", "PASS")
         cases.append(("FINISH+PASS: allow gh pr create", run_guard(root, "Bash", {"command": "gh pr create --fill"})[0] is False))
         cases.append(("FINISH+PASS: allow src? no — deny", run_guard(root, "Edit", {"file_path": src})[0] is True))

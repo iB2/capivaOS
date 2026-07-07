@@ -38,7 +38,10 @@ it's the maximum before quality degradation becomes unacceptable.
 | IMPLEMENT | ~60K | ~100K | Multiple subagents + reviews |
 | TEST_VERIFY | ~30K | ~50K | Two agents + static analysis |
 | FINISH | ~10K | ~20K | PR creation + board update |
-| **Total** | **~165K** | **~285K** | Heavy exceeds single session |
+| **Total (full lane)** | **~165K** | **~285K** | Heavy exceeds single session |
+| SPEC_PLAN (fast lane) | ~15K | ~25K | Combined spec-lite + plan, targeted interview |
+| VERIFY_FINISH (fast lane) | ~20K | ~35K | No two-agent generation; compact report + PR |
+| **Total (fast lane)** | **~75K** | **~135K** | TRIAGE + SPEC_PLAN + IMPLEMENT + VERIFY_FINISH |
 
 **Key insight**: A complex task's full pipeline may NOT fit in one session.
 The harness must handle multi-session execution gracefully.

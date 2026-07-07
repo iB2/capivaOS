@@ -30,6 +30,8 @@ Required phase: [PHASE_NAME]
 | /implement | IMPLEMENT | (stays IMPLEMENT until all tasks done) |
 | /test-verify | TEST_VERIFY | (stays TEST_VERIFY until gates pass) |
 | /finish | FINISH | IDLE (task complete) |
+| /spec-plan | SPEC_PLAN (fast lane) | IMPLEMENT on approval; GRILL_SPEC on abort |
+| /verify-finish | VERIFY_FINISH (fast lane) | IDLE on completion; TEST_VERIFY on escalation |
 
 ---
 
@@ -75,6 +77,15 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 - **Action**: Update sprint-state phase = FINISH, set "Quality Gate" = PASS
 - **Board**: Update task Quality field
 - **🧑 CHECKPOINT**: Human reviews quality report before proceeding.
+
+### Fast-Lane Transitions (Lane = fast, ADR-0010)
+
+- **TRIAGE → SPEC_PLAN** — /sprint's qualifying predicate passed (P2/P3, no new files, no schema/arch changes, no new dependencies). 🧑 override to full always honored at task pickup.
+- **SPEC_PLAN → IMPLEMENT** — 🧑 ONE gate approves spec-lite + PLAN.md together. Gate: `docs/specs/TASK-ID-spec.md` + `TASK-ID-acs.json` + `PLAN.md` exist; Spec Approved = Yes AND Plan Approved = Yes set together.
+- **SPEC_PLAN → GRILL_SPEC** (abort) — scope grew (new file, schema change, arch decision, >4 micro-tasks). Lane reset to full. Logged in Phase History.
+- **IMPLEMENT → VERIFY_FINISH** — all micro-tasks done, tests green (identical gate to IMPLEMENT → TEST_VERIFY).
+- **VERIFY_FINISH → IDLE** — 🧑 ONE gate: compact quality report reviewed (full-lane thresholds; all acs.json statuses `pass`; e2e evidence) + merge decision. PR created, board updated, Lane reset to full.
+- **VERIFY_FINISH → TEST_VERIFY** (escalation) — human routes to the full verification phase at the gate. Lane reset to full.
 
 ### FINISH → IDLE
 - **Trigger**: PR created, board updated

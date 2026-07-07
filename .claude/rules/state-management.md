@@ -14,9 +14,10 @@ The file uses Markdown field syntax: `- **Field Name**: Value`. All phase guards
 | Field | Values | Set By |
 |-------|--------|--------|
 | Task ID | Board task ID or `(none)` | /sprint |
+| Lane | full, fast | /sprint (TRIAGE, per ADR-0010 predicate) |
 | Task Title | Task name or `(none)` | /sprint |
 | Priority | P0-P4 or `--` | /sprint |
-| Phase | IDLE, TRIAGE, GRILL_SPEC, PLAN, IMPLEMENT, TEST_VERIFY, FINISH, BLOCKED | Every skill |
+| Phase | IDLE, TRIAGE, GRILL_SPEC, PLAN, IMPLEMENT, TEST_VERIFY, FINISH, SPEC_PLAN, VERIFY_FINISH, BLOCKED | Every skill |
 | Phase Started | ISO timestamp or `--` | Every skill |
 | Spec Approved | Yes / No | /sprint (after human approval) |
 | Plan Approved | Yes / No | /sprint (after human approval) |
@@ -29,14 +30,20 @@ Template: `.board/sprint-state.md` (initialized with IDLE state, empty history, 
 ### Valid Phase Transitions
 
 ```
+Full lane (default):
 IDLE ──→ TRIAGE ──→ GRILL_SPEC ──→ PLAN ──→ IMPLEMENT ──→ TEST_VERIFY ──→ FINISH ──→ IDLE
   ↑                                                                                      │
   └──────────────────────────────────────────────────────────────────────────────────────┘
+
+Fast lane (Lane = fast, ADR-0010):
+IDLE ──→ TRIAGE ──→ SPEC_PLAN ──→ IMPLEMENT ──→ VERIFY_FINISH ──→ IDLE
 
 Special transitions:
   ANY ──→ BLOCKED (human escalation or three-strike)
   BLOCKED ──→ (return to phase that blocked, after human resolution)
   ANY ──→ IDLE (human abort: "stop", "cancel", "discard")
+  SPEC_PLAN ──→ GRILL_SPEC (fast-lane abort: scope grew; Lane reset to full)
+  VERIFY_FINISH ──→ TEST_VERIFY (fast-lane escalation at the quality gate; Lane reset to full)
 ```
 
 ### Phase Ownership
@@ -50,6 +57,8 @@ Special transitions:
 | IMPLEMENT | /implement | YES | Yes (progress) | No |
 | TEST_VERIFY | /test-verify | Yes (tests only) | No | No |
 | FINISH | /finish | No | Yes (complete) | YES |
+| SPEC_PLAN | /spec-plan | No | No | No |
+| VERIFY_FINISH | /verify-finish | Yes (tests only) | Yes (complete) | YES |
 | BLOCKED | (none) | No | Yes (flag) | No |
 
 ### Phase Guard Protocol
@@ -185,6 +194,8 @@ Before starting, each skill verifies its input artifacts:
 | /implement | `PLAN.md` exists | File exists AND was approved (gate in sprint-state) |
 | /test-verify | Feature branch with green tests | Test suite passes on branch (per blueprint §build-commands) |
 | /finish | `docs/reports/TASK-ID-quality.md` exists | File exists AND quality gates pass AND every acs.json status = `pass` |
+| /spec-plan | Task selected, Lane = fast | Fast-lane predicate re-verified (abort to full on failure) |
+| /verify-finish | Feature branch + `TASK-ID-acs.json` | Tests green, gates at full-lane thresholds, e2e evidence |
 
 If ANY required artifact is missing → STOP. Report what's missing. Do NOT proceed.
 

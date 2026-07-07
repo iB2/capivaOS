@@ -17,7 +17,8 @@ Execute an approved plan by spawning subagents for each micro-task. TDD is enfor
 4. Verify `PLAN.md` exists in working directory
 5. Check if `docs/tech-context/TASK-ID-tech.md` exists:
    - If YES → include in each subagent's context alongside spec and PLAN.md
-   - If NO → check sprint-state Notes for "domain-only" flag. If flagged, proceed. If NOT flagged → **WARN**: "Tech context missing. Consider running /plan Step 1.5 (Context7 discovery) to avoid using stale API docs."
+   - If NO and Lane = fast with PLAN.md noting "fast lane: tech context inline" → proceed (fast lane embeds tech findings in PLAN.md; see /spec-plan)
+   - If NO otherwise → check sprint-state Notes for "domain-only" flag. If flagged, proceed. If NOT flagged → **WARN**: "Tech context missing. Consider running /plan Step 1.5 (Context7 discovery) to avoid using stale API docs."
 6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /plan first."
 7. If ALL checks pass → proceed
 
@@ -155,16 +156,18 @@ Both must succeed. If any fail → diagnose and fix before proceeding.
 
 **After all tasks complete and tests are green:**
 
+The next phase depends on the lane: TEST_VERIFY (Lane = full) or VERIFY_FINISH (Lane = fast, ADR-0010).
+
 1. Update `.board/sprint-state.md`:
-   - Phase History: `| [now] | [task] | IMPLEMENT | TEST_VERIFY | tests-green | [N] tasks, [M] tests |`
+   - Phase History: `| [now] | [task] | IMPLEMENT | TEST_VERIFY or VERIFY_FINISH | tests-green | [N] tasks, [M] tests |`
 2. Update `.board/tasks.md` (with lock):
    - Set Branch field on the task
    - Update Phase field
-3. **→ Return control to /sprint** which will invoke /test-verify next.
+3. **→ Return control to /sprint** which will invoke /test-verify (full lane) or /verify-finish (fast lane) next.
 
 If invoked standalone:
 - Update sprint-state as above
-- State: "Implementation complete. [N] tasks done, [M] tests added, all green. Next: invoke /test-verify."
+- State: "Implementation complete. [N] tasks done, [M] tests added, all green. Next: invoke /test-verify (or /verify-finish in the fast lane)."
 
 ## Input Quality Validation
 

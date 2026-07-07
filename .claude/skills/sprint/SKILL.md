@@ -62,24 +62,37 @@ Sprint state: [IDLE | Resuming TASK-ID at phase IMPLEMENT | BLOCKED on...]
 2. Find highest-priority uncompleted, unblocked task (P0 > P1 > P2)
 3. If no eligible tasks: report "Sprint complete — no tasks available" and STOP
 
-4. **Acquire board lock** (follow `.claude/rules/board-protocol.md` protocol)
-5. Move task to "In Progress" section
-6. Set task Status = "In Progress", Phase = TRIAGE, Started = now
-7. **Release board lock**
+4. **Lane selection (ADR-0010)** — evaluate the fast-lane qualifying predicate (ALL must hold):
+   - Priority is P2 or P3
+   - No new source files (task modifies existing files only, per its spec/AC)
+   - No schema/migration changes
+   - No architectural changes (blueprint §architecture) and no new dependencies
 
-8. Update `.board/sprint-state.md`:
+   ALL hold → Lane = fast. ANY fails (or P0/P1, or you cannot tell from the task) → Lane = full. **Full is the default; when in doubt, full.**
+
+5. **Acquire board lock** (follow `.claude/rules/board-protocol.md` protocol)
+6. Move task to "In Progress" section
+7. Set task Status = "In Progress", Phase = TRIAGE, Started = now
+8. **Release board lock**
+
+9. Update `.board/sprint-state.md`:
    - Task ID, Title, Priority from the selected task
-   - Phase = TRIAGE
+   - Phase = TRIAGE, Lane = full | fast
    - Phase Started = now
    - Reset: Spec Approved = No, Plan Approved = No, Quality Gate = --
-   - Add Phase History row: `| [now] | [task] | IDLE | TRIAGE | -- | Task selected from board |`
+   - Add Phase History row: `| [now] | [task] | IDLE | TRIAGE | -- | Task selected; lane: [full|fast] ([reason]) |`
 
-9. Present to human:
+10. Present to human:
 ```
 Sprint: picking up [TASK-ID] — [Task Title] (Priority: P1)
+Lane: [full | fast — qualifies: P3, modify-only, no schema/arch changes]
 Spec: [brief summary or "no spec — will create during grill"]
-→ Starting Phase 1: Grill Spec
+→ Starting Phase 1: [Grill Spec | Spec-Plan (fast lane)]
 ```
+
+The human can override lane selection here ("full pipeline" always wins; "fast"
+is honored ONLY if the predicate actually passes — a non-qualifying task cannot
+be forced fast).
 
 ### Step 3: Load Spec
 
@@ -117,6 +130,25 @@ INVOKE /handover
 STOP sprint loop (do not continue to next phase)
 Report: "Context budget reached. Handover document written. Resume with /sprint in a new session."
 ```
+
+#### Fast Lane (Lane = fast) — SPEC_PLAN → IMPLEMENT → VERIFY_FINISH
+
+When Lane = fast, the loop runs the alternate path (ADR-0010) instead of Phases 1-5:
+
+```
+SPEC_PLAN:     CONTEXT CHECK → UPDATE state → Phase: SPEC_PLAN → INVOKE /spec-plan
+               🧑 ONE gate: approve spec+plan → Spec Approved = Yes, Plan Approved = Yes
+               → UPDATE state → IMPLEMENT
+IMPLEMENT:     CONTEXT CHECK → INVOKE /implement   (unchanged — TDD enforced)
+               → UPDATE state → VERIFY_FINISH
+VERIFY_FINISH: CONTEXT CHECK → INVOKE /verify-finish
+               🧑 ONE gate: quality review + merge decision → PR created
+               → UPDATE state → IDLE, Lane reset to full
+```
+
+Transitions are logged in Phase History like any other. If /spec-plan or
+/verify-finish aborts to the full lane (scope growth), the loop continues from
+the phase they set (GRILL_SPEC or TEST_VERIFY) — do not restart.
 
 #### Phase 1 — GRILL_SPEC
 
@@ -290,7 +322,8 @@ On sprint end, produce summary:
 - **Sprint-state is the source of truth.** If it says IMPLEMENT, you're in IMPLEMENT. No overrides.
 - **One task at a time.** Sequential by design. Parallelism happens WITHIN /implement, not across tasks.
 - **`/clear` between tasks.** Non-negotiable. Context hygiene prevents quality degradation.
-- **Never skip phases.** Even for "trivial" tasks. The pipeline IS the quality guarantee.
+- **Never skip phases.** Even for "trivial" tasks. The pipeline IS the quality guarantee. (The fast lane is not a skip — it is an alternate state-machine path with its own guarded phases; see ADR-0010.)
+- **Lane selection is mechanical.** The predicate decides; the human can force full but cannot force fast for a non-qualifying task.
 - **Checkpoints are blocking.** Silence ≠ approval. Wait for explicit human confirmation.
 - **Resume on restart.** If sprint-state shows a task in progress, resume from that phase.
 - **Log everything.** Every phase transition goes in the Phase History table.

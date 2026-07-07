@@ -85,16 +85,20 @@ Each blueprint has an associated **real, buildable project** on the local filesy
 > **Why**: The most common AI development failure is jumping straight to code — skipping spec clarification, planning, and test design. Phase skipping is the root cause of spec amnesia, untested code, and rework. Even "simple" tasks reveal hidden complexity during grill-spec and planning. See [ADR-0001](docs/adr/0001-six-phase-pipeline.md).
 
 ```
-IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
+Full lane: IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
+Fast lane: IDLE → TRIAGE → SPEC_PLAN → IMPLEMENT → VERIFY_FINISH → IDLE
 ```
 
-**Mechanically enforced**: the `phase_guard.py` PreToolUse hook denies source-file writes outside IMPLEMENT (test paths also allowed in TEST_VERIFY) and `gh pr create` outside FINISH with passing gates — see [ADR-0008](docs/adr/0008-phase-guard-hook-enforcement.md). The rules below hold even if the conversation drifts.
+The **fast lane** (see [ADR-0010](docs/adr/0010-fast-lane-pipeline.md)) is an alternate state-machine path for qualifying small tasks (P2/P3, no new files, no schema/arch changes, no new dependencies — /sprint evaluates the predicate at TRIAGE and records `Lane` in sprint-state). `/spec-plan` combines spec-lite + plan behind ONE gate; `/verify-finish` combines verification + PR behind a single quality gate. TDD, the acs.json contract, and quality thresholds are identical in both lanes. Full pipeline remains the default — P0/P1 and anything failing the predicate cannot go fast.
+
+**Mechanically enforced**: the `phase_guard.py` PreToolUse hook denies source-file writes outside IMPLEMENT (test paths also allowed in TEST_VERIFY / VERIFY_FINISH) and `gh pr create` outside FINISH / VERIFY_FINISH with passing gates — see [ADR-0008](docs/adr/0008-phase-guard-hook-enforcement.md). The rules below hold even if the conversation drifts.
 
 You CANNOT:
 - Write implementation code unless sprint-state Phase = IMPLEMENT
-- Write test code (beyond TDD in /implement) unless Phase = TEST_VERIFY
-- Create a PR unless Phase = FINISH
+- Write test code (beyond TDD in /implement) unless Phase = TEST_VERIFY (or VERIFY_FINISH in the fast lane)
+- Create a PR unless Phase = FINISH (or VERIFY_FINISH in the fast lane)
 - Start a new task unless Phase = IDLE
+- Take the fast lane unless the ADR-0010 predicate passes AND the task is P2/P3
 - Run /plan without an approved spec (Spec Approved = Yes in sprint-state)
 - Run /implement without an approved plan (Plan Approved = Yes in sprint-state)
 - Run /finish without quality gates passing (Quality Gate = PASS in sprint-state)

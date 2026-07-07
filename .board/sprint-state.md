@@ -8,6 +8,7 @@
 - **Task ID**: (none)
 - **Task Title**: (none)
 - **Priority**: --
+- **Lane**: full
 - **Phase**: IDLE
 - **Phase Started**: --
 - **Spec Approved**: No
@@ -18,9 +19,11 @@
 ## Valid Transitions
 
 ```
-IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
+Full lane: IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
+Fast lane: IDLE → TRIAGE → SPEC_PLAN → IMPLEMENT → VERIFY_FINISH → IDLE   (ADR-0010)
 ANY  → BLOCKED (escalation) → resume previous phase
 ANY  → IDLE (abort)
+SPEC_PLAN → GRILL_SPEC / VERIFY_FINISH → TEST_VERIFY (fast-lane abort/escalation, Lane resets to full)
 ```
 
 ## Phase History
