@@ -28,6 +28,7 @@ ANY  → IDLE (abort)
 | Timestamp | Task | From | To | Gate | Notes |
 |-----------|------|------|----|------|-------|
 | 2026-07-07 | HARN-001..009 | IDLE | IDLE | board-write | Harness improvement backlog added from docs/audits/2026-07-07-harness-audit.md (no phase change) |
+| 2026-07-07 | HARN-001 | IDLE | IDLE | board-write | HARN-001 done (fast-tracked, owner-approved): hook registration + parsers repaired, verified on Windows. Commit 816c0e3 |
 
 ## Board Lock
 

@@ -16,29 +16,25 @@
 
 <!-- Completed. Immutable. PR + quality metrics. -->
 
+- [x] **HARN-001** Repair context-persistence hook + Windows compatibility (P0)
+  - **Spec**: docs/audits/2026-07-07-harness-audit.md (findings F1.2, F1.3, F2.1–F2.3)
+  - **AC**: 4/4 verified — hook schema fixed (previous flat format never registered), plain python3 invocation valid in bash/cmd/PowerShell (verified on Windows), Boss/cycle dead paths removed, .state/ gitignored, board + sprint-state parsers match actual bullet formats
+  - **Depends**: none
+  - **Assignee**: main
+  - **Status**: Done
+  - **Phase**: IDLE
+  - **Branch**: chore/harness-audit-backlog
+  - **PR**: -- (fast-tracked with COS owner approval; branch PR covers HARN batch)
+  - **Quality**: precompact/restore/stop entry points manually verified on Windows
+  - **Started**: 2026-07-07
+  - **Completed**: 2026-07-07
+  - **Notes**: Extra finding during implementation: settings.json used a flat hook format that never registered with Claude Code, and the sprint-state parser always fell back to a stub — both worse than audited. Commit 816c0e3.
+
 ## Backlog — P0 Critical
 
 <!-- Blocking other work or requiring immediate attention -->
 
 <!-- HARN-* tasks: harness self-improvement backlog from docs/audits/2026-07-07-harness-audit.md (findings F1-F6 detailed there) -->
-
-- [ ] **HARN-001** Repair context-persistence hook + Windows compatibility (P0)
-  - **Spec**: Fix the only mechanical enforcement layer. See audit findings F1.2, F1.3, F2.1–F2.3.
-  - **AC**:
-    1. settings.json hook commands resolve on Windows (python launcher or explicit interpreter), verified by running each hook entry point manually
-    2. Dead Boss/cycle code paths removed (.state/cycle-state.json, "Last Cycle Narrative", session-start.py docstring reference)
-    3. `.state/` added to .gitignore
-    4. Board parsing matches actual `- **Status**:` bulleted format (no substring-accident matching)
-  - **Depends**: none
-  - **Assignee**: unassigned
-  - **Status**: Backlog
-  - **Phase**: IDLE
-  - **Branch**: --
-  - **PR**: --
-  - **Quality**: --
-  - **Started**: --
-  - **Completed**: --
-  - **Notes**: Without this, PreCompact/Stop auto-save silently no-ops on Windows.
 
 - [ ] **HARN-002** Fix dead references and doc inconsistencies (P0)
   - **Spec**: Remove/resolve every dead reference and stale count. See audit findings F1.1, F3.1–F3.7.
