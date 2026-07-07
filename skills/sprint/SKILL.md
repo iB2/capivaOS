@@ -59,10 +59,19 @@ Sprint state: [IDLE | Resuming TASK-ID at phase IMPLEMENT | BLOCKED on...]
 ### Step 2: Pick Task (TRIAGE)
 
 1. Read `.board/tasks.md`
-2. Find highest-priority uncompleted, unblocked task (P0 > P1 > P2)
-3. If no eligible tasks: report "Sprint complete — no tasks available" and STOP
+2. Find the next ELIGIBLE task. Eligible = Status not Done/Blocked AND every ID
+   in its **Depends** field is Done ("none" = no dependencies). A dependency
+   that is Blocked counts as not-Done — skip and say why. Selection order is
+   DETERMINISTIC (required for unattended runs): priority (P0 > P1 > P2) →
+   dependency order (a task never precedes anything it depends on) → board
+   order as the tiebreak.
+3. If the Depends graph contains a cycle: that is a BOARD DEFECT — report the
+   cycle members and STOP task selection entirely (never silently skip a cycle
+   member; `harness_lint` catches this in CI too).
+4. If no eligible tasks: report "Sprint complete — no tasks available" (listing
+   any dependency-blocked remainder) and STOP
 
-4. **Lane selection (ADR-0010)** — evaluate the fast-lane qualifying predicate (ALL must hold):
+5. **Lane selection (ADR-0010)** — evaluate the fast-lane qualifying predicate (ALL must hold):
    - Priority is P2 or P3
    - No new source files (task modifies existing files only, per its spec/AC)
    - No schema/migration changes
@@ -70,19 +79,19 @@ Sprint state: [IDLE | Resuming TASK-ID at phase IMPLEMENT | BLOCKED on...]
 
    ALL hold → Lane = fast. ANY fails (or P0/P1, or you cannot tell from the task) → Lane = full. **Full is the default; when in doubt, full.**
 
-5. **Acquire board lock** (follow `${CLAUDE_PLUGIN_ROOT}/rules/board-protocol.md` protocol)
-6. Move task to "In Progress" section
-7. Set task Status = "In Progress", Phase = TRIAGE, Started = now
-8. **Release board lock**
+6. **Acquire board lock** (follow `${CLAUDE_PLUGIN_ROOT}/rules/board-protocol.md` protocol)
+7. Move task to "In Progress" section
+8. Set task Status = "In Progress", Phase = TRIAGE, Started = now
+9. **Release board lock**
 
-9. Update `.board/sprint-state.md`:
+10. Update `.board/sprint-state.md`:
    - Task ID, Title, Priority from the selected task
    - Phase = TRIAGE, Lane = full | fast
    - Phase Started = now
    - Reset: Spec Approved = No, Plan Approved = No, Quality Gate = --
    - Add Phase History row: `| [now] | [task] | IDLE | TRIAGE | -- | Task selected; lane: [full|fast] ([reason]) |`
 
-10. Present to human:
+11. Present to human:
 ```
 Sprint: picking up [TASK-ID] — [Task Title] (Priority: P1)
 Lane: [full | fast — qualifies: P3, modify-only, no schema/arch changes]
