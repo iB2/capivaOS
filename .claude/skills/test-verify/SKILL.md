@@ -38,7 +38,7 @@ Generate integration tests beyond what TDD produced, run static analysis, and pr
 Spawn two subagents:
 
 #### Agent 1: Test Writer
-- Role: `.claude/agents/roles/dev.md` (with test-writing focus)
+- Agent: **dev** (native definition `.claude/agents/dev.md`, spawned by type — platform-enforced tool allowlist), with test-writing focus
 - Input: Spec + implementation diff + existing tests + blueprint reference.md
 - Produces: New test files following existing patterns and blueprint §test-stack conventions
 
@@ -49,7 +49,7 @@ Test categories to cover:
 4. **Edge case tests**: Null inputs, boundary values, concurrent access, timeouts
 
 #### Agent 2: Adversarial Reviewer
-- Role: `.claude/agents/roles/qa.md`
+- Agent: **qa** (native definition `.claude/agents/qa.md`, spawned by type — READ-ONLY tool allowlist: the reviewer mechanically cannot modify what it reviews)
 - Input: The implementation report's CLAIMS + all tests (existing + new from Agent 1) + the diff + `docs/specs/TASK-ID-acs.json` + blueprint reference.md
 - Produces: Review with CLAIMS VERIFIED or REFUTED verdict
 

@@ -18,6 +18,8 @@ jobs:
         run: python scripts/harness_lint.py --self-test
       - name: Lint harness cross-references
         run: python scripts/harness_lint.py
+      - name: Implementation-report validator self-test
+        run: python scripts/validate_impl_report.py --self-test
 
   hook-tests:
     name: Hook tests (${{ matrix.os }})

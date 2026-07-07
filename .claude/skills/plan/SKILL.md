@@ -9,7 +9,7 @@ Decompose an approved spec into implementable micro-tasks. Each task is self-con
 
 ## Architecture Enforcement — Arch Role
 
-Before decomposing into tasks, the /plan skill MUST validate architectural compliance using the Architect role (`.claude/agents/roles/arch.md`).
+Before decomposing into tasks, the /plan skill MUST validate architectural compliance using the **arch** agent (native definition `.claude/agents/arch.md` — read + Write allowlist for ADRs and deviation records; it cannot touch source).
 
 ### Pre-Decomposition Architecture Check
 
@@ -40,7 +40,7 @@ When spawning the arch role:
 
 ```
 Agent(
-  role: .claude/agents/roles/arch.md
+  subagent_type: "arch"          // native definition .claude/agents/arch.md
   input: spec + existing architecture + CONTEXT.md + blueprint reference.md
   output: ADRs + layer assignments + interface definitions
 )

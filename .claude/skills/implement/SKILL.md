@@ -47,7 +47,9 @@ For each task in PLAN.md, in dependency order:
 
 #### a. Spawn Subagent
 
-Launch a dev-role subagent (`.claude/agents/roles/dev.md`) with:
+Launch a **dev** subagent (native agent definition `.claude/agents/dev.md` — spawn by
+agent type so the platform enforces its tool allowlist; do NOT paste the role file
+into the prompt) with:
 - The task description from PLAN.md (verbatim)
 - `docs/CONTEXT.md` domain terms
 - `docs/tech-context/TASK-ID-tech.md` current library docs (relevant sections for this task's libraries)
@@ -58,6 +60,19 @@ Launch a dev-role subagent (`.claude/agents/roles/dev.md`) with:
 - Instruction: **do NOT modify any other files besides those listed in the task**
 
 Each subagent gets fresh context — no bleed from previous tasks.
+
+#### a2. Collect & Validate the Structured Report (ADR-0012)
+
+Every dev subagent ends with one fenced JSON completion report (schema in
+`.claude/agents/dev.md`). On completion:
+
+1. Extract the JSON block; validate it: `python scripts/validate_impl_report.py report.json`
+2. Missing or invalid → respawn ONCE asking for the report only (no code changes). Still invalid → the attempt counts as a failure (three-strike rule).
+3. Cross-check claims mechanically:
+   - `files_changed` vs `git diff --name-status` for the task's commits — any mismatch is a REFUTED claim: fix the report or the code
+   - `test_results` vs your own run of the suite (Step c) — counts must match
+   - `tests_added[].acs` ids must exist in `docs/specs/TASK-ID-acs.json`
+4. Aggregate the validated JSONs — the Implementation Report (Step 5) is GENERATED from them, not re-written from memory.
 
 #### b. TDD Enforcement
 
@@ -126,7 +141,7 @@ Both must succeed. If any fail → diagnose and fix before proceeding.
    git push -u origin feature/TASK-ID-slug
    ```
 
-4. Produce implementation report:
+4. Produce implementation report — GENERATED from the validated per-task JSON reports (Step a2), not hand-written:
 ```markdown
 ## Implementation Report
 
