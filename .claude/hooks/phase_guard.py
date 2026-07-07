@@ -37,8 +37,8 @@ SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
 WRITE_TOOLS = {"Edit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
-# Paths writable in ANY phase — the pipeline itself produces these artifacts.
-ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", "docs", "templates", "reports")
+# Paths writable in ANY phase — pipeline artifacts plus harness/CI tooling.
+ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", ".github", "docs", "scripts", "templates", "reports")
 ALWAYS_ALLOWED_FILES = ("PLAN.md", ".gitignore", ".mcp.json")
 
 # Heuristics for "this is a test file" (blueprint test layouts: tests/,

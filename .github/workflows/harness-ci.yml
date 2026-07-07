@@ -1,0 +1,46 @@
+name: Harness CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Cross-reference lint + blueprint parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Linter self-test (must catch seeded drift)
+        run: python scripts/harness_lint.py --self-test
+      - name: Lint harness cross-references
+        run: python scripts/harness_lint.py
+
+  hook-tests:
+    name: Hook tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Phase guard scenario tests
+        run: python .claude/hooks/tests/test_phase_guard.py
+      - name: Context-persistence entry points smoke test
+        shell: bash
+        run: |
+          export CLAUDE_PROJECT_DIR="$GITHUB_WORKSPACE"
+          python .claude/hooks/context-persistence.py precompact
+          test -f .state/session-state.md
+          python .claude/hooks/context-persistence.py restore | python -c "import json,sys; d=json.load(sys.stdin); assert d['additionalContext']"
+          test ! -f .state/session-state.md
+          python .claude/hooks/context-persistence.py stop
+          test -f .state/session-state.md
+          echo "context-persistence: precompact/restore/stop OK"

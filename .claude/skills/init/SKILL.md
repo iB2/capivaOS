@@ -114,7 +114,7 @@ Available blueprints: dotnet-hexagonal, python-fastapi, nextjs-typescript
 
 Options:
 1. Create a custom blueprint: .claude/blueprints/<name>/reference.md
-   (use an existing blueprint as template — all §sections are required)
+   (use an existing blueprint as template — every § section is required)
 2. Proceed without a blueprint (not recommended — skills lose stack context)
 ```
 

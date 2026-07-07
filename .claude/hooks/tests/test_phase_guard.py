@@ -61,6 +61,8 @@ def main():
         cases.append(("IDLE: deny src edit", run_guard(root, "Edit", {"file_path": src})[0] is True))
         cases.append(("IDLE: allow docs edit", run_guard(root, "Write", {"file_path": doc})[0] is False))
         cases.append(("IDLE: allow PLAN.md", run_guard(root, "Write", {"file_path": str(root / "PLAN.md")})[0] is False))
+        cases.append(("IDLE: allow scripts/ tooling", run_guard(root, "Write", {"file_path": str(root / "scripts" / "lint.py")})[0] is False))
+        cases.append(("IDLE: allow .github/ CI config", run_guard(root, "Write", {"file_path": str(root / ".github" / "workflows" / "ci.yml")})[0] is False))
         cases.append(("IDLE: deny gh pr create", run_guard(root, "Bash", {"command": "gh pr create --title t"})[0] is True))
         cases.append(("IDLE: allow other bash", run_guard(root, "Bash", {"command": "git status"})[0] is False))
 
