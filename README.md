@@ -33,6 +33,7 @@ Each 🧑 is a blocking human checkpoint. Silence is NOT approval. `/init` runs 
 |-----------|-----------------|
 | **Init gate** | Running pipeline without project docs or blueprint config |
 | **Phase guards** | Skills running out of sequence |
+| **Phase guard hook** (PreToolUse) | Source edits outside IMPLEMENT; PRs outside FINISH — denied at the tool layer (ADR-0008) |
 | **Artifact gates** | Advancing without required outputs |
 | **Board lock** | Concurrent writes corrupting state |
 | **Sprint state** | Session crashes losing pipeline position |

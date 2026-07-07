@@ -180,6 +180,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0005](adr/0005-context7-in-plan-phase.md) | Context7 documentation lookup in /plan, not /grill-spec |
 | [0006](adr/0006-artifact-gating.md) | File-existence gating over conversation-state gating |
 | [0007](adr/0007-blueprint-plugin-architecture.md) | Pluggable blueprint architecture for stack-agnosticism |
+| [0008](adr/0008-phase-guard-hook-enforcement.md) | Hook-enforced phase guards parsing sprint-state.md directly |
 
 ---
 

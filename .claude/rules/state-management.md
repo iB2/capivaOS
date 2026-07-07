@@ -66,6 +66,8 @@ Every skill includes this guard at the top:
 
 **No exceptions.** Even if the human says "just run /implement" — if the phase isn't IMPLEMENT, refuse.
 
+**Hook backstop**: independent of skill discipline, the `phase_guard.py` PreToolUse hook parses this file's `- **Field**:` format and denies source-file writes outside IMPLEMENT and `gh pr create` outside FINISH at the tool layer (see ADR-0008). The field format above is therefore a load-bearing interface — changing it requires updating `phase_guard.py` and `context-persistence.py` in the same commit.
+
 ### Sprint State Updates
 
 When transitioning phases, update `.board/sprint-state.md` atomically:

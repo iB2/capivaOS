@@ -88,6 +88,8 @@ Each blueprint has an associated **real, buildable project** on the local filesy
 IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
 ```
 
+**Mechanically enforced**: the `phase_guard.py` PreToolUse hook denies source-file writes outside IMPLEMENT (test paths also allowed in TEST_VERIFY) and `gh pr create` outside FINISH with passing gates — see [ADR-0008](docs/adr/0008-phase-guard-hook-enforcement.md). The rules below hold even if the conversation drifts.
+
 You CANNOT:
 - Write implementation code unless sprint-state Phase = IMPLEMENT
 - Write test code (beyond TDD in /implement) unless Phase = TEST_VERIFY
