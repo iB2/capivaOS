@@ -4,7 +4,7 @@
 
 A 6-phase development pipeline for Claude Code that enforces spec-driven, test-first development. The pipeline is state-machine driven — every phase reads and updates `.board/sprint-state.md`, every skill enforces phase guards, and no skill can run out of sequence.
 
-**Three immutable laws:**
+**The credo (the seven laws below, in three lines):**
 1. If it's not on the board, it doesn't get built.
 2. If there's no approved spec, there's no code.
 3. If there's no test, there's no implementation.
@@ -326,7 +326,7 @@ Key gates (summary — refer to quality-gates.md for detailed scoping):
 
 ---
 
-## Law 6: Artifact Quality Standards
+## Law 7: Artifact Quality Standards
 
 Every artifact MUST meet the gold standard defined in `.claude/rules/artifact-standards.md`.
 
@@ -346,7 +346,7 @@ If an artifact's quality is below the standard → the skill that produced it MU
 |------|---------|
 | `docs/DESIGN.md` | **Design philosophy, source attribution, core principles, rationale for every law** |
 | `docs/SCOPE.md` | **What the harness is/isn't, adaptation guide, assumptions** |
-| `docs/adr/0001-*.md` through `0007-*.md` | **Architecture Decision Records for the harness's own design choices** |
+| `docs/adr/*.md` | **Architecture Decision Records for the harness's own design choices** |
 
 ## Rules (detailed)
 

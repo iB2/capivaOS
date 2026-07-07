@@ -97,6 +97,7 @@ The harness is stack-agnostic. Technology-specific patterns, commands, and stand
 |-----------|-------|-------------|
 | `dotnet-hexagonal` | .NET 10 / C# 13 | Hexagonal (Ports & Adapters) |
 | `python-fastapi` | Python 3.13 / FastAPI | Layered Architecture |
+| `nextjs-typescript` | Node.js 22 / Next.js 15+ / App Router | Feature-based colocation (Server/Client split) |
 
 ### Adding a New Blueprint
 

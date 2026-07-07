@@ -119,9 +119,9 @@ Several design elements don't exist in any of the source frameworks:
 
 ---
 
-## The Six Laws — Rationale
+## The Seven Laws — Rationale
 
-The CLAUDE.md file states six "immutable laws." Here is WHY each exists:
+The CLAUDE.md file states seven "immutable laws" (summarized by a three-line credo at the top of that file). Here is WHY each exists:
 
 ### Law 1: State Machine Governs All
 
@@ -159,6 +159,12 @@ The CLAUDE.md file states six "immutable laws." Here is WHY each exists:
 
 **Why 200K specifically**: Empirical observation. Auto-compaction typically triggers around 180-200K tokens. After 2 auto-compactions, the quality drop is observable in review. 200K is the practical ceiling before "quality degradation becomes unacceptable" — not a theoretical limit, but a measured one.
 
+### Law 7: Artifact Quality Standards
+
+**Problem it solves**: Artifact gating (Law 3) checks that files EXIST — it says nothing about whether they're any good. Without a quality floor, the agent satisfies the gate with placeholder specs ("TBD"), single-sentence sections, and vague acceptance criteria — artifacts that pass the existence check but poison every downstream phase.
+
+**Why gold-standard examples, not just rules**: Models anchor on examples. A rule that says "write detailed ACs" produces marginally better output; a worked example of a rich GIVEN/WHEN/THEN block with concrete values sets the floor at that level. `artifact-standards.md` therefore ships full exemplar artifacts for every phase, plus anti-slop rules that name the failure modes explicitly (no placeholders, no unnamed entities, quantify when possible).
+
 ---
 
 ## Design Decisions Index
@@ -173,6 +179,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0004](adr/0004-token-bounded-execution.md) | Token-bounded sprints over time-bounded |
 | [0005](adr/0005-context7-in-plan-phase.md) | Context7 documentation lookup in /plan, not /grill-spec |
 | [0006](adr/0006-artifact-gating.md) | File-existence gating over conversation-state gating |
+| [0007](adr/0007-blueprint-plugin-architecture.md) | Pluggable blueprint architecture for stack-agnosticism |
 
 ---
 

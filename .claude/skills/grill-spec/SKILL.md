@@ -23,8 +23,9 @@ Grill-spec needs domain context and project scope to produce useful specs.
 Without CONTEXT.md and INTAKE-summary.md, the adversarial interview
 starts from zero — questions will be generic, specs will miss constraints.
 
-Run /init to set up the harness, or provide raw materials and use
-/discovery to generate the project docs first.
+Run /init to set up the harness. If the project docs are missing, draft
+them from your raw materials first (templates/intake-summary.md defines
+the INTAKE format).
 ```
 
 ## Phase Guard (MANDATORY)
@@ -91,16 +92,16 @@ Create `docs/adr/NNNN-slug.md` ONLY when ALL THREE criteria are met:
 2. Non-obvious (reasonable engineers would disagree)
 3. Real trade-offs (not just "best practice")
 
-**Numbering**: Continue from the highest existing ADR number in `docs/adr/` (the harness ships with 0001-0006).
+**Numbering**: Continue from the highest existing ADR number in `docs/adr/` (list the directory — the harness ships with its own exemplar ADRs).
 
-**Exemplars**: Read any of `docs/adr/0001-*.md` through `docs/adr/0006-*.md` as gold-standard examples. Your ADRs must match this depth.
+**Exemplars**: Read any of the shipped ADRs in `docs/adr/` as gold-standard examples. Your ADRs must match this depth.
 
 ADR format:
 ```markdown
 # ADR-NNNN: Title
 
 ## Status
-Accepted | Superseded by ADR-XXXX | Deprecated
+Proposed | Accepted | Superseded by ADR-XXXX | Deprecated
 
 ## Context
 
@@ -244,7 +245,7 @@ Before presenting the spec for approval, validate against `.claude/rules/artifac
 - [ ] No placeholders ("[TBD]", "as discussed", "various", "etc.") anywhere
 - [ ] Every entity is named specifically (class names, table names, endpoint paths — not "the service")
 - [ ] If ADRs were created: each has Context, Options Considered (2+ options with pros/cons), Decision (with rationale), and Consequences
-- [ ] If ADRs were created: they match the depth of `docs/adr/0001-*.md` through `0006-*.md` (the harness exemplars)
+- [ ] If ADRs were created: they match the depth of the harness exemplar ADRs in `docs/adr/`
 
 If ANY check fails → iterate on the spec before presenting. Do NOT present a below-standard spec.
 

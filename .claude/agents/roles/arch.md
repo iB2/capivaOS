@@ -16,11 +16,13 @@ Every design decision MUST respect the architectural patterns defined in the act
 
 ### ADR Format
 
+This is the canonical ADR format for the whole harness — /grill-spec uses the same one. File name: `docs/adr/NNNN-slug.md`; continue numbering from the highest existing ADR. Match the depth of the exemplar ADRs shipped in `docs/adr/`.
+
 ```markdown
-# NNNN: [Decision Title]
+# ADR-NNNN: [Decision Title]
 
 ## Status
-Proposed | Accepted | Superseded by NNNN
+Proposed | Accepted | Superseded by ADR-XXXX | Deprecated
 
 ## Context
 [What motivates this decision? What constraints exist?]

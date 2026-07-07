@@ -95,6 +95,8 @@ This document maps every file in the harness to its classification (universal, s
 | Other | 7 (board files, ADRs, mermaid, CONTEXT.md) | 0 | 1 (.gitignore) |
 | **Total** | **19** | **6** | **13** |
 
+> **Note on counts**: ADR-0007's Context section cites an initial audit of "41 files: 13 universal / 7 .NET-specific / 21 mixed." That was the rough pre-analysis census that motivated the decision. This map is the file-by-file classification produced afterwards (38 classified entries: 19/6/13) — several files moved buckets on closer reading, and runtime/lock files were excluded. Where the two disagree, **this map is authoritative**.
+
 ---
 
 ## Reference File Structure

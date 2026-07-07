@@ -2,7 +2,7 @@
 
 A state-machine enforced, 6-phase development pipeline that turns Claude Code into a disciplined development agent. Board-driven, spec-first, test-enforced, artifact-gated. **Stack-agnostic** — works with any technology via pluggable blueprints.
 
-Synthesizes ideas from [grill-with-docs](https://github.com/mattpocock) (adversarial spec interviews), [Superpowers](https://github.com/obra) (SDD+TDD pipeline), and [Claudio](https://github.com/brunoamerico) (board-driven agent orchestration). See [docs/DESIGN.md](docs/DESIGN.md) for full design philosophy, source attribution, and rationale. See [docs/SCOPE.md](docs/SCOPE.md) for what this harness is and isn't.
+Synthesizes ideas from [Matt Pocock's skills](https://github.com/mattpocock/skills) (the `/grill-me` adversarial spec interview), [Superpowers](https://github.com/obra/superpowers) (SDD+TDD pipeline, by obra), and Claudio (Bruno Americo's board-driven agent orchestration framework, not publicly released). See [docs/DESIGN.md](docs/DESIGN.md) for full design philosophy, source attribution, and rationale. See [docs/SCOPE.md](docs/SCOPE.md) for what this harness is and isn't.
 
 ## What This Does
 
@@ -80,7 +80,7 @@ The harness requires project documentation before setup. Without it, every downs
 - Fill in `docs/CONTEXT.md` with domain terms, acronyms, and business rules
 - Create `docs/specs/INTAKE-summary.md` with project scope, stakeholders, and requirements (see `templates/intake-summary.md`)
 
-Use `/discovery` to generate these from raw materials (transcripts, requirements docs, emails).
+Draft these from your raw materials (transcripts, requirements docs, emails) — `templates/intake-summary.md` defines the format. You can ask Claude to generate first drafts from those materials before running `/init`.
 
 ### 3. Run init
 

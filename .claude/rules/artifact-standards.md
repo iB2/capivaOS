@@ -150,11 +150,11 @@ If this section has entries, the spec is NOT approved.]
 
 ### ADR Quality Bar
 
-ADRs are optional artifacts — most specs produce zero. But when created, they must meet the same quality standard as any other artifact. The harness ships with 6 exemplar ADRs (`docs/adr/0001-*.md` through `0006-*.md`) that define the floor.
+ADRs are optional artifacts — most specs produce zero. But when created, they must meet the same quality standard as any other artifact. The harness ships with exemplar ADRs in `docs/adr/` that define the floor.
 
 **REJECT** — missing options:
 ```
-# ADR-0007: Use Redis for caching
+# ADR-0042: Use Redis for caching
 
 ## Status
 Accepted
@@ -173,7 +173,7 @@ Caching will be faster.
 
 **ACCEPT** — full analysis:
 ```
-# ADR-0007: Redis Over In-Memory Cache for Quote Price Data
+# ADR-0042: Redis Over In-Memory Cache for Quote Price Data
 
 ## Status
 Accepted
