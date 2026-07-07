@@ -1,0 +1,3 @@
+# capivaOS harness runtime state (added by /capiva:init — append to your .gitignore)
+.board/board.lock
+.state/

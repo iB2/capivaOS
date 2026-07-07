@@ -28,7 +28,7 @@ This harness synthesizes ideas from three distinct approaches, each solving part
 
 Pocock's insight: the biggest source of bugs isn't bad code — it's ambiguous requirements. His "grill" process forces the spec to survive hostile questioning before any code is written. Every assumption is surfaced, every edge case is challenged, every "it depends" gets a concrete answer.
 
-**How we adapted it**: Our `/grill-spec` skill (Phase 1) implements this as a structured adversarial interview with concurrent domain modeling. The output isn't just a clarified spec — it's a formal document with GIVEN/WHEN/THEN acceptance criteria, a domain glossary (CONTEXT.md), and Architecture Decision Records for hard-to-reverse choices.
+**How we adapted it**: Our `/capiva:grill-spec` skill (Phase 1) implements this as a structured adversarial interview with concurrent domain modeling. The output isn't just a clarified spec — it's a formal document with GIVEN/WHEN/THEN acceptance criteria, a domain glossary (CONTEXT.md), and Architecture Decision Records for hard-to-reverse choices.
 
 ### 2. Superpowers (obra)
 
@@ -36,7 +36,7 @@ Pocock's insight: the biggest source of bugs isn't bad code — it's ambiguous r
 
 obra's framework demonstrates that Claude Code produces dramatically better output when forced into a structured pipeline: understand → specify → implement → verify. The key insight is that spec-first development isn't just about documentation — it's about forcing the agent to think before it acts.
 
-**How we adapted it**: Our 6-phase pipeline extends this with explicit phase guards, a state machine, and artifact gating. Where Superpowers relies on convention ("you should write a spec first"), our harness enforces it mechanically ("the /plan skill refuses to run unless a spec file exists and sprint-state says Spec Approved = Yes").
+**How we adapted it**: Our 6-phase pipeline extends this with explicit phase guards, a state machine, and artifact gating. Where Superpowers relies on convention ("you should write a spec first"), our harness enforces it mechanically ("the /capiva:plan skill refuses to run unless a spec file exists and sprint-state says Spec Approved = Yes").
 
 ### 3. Claudio (Bruno Americo)
 
@@ -50,7 +50,7 @@ Claudio demonstrated that AI agents work best when they operate from a persisten
 
 Several design elements don't exist in any of the source frameworks:
 
-- **Formal handover protocol** — no source framework had a mechanism for multi-session pipeline continuation. All assumed single-session execution. Our `/handover` skill produces a self-contained document that enables a fresh agent to resume from exactly where the previous agent stopped.
+- **Formal handover protocol** — no source framework had a mechanism for multi-session pipeline continuation. All assumed single-session execution. Our `/capiva:handover` skill produces a self-contained document that enables a fresh agent to resume from exactly where the previous agent stopped.
 - **Context7 documentation discovery** — fetching current library docs via MCP before writing code. Training data staleness is a known problem; no prior framework addressed it systematically.
 - **Artifact-gated progression** — each phase produces files on disk, and the next phase mechanically verifies they exist. This is a stronger guarantee than "the spec should be done before planning" — it's "the plan skill literally cannot execute without the spec file."
 - **Gold-standard artifact templates** — comprehensive examples of what GOOD output looks like for every phase, with anti-slop rules. Models are lazy — if you show them a minimal example, they'll produce minimal output. We show rich examples so the floor is high.
@@ -109,7 +109,7 @@ Several design elements don't exist in any of the source frameworks:
 - No timebox on sprints
 - Compaction counter as signal (0 = healthy, 1 = caution, 2 = mandatory handover)
 - Multi-session execution is expected, not a failure mode
-- `/handover` skill produces documents that enable zero-loss resumption
+- `/capiva:handover` skill produces documents that enable zero-loss resumption
 
 ### 6. Traceability from Spec to PR
 
@@ -117,7 +117,7 @@ Several design elements don't exist in any of the source frameworks:
 
 **Why**: Without traceability, it's impossible to verify that what was shipped matches what was requested. "All tests pass" is meaningless if you can't map tests back to acceptance criteria. The AC coverage matrix in the quality report is the single most important table in the pipeline — it proves that every requirement has a corresponding test.
 
-**How this is enforced**: The AC list is data, not prose. `/grill-spec` emits `docs/specs/TASK-ID-acs.json` (one entry per AC: `id`, `text`, `status`); after spec approval only `status` may change. `/test-verify` generates the quality-report matrix FROM this file and writes verdicts back to it, and `/finish` refuses to create a PR while any AC is not `pass`. A dropped or paraphrased AC is a mechanical failure, not an oversight (see [ADR-0009](adr/0009-machine-readable-ac-gating.md)).
+**How this is enforced**: The AC list is data, not prose. `/capiva:grill-spec` emits `docs/specs/TASK-ID-acs.json` (one entry per AC: `id`, `text`, `status`); after spec approval only `status` may change. `/capiva:test-verify` generates the quality-report matrix FROM this file and writes verdicts back to it, and `/capiva:finish` refuses to create a PR while any AC is not `pass`. A dropped or paraphrased AC is a mechanical failure, not an oversight (see [ADR-0009](adr/0009-machine-readable-ac-gating.md)).
 
 ---
 
@@ -179,7 +179,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0002](adr/0002-state-machine-governance.md) | State machine over trust-based enforcement |
 | [0003](adr/0003-board-lock-file-based.md) | File-based board lock over git-based alternatives |
 | [0004](adr/0004-token-bounded-execution.md) | Token-bounded sprints over time-bounded |
-| [0005](adr/0005-context7-in-plan-phase.md) | Context7 documentation lookup in /plan, not /grill-spec |
+| [0005](adr/0005-context7-in-plan-phase.md) | Context7 documentation lookup in /capiva:plan, not /capiva:grill-spec |
 | [0006](adr/0006-artifact-gating.md) | File-existence gating over conversation-state gating |
 | [0007](adr/0007-blueprint-plugin-architecture.md) | Pluggable blueprint architecture for stack-agnosticism |
 | [0008](adr/0008-phase-guard-hook-enforcement.md) | Hook-enforced phase guards parsing sprint-state.md directly |
@@ -187,6 +187,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0010](adr/0010-fast-lane-pipeline.md) | Fast lane as an alternate state-machine path for small, low-risk tasks |
 | [0011](adr/0011-slim-always-loaded-layer.md) | Gold-standard examples moved into skills; always-loaded layer slimmed |
 | [0012](adr/0012-native-agent-primitives.md) | Native agent definitions with tool allowlists; structured subagent reports |
+| [0013](adr/0013-plugin-distribution.md) | Plugin distribution: engine/state split, self-marketplace, session injection |
 
 ---
 
