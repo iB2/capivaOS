@@ -43,6 +43,13 @@ Doc templates (CAB ticket, release checklist, deviation record, solution
 document, intake summary) are NOT copied — skills read them from
 `${CLAUDE_PLUGIN_ROOT}/project-template/templates/` at runtime.
 
+**Approval policy (auto mode)**: NOT scaffolded — `.board/approval-policy.md`
+is human-authored law the agent may not write (the guard denies it, ADR-0014).
+Absence simply means every delegated gate escalates. When the user wants
+delegation, tell them to copy
+`${CLAUDE_PLUGIN_ROOT}/project-template/templates/approval-policy.md` to
+`.board/approval-policy.md` themselves and edit the grants.
+
 ### Legacy copy-mode migration (if detected)
 
 If `.claude/skills/sprint/` exists, this project used the pre-plugin copy-mode

@@ -132,6 +132,25 @@ Subagents (spawned by /capiva:implement) have RESTRICTED access:
 
 ---
 
+## Approvals Queue (`.board/approvals.md`, auto mode — ADR-0014)
+
+Escalations from delegated gates queue here; the human resolves them by editing
+Status. One entry per escalation:
+
+```markdown
+## ESC-[N] — [TASK-ID] [gate type] — [timestamp]
+- **Exception**: [one-paragraph exception-first summary from the gate-judge]
+- **Details**: [file:line findings]
+- **Options**: approve as-is | request change | route to attended
+- **Status**: pending | approved | changes-requested: [note] | attended
+```
+
+Rules: agents APPEND entries and READ resolutions — they never edit an entry's
+Status (that is the human's answer). Every resolution the driver acts on is
+logged in Phase History (`gate-escalation-resolved`). Every delegated CLEAR is
+logged too (`gate-delegated`, with the policy/judge basis) — the audit trail
+must show who decided what, human or machine, and on what grounds.
+
 ## Board Integrity Rules
 
 1. **One task in progress.** If "In Progress" has a task, do NOT start another.
