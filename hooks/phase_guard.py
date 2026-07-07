@@ -44,7 +44,7 @@ WRITE_TOOLS = {"Edit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
 # Paths writable in ANY phase — pipeline artifacts plus harness/CI tooling.
-ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", ".github", "docs", "scripts", "templates", "reports")
+ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", ".github", "docs", "scripts", "templates", "reports", "capiva-blueprints")
 ALWAYS_ALLOWED_FILES = ("PLAN.md", ".gitignore", ".mcp.json")
 
 # Heuristics for "this is a test file" (blueprint test layouts: tests/,
