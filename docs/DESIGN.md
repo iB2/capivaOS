@@ -28,7 +28,7 @@ This harness synthesizes ideas from three distinct approaches, each solving part
 
 Pocock's insight: the biggest source of bugs isn't bad code — it's ambiguous requirements. His "grill" process forces the spec to survive hostile questioning before any code is written. Every assumption is surfaced, every edge case is challenged, every "it depends" gets a concrete answer.
 
-**How we adapted it**: Our `/grill-spec` skill (Phase 1) implements this as a structured adversarial interview with concurrent domain modeling. The output isn't just a clarified spec — it's a formal document with GIVEN/WHEN/THEN acceptance criteria, a domain glossary (CONTEXT.md), and Architecture Decision Records for hard-to-reverse choices.
+**How we adapted it**: Our `/capiva:grill-spec` skill (Phase 1) implements this as a structured adversarial interview with concurrent domain modeling. The output isn't just a clarified spec — it's a formal document with GIVEN/WHEN/THEN acceptance criteria, a domain glossary (CONTEXT.md), and Architecture Decision Records for hard-to-reverse choices.
 
 ### 2. Superpowers (obra)
 
@@ -50,7 +50,7 @@ Claudio demonstrated that AI agents work best when they operate from a persisten
 
 Several design elements don't exist in any of the source frameworks:
 
-- **Formal handover protocol** — no source framework had a mechanism for multi-session pipeline continuation. All assumed single-session execution. Our `/handover` skill produces a self-contained document that enables a fresh agent to resume from exactly where the previous agent stopped.
+- **Formal handover protocol** — no source framework had a mechanism for multi-session pipeline continuation. All assumed single-session execution. Our `/capiva:handover` skill produces a self-contained document that enables a fresh agent to resume from exactly where the previous agent stopped.
 - **Context7 documentation discovery** — fetching current library docs via MCP before writing code. Training data staleness is a known problem; no prior framework addressed it systematically.
 - **Artifact-gated progression** — each phase produces files on disk, and the next phase mechanically verifies they exist. This is a stronger guarantee than "the spec should be done before planning" — it's "the plan skill literally cannot execute without the spec file."
 - **Gold-standard artifact templates** — comprehensive examples of what GOOD output looks like for every phase, with anti-slop rules. Models are lazy — if you show them a minimal example, they'll produce minimal output. We show rich examples so the floor is high.
@@ -109,7 +109,7 @@ Several design elements don't exist in any of the source frameworks:
 - No timebox on sprints
 - Compaction counter as signal (0 = healthy, 1 = caution, 2 = mandatory handover)
 - Multi-session execution is expected, not a failure mode
-- `/handover` skill produces documents that enable zero-loss resumption
+- `/capiva:handover` skill produces documents that enable zero-loss resumption
 
 ### 6. Traceability from Spec to PR
 
@@ -117,7 +117,7 @@ Several design elements don't exist in any of the source frameworks:
 
 **Why**: Without traceability, it's impossible to verify that what was shipped matches what was requested. "All tests pass" is meaningless if you can't map tests back to acceptance criteria. The AC coverage matrix in the quality report is the single most important table in the pipeline — it proves that every requirement has a corresponding test.
 
-**How this is enforced**: The AC list is data, not prose. `/grill-spec` emits `docs/specs/TASK-ID-acs.json` (one entry per AC: `id`, `text`, `status`); after spec approval only `status` may change. `/test-verify` generates the quality-report matrix FROM this file and writes verdicts back to it, and `/finish` refuses to create a PR while any AC is not `pass`. A dropped or paraphrased AC is a mechanical failure, not an oversight (see [ADR-0009](adr/0009-machine-readable-ac-gating.md)).
+**How this is enforced**: The AC list is data, not prose. `/capiva:grill-spec` emits `docs/specs/TASK-ID-acs.json` (one entry per AC: `id`, `text`, `status`); after spec approval only `status` may change. `/capiva:test-verify` generates the quality-report matrix FROM this file and writes verdicts back to it, and `/capiva:finish` refuses to create a PR while any AC is not `pass`. A dropped or paraphrased AC is a mechanical failure, not an oversight (see [ADR-0009](adr/0009-machine-readable-ac-gating.md)).
 
 ---
 
@@ -187,6 +187,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0010](adr/0010-fast-lane-pipeline.md) | Fast lane as an alternate state-machine path for small, low-risk tasks |
 | [0011](adr/0011-slim-always-loaded-layer.md) | Gold-standard examples moved into skills; always-loaded layer slimmed |
 | [0012](adr/0012-native-agent-primitives.md) | Native agent definitions with tool allowlists; structured subagent reports |
+| [0013](adr/0013-plugin-distribution.md) | Plugin distribution: engine/state split, self-marketplace, session injection |
 
 ---
 

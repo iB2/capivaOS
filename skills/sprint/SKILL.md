@@ -9,7 +9,7 @@ The sprint skill is the ONLY entry point for the development pipeline. It reads 
 
 ## When to Use
 
-Invoke `/sprint` to:
+Invoke `/capiva:sprint` to:
 - Start a new development sprint (picks tasks from board)
 - Resume an interrupted sprint (reads sprint-state to find where it stopped)
 - Check pipeline status (reports current state without advancing)

@@ -177,6 +177,6 @@ fix(orders): correct decimal precision in FIX message #COS-43
 
 ### Enforcement
 
-- `/implement` subagents produce commits in this format
-- `/finish` validates all branch commits follow Karma convention
+- `/capiva:implement` subagents produce commits in this format
+- `/capiva:finish` validates all branch commits follow Karma convention
 - Non-compliant commits are flagged in the PR review

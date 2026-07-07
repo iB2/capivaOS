@@ -11,7 +11,7 @@ A state-machine-driven development pipeline for Claude Code that enforces spec-d
 
 **Why**: Claude Code without structure jumps to code, skips specs, forgets decisions after compaction, and self-approves mediocre quality. This pipeline makes disciplined development the path of least resistance. Rationale and philosophy: `${CLAUDE_PLUGIN_ROOT}/docs/DESIGN.md`. Boundaries and adaptation: `${CLAUDE_PLUGIN_ROOT}/docs/SCOPE.md`. Failure modes: `${CLAUDE_PLUGIN_ROOT}/docs/troubleshooting.md`.
 
-**Reading order**: first-time setup → run `/init`, then `/sprint`. As an agent → the laws below, then the skill for the current phase. As a maintainer → rules in `${CLAUDE_PLUGIN_ROOT}/rules/`, skills in `${CLAUDE_PLUGIN_ROOT}/skills/`, agents in `${CLAUDE_PLUGIN_ROOT}/agents/`, blueprints in `${CLAUDE_PLUGIN_ROOT}/blueprints/`.
+**Reading order**: first-time setup → run `/capiva:init`, then `/capiva:sprint`. As an agent → the laws below, then the skill for the current phase. As a maintainer → rules in `${CLAUDE_PLUGIN_ROOT}/rules/`, skills in `${CLAUDE_PLUGIN_ROOT}/skills/`, agents in `${CLAUDE_PLUGIN_ROOT}/agents/`, blueprints in `${CLAUDE_PLUGIN_ROOT}/blueprints/`.
 
 ---
 
@@ -101,7 +101,7 @@ Silence is NOT approval. Present the deliverable, then WAIT for explicit approva
 The pipeline is **token-bounded, not time-bounded**. `context-persistence.py` hooks auto-save state on every compaction and session end; SessionStart:compact restores it. Budget model, compaction triggers, and the handover protocol: `${CLAUDE_PLUGIN_ROOT}/rules/context-management.md`.
 
 - Before EVERY phase transition: run the context budget check
-- Quality degradation (forgotten decisions, vague output, repeated questions) = mandatory `/handover` at the next phase boundary; before token-heavy phases (IMPLEMENT, TEST_VERIFY) in a long session = handover; lighter phases = `/compact` with focus
+- Quality degradation (forgotten decisions, vague output, repeated questions) = mandatory `/capiva:handover` at the next phase boundary; before token-heavy phases (IMPLEMENT, TEST_VERIFY) in a long session = handover; lighter phases = `/compact` with focus
 - Multi-session execution via handover is EXPECTED for complex tasks — the artifact chain persists on disk
 
 ### Law 7: Artifact Quality Standards
@@ -114,16 +114,16 @@ Every artifact meets the gold standard: anti-slop rules, schemas, and validation
 
 | Phase | Skill | Does | Gate |
 |-------|-------|------|------|
-| 0 TRIAGE | `/sprint` | Pick highest-priority task, select lane, load spec | — |
-| 1 GRILL_SPEC | `/grill-spec` | Adversarial interview → spec, acs.json, CONTEXT.md terms, ADRs | 🧑 spec approval |
-| 2 PLAN | `/plan` | Context7 docs → micro-tasks with file paths, snippets, tests | 🧑 plan approval |
-| 3 IMPLEMENT | `/implement` | One subagent per micro-task, TDD (RED→GREEN→REFACTOR), feature branch | — (autonomous) |
-| 4 TEST_VERIFY | `/test-verify` | Two-agent tests + adversarial review, static analysis, e2e exercise → quality report | 🧑 quality review |
-| 5 FINISH | `/finish` | PR + CAB/release artifacts, board → Done, cleanup | 🧑 merge decision |
-| fast: SPEC_PLAN | `/spec-plan` | Spec-lite + plan in one pass | 🧑 one combined gate |
-| fast: VERIFY_FINISH | `/verify-finish` | Verify (full thresholds) + PR | 🧑 one combined gate |
+| 0 TRIAGE | `/capiva:sprint` | Pick highest-priority task, select lane, load spec | — |
+| 1 GRILL_SPEC | `/capiva:grill-spec` | Adversarial interview → spec, acs.json, CONTEXT.md terms, ADRs | 🧑 spec approval |
+| 2 PLAN | `/capiva:plan` | Context7 docs → micro-tasks with file paths, snippets, tests | 🧑 plan approval |
+| 3 IMPLEMENT | `/capiva:implement` | One subagent per micro-task, TDD (RED→GREEN→REFACTOR), feature branch | — (autonomous) |
+| 4 TEST_VERIFY | `/capiva:test-verify` | Two-agent tests + adversarial review, static analysis, e2e exercise → quality report | 🧑 quality review |
+| 5 FINISH | `/capiva:finish` | PR + CAB/release artifacts, board → Done, cleanup | 🧑 merge decision |
+| fast: SPEC_PLAN | `/capiva:spec-plan` | Spec-lite + plan in one pass | 🧑 one combined gate |
+| fast: VERIFY_FINISH | `/capiva:verify-finish` | Verify (full thresholds) + PR | 🧑 one combined gate |
 
-`/sprint` orchestrates the loop (state reading, lane selection, transitions, context checks, handover) — see `${CLAUDE_PLUGIN_ROOT}/skills/sprint/SKILL.md`. Between tasks `/clear` is mandatory. Between sessions `/handover` produces the resume document.
+`/capiva:sprint` orchestrates the loop (state reading, lane selection, transitions, context checks, handover) — see `${CLAUDE_PLUGIN_ROOT}/skills/sprint/SKILL.md`. Between tasks `/clear` is mandatory. Between sessions `/capiva:handover` produces the resume document.
 
 ## Quality Gates
 
@@ -167,7 +167,7 @@ Each agent receives task-specific context (spec, CONTEXT.md, blueprint reference
 
 ## Configuration
 
-Required: populated `.board/tasks.md`, initialized `.board/sprint-state.md`, an Active Blueprint (above), and project source in the working directory. Setup, adaptation, custom blueprints, and Jira integration: `${CLAUDE_PLUGIN_ROOT}/docs/SCOPE.md` + `/init`. Blueprint deviations require a Deviation Record (`${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md`); see `${CLAUDE_PLUGIN_ROOT}/rules/enterprise-blueprint.md`.
+Required: populated `.board/tasks.md`, initialized `.board/sprint-state.md`, an Active Blueprint (above), and project source in the working directory. Setup, adaptation, custom blueprints, and Jira integration: `${CLAUDE_PLUGIN_ROOT}/docs/SCOPE.md` + `/capiva:init`. Blueprint deviations require a Deviation Record (`${CLAUDE_PLUGIN_ROOT}/project-template/templates/deviation-record.md`); see `${CLAUDE_PLUGIN_ROOT}/rules/enterprise-blueprint.md`.
 
 ---
 

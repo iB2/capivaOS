@@ -70,11 +70,11 @@ It produces artifacts (PRs, quality reports) that feed INTO your CI pipeline. Th
 - Manage sprints across multiple projects
 - Provide reporting or analytics
 
-If you use Jira, the harness can transition Jira tickets (optional integration in `/finish`), but the board is the sprint-level source of truth.
+If you use Jira, the harness can transition Jira tickets (optional integration in `/capiva:finish`), but the board is the sprint-level source of truth.
 
 ### Not a Framework or Library
 
-You don't import this or add it as a dependency. You **copy** the `.claude/`, `.board/`, and `docs/` directories into your project. It becomes part of your project's Claude Code configuration.
+You don't import this or add it as a dependency. It installs as a **Claude Code plugin** (`/plugin marketplace add iB2/capivaOS` → `/plugin install capiva@capiva`); the engine lives in the plugin cache and updates centrally, while `/capiva:init` scaffolds your project's mutable state (`.board/`, docs skeleton). Air-gapped: add a local clone as the marketplace — no other network access exists (see SECURITY.md).
 
 ### Not Suitable for Fully Autonomous Operation
 
@@ -131,7 +131,7 @@ The harness assumes:
 
 1. **Claude Code is the execution agent.** Skills use Claude Code slash commands and tool conventions. The harness doesn't work with other AI coding assistants without modification.
 
-2. **Context7 MCP is available.** The `/plan` skill queries Context7 for current library documentation. If Context7 is not configured, the skill logs a warning and falls back to training data — but the quality guarantee is weakened.
+2. **Context7 MCP is available.** The `/capiva:plan` skill queries Context7 for current library documentation. If Context7 is not configured, the skill logs a warning and falls back to training data — but the quality guarantee is weakened.
 
 3. **Stack toolchain is installed.** The active blueprint's §build-commands must be executable. The harness doesn't install toolchains.
 
@@ -143,15 +143,15 @@ The harness assumes:
 
 ---
 
-## Project Setup (moved from CLAUDE.md, ADR-0011)
+## Project Setup (ADR-0013)
 
-1. Copy `.claude/`, `.board/`, `docs/`, `project-template/templates/` into your project
-2. Populate project docs: `docs/CONTEXT.md` (domain glossary) and `docs/specs/INTAKE-summary.md` (project scope — see `project-template/templates/intake-summary.md`)
-3. Run `/init` — validates docs, detects your stack, selects the matching blueprint, writes the config
+1. Install the plugin: `/plugin marketplace add iB2/capivaOS` then `/plugin install capiva@capiva` (or `claude plugin install capiva@capiva --scope project` for CI/teams)
+2. Populate project docs: `docs/CONTEXT.md` (domain glossary) and `docs/specs/INTAKE-summary.md` (project scope — template at `${CLAUDE_PLUGIN_ROOT}/project-template/templates/intake-summary.md`)
+3. Run `/capiva:init` — scaffolds `.board/` + docs skeleton, validates docs, detects your stack, writes `.board/harness-config.md`, stamps the schema version
 4. Populate `.board/tasks.md` with your backlog
-5. Run `/sprint` to begin
+5. Run `/capiva:sprint` to begin; update the harness later with `/capiva:update`
 
-Optional: Jira integration (add project key, board ID, transition IDs to CLAUDE.md), quality-threshold overrides (edit `rules/quality-gates.md` + ADR), custom blueprints (below).
+Optional: Jira integration (project key/board ID in your project docs), quality-threshold overrides (documented deviation + ADR), custom blueprints in `capiva-blueprints/` (project overrides shipped).
 
 ## Adaptation Guide
 

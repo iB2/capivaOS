@@ -58,7 +58,7 @@ Context management is **enforced mechanically** via Claude Code hooks, not by ag
 |------|---------|--------|
 | `PreCompact` | Before every auto-compaction | Saves sprint state, board snapshot, git state to `.state/session-state.md` |
 | `SessionStart:compact` | After compaction completes | Restores saved state as `additionalContext`, deletes the file |
-| `Stop` | On session end | Saves final state (skips if manual `/handover` doc exists) |
+| `Stop` | On session end | Saves final state (skips if manual `/capiva:handover` doc exists) |
 
 **Configured in**: the plugin's `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` (dev/copy mode: the project's `.claude/settings.json`) → hooks registered there fire automatically.
 **Script**: `${CLAUDE_PLUGIN_ROOT}/hooks/context-persistence.py` (always exits 0, never blocks).
@@ -83,7 +83,7 @@ The heuristics below were re-checked against current Claude Code context managem
   persist sprint state mechanically), but it remains the best available proxy
   for "this session has been long enough that quality risk is real."
 - **RETAINED — handover at phase boundaries.** Even with automatic continuation,
-  a deliberate `/handover` document beats an automatic summary for multi-session
+  a deliberate `/capiva:handover` document beats an automatic summary for multi-session
   tasks: it is reviewable, versioned, and structured for the next agent.
 
 ### Phase Boundary Checkpoints
@@ -150,7 +150,7 @@ instead of continuing with degraded quality.
 
 ### What Handover Produces
 
-The `/handover` skill produces a self-contained handover document that a fresh agent
+The `/capiva:handover` skill produces a self-contained handover document that a fresh agent
 can read to resume work with zero loss of context. See `${CLAUDE_PLUGIN_ROOT}/skills/handover/SKILL.md`.
 
 ### What Handover Updates
