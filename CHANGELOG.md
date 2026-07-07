@@ -5,7 +5,7 @@ receive updates only when the version in `.claude-plugin/plugin.json` is bumped.
 Schema-affecting changes MUST land with a matching migration row in
 `skills/update-project/SKILL.md`.
 
-## [1.1.0] — unreleased
+## [1.1.0] — 2026-07-08
 
 The autonomy release: capivaOS gains an opt-in AUTO mode under a strict contract
 (ADR-0014), while attended mode remains the unchanged default.
