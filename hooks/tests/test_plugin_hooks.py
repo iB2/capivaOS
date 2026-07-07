@@ -136,6 +136,37 @@ def main():
             compact_ok = "Law 1" not in ctx2 and "credo" in ctx2.lower() and "TST-9" in ctx2
         cases.append(("session_context: compact -> credo reminder only, no full laws", compact_ok))
 
+        # loop persistence (LOOP-004)
+        loop_project = Path(td) / "loop"
+        make_harness_project(loop_project, phase="IMPLEMENT")
+        st = loop_project / ".board" / "sprint-state.md"
+        st.write_text(st.read_text(encoding="utf-8")
+                      + "- **Loop Active**: yes\n- **Loop Task Cap**: 3\n- **Loop Tasks Done**: 1\n",
+                      encoding="utf-8")
+        rc, out, _ = run_script("session_context.py", [], stdin='{"source":"compact"}',
+                                project_dir=loop_project)
+        loop_ok = False
+        if rc == 0 and out.strip():
+            ctx3 = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+            loop_ok = "AUTO_LOOP_RESUME" in ctx3 and "1/3" in ctx3
+        cases.append(("session_context: compact + active loop -> AUTO_LOOP_RESUME with counters", loop_ok))
+
+        rc, out, _ = run_script("session_context.py", [], stdin='{"source":"compact"}',
+                                project_dir=harness_project)
+        no_loop_ok = False
+        if rc == 0 and out.strip():
+            no_loop_ok = "AUTO_LOOP_RESUME" not in json.loads(out)["hookSpecificOutput"]["additionalContext"]
+        cases.append(("session_context: compact + no loop -> no resume block", no_loop_ok))
+
+        (loop_project / ".board" / "harness-config.md").write_text(
+            "- **Active Blueprint**: x\n", encoding="utf-8")
+        rc, _, _ = run_script("context-persistence.py", ["stop"], project_dir=loop_project)
+        snap = loop_project / ".state" / "board-snapshot"
+        cases.append(("context-persistence: stop snapshots full board files",
+                      rc == 0 and (snap / "tasks.md").is_file()
+                      and (snap / "sprint-state.md").is_file()
+                      and (snap / "harness-config.md").is_file()))
+
         # version skew nudge (AC4)
         skew_project = Path(td) / "skew"
         make_harness_project(skew_project, schema_version="0.1.0")
