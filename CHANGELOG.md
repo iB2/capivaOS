@@ -5,7 +5,7 @@ receive updates only when the version in `.claude-plugin/plugin.json` is bumped.
 Schema-affecting changes MUST land with a matching migration row in
 `skills/update-project/SKILL.md`.
 
-## [1.0.0] — unreleased
+## [1.0.0] — 2026-07-07
 
 First plugin release. capivaOS becomes an installable Claude Code plugin +
 self-marketplace (previously: copy-directories template).
