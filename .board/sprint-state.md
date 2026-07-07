@@ -32,6 +32,7 @@ ANY  → IDLE (abort)
 | 2026-07-07 | HARN-010 | IDLE | IDLE | board-write | Added template-cleanup gate (owner-requested): restore pristine board/state/docs before HARN branch merges |
 | 2026-07-07 | HARN-002 | IDLE | IDLE | board-write | HARN-002 done (fast-tracked, owner-approved): dead refs + doc inconsistencies fixed, grep-verified. Commit d5a62cc |
 | 2026-07-07 | HARN-003 | IDLE | IDLE | board-write | HARN-003 done (fast-tracked, owner-approved): universal layer de-.NETted, orphan blueprint.md stubs, agnostic gitignore, −1389 lines. Commit 9684553 |
+| 2026-07-07 | HARN-004 | IDLE | IDLE | board-write | HARN-004 done (fast-tracked, owner-approved): phase_guard.py PreToolUse enforcement, ADR-0008, 21/21 self-tests. AC1 amended per ADR-0008. Commit 7b80f9b |
 
 ## Board Lock
 

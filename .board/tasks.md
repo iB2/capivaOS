@@ -58,6 +58,20 @@
   - **Completed**: 2026-07-07
   - **Notes**: artifact-standards.md worked examples stay .NET-flavored under an explicit example-stack label (per task note). Commit 9684553.
 
+- [x] **HARN-004** Mechanical phase-guard enforcement: PreToolUse hooks (P1)
+  - **Spec**: docs/audits/2026-07-07-harness-audit.md (findings F6.2, F6.6); ADR-0008
+  - **AC**: 3/4 as-specified, 1 deliberately amended — AC2 ✅ (source writes denied outside IMPLEMENT, tests allowed in TEST_VERIFY, denial message points to /sprint), AC3 ✅ (`gh pr create` gated on FINISH + PASS/ACCEPTED_SOFT_FAIL), AC4 ✅ (21/21 scenarios on Windows PowerShell + Git Bash; fail-open with logged warning verified; Linux run lands with HARN-005 CI). **AC1 AMENDED**: dual sprint-state.json REJECTED per ADR-0008 — prompt-disciplined dual-write reintroduces the trust failure this task eliminates; guard parses sprint-state.md directly (single source of truth)
+  - **Depends**: HARN-001
+  - **Assignee**: main
+  - **Status**: Done
+  - **Phase**: IDLE
+  - **Branch**: chore/harness-audit-backlog
+  - **PR**: -- (fast-tracked with owner approval; branch PR covers HARN batch)
+  - **Quality**: .claude/hooks/tests/test_phase_guard.py — the harness's first self-test suite, feeds HARN-005 CI
+  - **Started**: 2026-07-07
+  - **Completed**: 2026-07-07
+  - **Notes**: Hook takes effect in sessions started after merge. CAPIVA_PHASE_GUARD=off escape hatch (logged). `- **Field**:` format now a load-bearing interface (state-management.md documents this). Commit 7b80f9b.
+
 ## Backlog — P0 Critical
 
 <!-- Blocking other work or requiring immediate attention -->
@@ -67,24 +81,6 @@
 ## Backlog — P1 Sprint
 
 <!-- Committed for delivery this sprint -->
-
-- [ ] **HARN-004** Mechanical phase-guard enforcement: PreToolUse hooks + sprint-state.json (P1)
-  - **Spec**: Convert Laws 1–2 from prompt-enforced to hook-enforced. See audit finding F6.2, F6.6. Rationale: Anthropic steering guidance — prompted "never do X" is not a guardrail.
-  - **AC**:
-    1. `sprint-state.json` written alongside sprint-state.md at every transition (phase, task, approvals, gates); markdown stays human-readable view
-    2. PreToolUse hook denies Edit/Write to source paths unless Phase = IMPLEMENT (tests also allowed in TEST_VERIFY), with clear denial message pointing to /sprint
-    3. PreToolUse hook denies `gh pr create` unless Phase = FINISH and Quality Gate = PASS
-    4. Hooks tested on Windows + POSIX; always fail-open with a logged warning if state file is missing/corrupt
-  - **Depends**: HARN-001
-  - **Assignee**: unassigned
-  - **Status**: Backlog
-  - **Phase**: IDLE
-  - **Branch**: --
-  - **PR**: --
-  - **Quality**: --
-  - **Started**: --
-  - **Completed**: --
-  - **Notes**: Highest-leverage design change in the audit.
 
 - [ ] **HARN-010** Template cleanup: restore distribution-pristine state before merge (P1)
   - **Spec**: This repo IS the distributed template — every project that adopts the harness copies `.board/`, `docs/`, `.claude/` verbatim. Session-specific tracking artifacts (HARN board entries, phase-history rows, audit docs) must NOT ship to adopters. This task runs LAST, immediately before the HARN branch merges.
