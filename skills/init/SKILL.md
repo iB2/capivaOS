@@ -1,50 +1,73 @@
 ---
 name: init
-description: Phase 0 — First-time project setup. Validates project docs exist, detects stack, selects blueprint, configures harness. Must run before /capiva:sprint.
+description: Phase 0 — Bootstrap a project for the capivaOS harness. Scaffolds board + docs from the plugin's project-template, validates project docs, detects stack, writes per-project config with schema version. Must run before /capiva:sprint.
 ---
 
-# Init — Phase 0: Project Setup
+# Init — Phase 0: Project Bootstrap
 
-First-time harness configuration for a new project. This skill is the entry point — it runs once, before `/capiva:sprint` ever executes.
+First-time harness setup for a project. Runs once, before `/capiva:sprint` ever
+executes. The engine (skills, hooks, rules, blueprints) lives in the capiva
+plugin; this skill creates the MUTABLE project state the pipeline works on.
 
-## Prerequisites
+## Step 0: Scaffold Project State
 
-The harness directories must already be copied into the project:
-- `.claude/` (skills, rules, blueprints, agents)
-- `.board/` (task board, sprint state)
-- `docs/` (context, ADRs, specs)
-- `${CLAUDE_PLUGIN_ROOT}/project-template/templates/` (deviation records, solution docs)
+Copy from `${CLAUDE_PLUGIN_ROOT}/project-template/` into the project root.
+**Never overwrite an existing file** — for each item: if it exists, report
+"already present" and skip.
 
-If these don't exist, tell the user:
+| Source (in plugin) | Destination (in project) |
+|--------------------|--------------------------|
+| `${CLAUDE_PLUGIN_ROOT}/project-template/.board/tasks.md` | `.board/tasks.md` |
+| `${CLAUDE_PLUGIN_ROOT}/project-template/.board/sprint-state.md` | `.board/sprint-state.md` |
+| `${CLAUDE_PLUGIN_ROOT}/project-template/docs/specs/.gitkeep` | `docs/specs/.gitkeep` (and reports/, tech-context/) |
+| `${CLAUDE_PLUGIN_ROOT}/project-template/gitignore-additions.txt` | APPEND to `.gitignore` (skip lines already present) |
+
+Then, if `docs/CONTEXT.md` does not exist, create the stub:
+
+```markdown
+# Domain Context
+
+## Glossary
+| Term | Definition | Used In Code As | Avoid |
+|------|-----------|-----------------|-------|
+
+## Acronyms
+| Acronym | Meaning |
+|---------|---------|
+
+## Domain Rules
+<!-- Business rules that constrain implementation -->
 ```
-Harness directories not found. Copy them first:
 
-  git clone https://github.com/iB2/capivaOS.git .harness-tmp
-  cp -r .harness-tmp/.claude .claude
-  cp -r .harness-tmp/.board .board
-  cp -r .harness-tmp/docs docs
-  cp -r .harness-tmp/templates templates
-  rm -rf .harness-tmp
+Doc templates (CAB ticket, release checklist, deviation record, solution
+document, intake summary) are NOT copied — skills read them from
+`${CLAUDE_PLUGIN_ROOT}/project-template/templates/` at runtime.
 
-Then run /capiva:init again.
-```
+### Legacy copy-mode migration (if detected)
 
-## Process
+If `.claude/skills/sprint/` exists, this project used the pre-plugin copy-mode
+harness. Offer migration — **order matters** (a moved hook script deadlocks the
+session that registered it: the hook snapshot points at the old path and a
+missing-file python error reads as a deny):
 
-### Step 1: Check Project Documentation (GATE)
+1. Rewrite `.claude/settings.json`: remove the harness hook entries (the plugin's
+   `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` now provides them; keep any user-added non-harness hooks)
+2. **Leave `.claude/hooks/*.py` in place for now** — the running session's hook
+   snapshot still points there. They become dead files after restart.
+3. Delete `.claude/skills/`, `.claude/rules/`, `.claude/agents/`,
+   `.claude/blueprints/` ONLY after the user confirms the plugin versions work
+   (project-level copies would silently shadow the plugin's)
+4. Tell the user: "Restart the session, verify `/capiva:sprint` works, then delete
+   `.claude/hooks/` — or run `/capiva:init` again and I'll finish the cleanup."
 
-**This step is a hard gate. Do not proceed past it without docs.**
+## Step 1: Check Project Documentation (GATE)
 
-Check for these two files:
+**Hard gate. Do not proceed without docs.**
 
-1. `docs/CONTEXT.md` — must have **at least one glossary entry or domain rule** (not just the empty template)
+1. `docs/CONTEXT.md` — must have **at least one glossary entry or domain rule** (the stub from Step 0 does not count)
 2. `docs/specs/INTAKE-summary.md` — must exist with project scope, stakeholders, and key requirements
 
-**How to check**:
-- Read `docs/CONTEXT.md`. If it only contains the empty table headers (no actual terms), it counts as missing.
-- Check if `docs/specs/INTAKE-summary.md` exists and has content.
-
-**If EITHER is missing or empty → STOP.** Present this message:
+**If EITHER is missing or empty → STOP.** Present:
 
 ```
 ⛔ Project documentation required before harness setup.
@@ -59,39 +82,19 @@ Missing:
 
 What to do:
 1. Gather your raw materials (transcripts, requirements docs, emails, specs)
-2. Draft the documents from those materials — ${CLAUDE_PLUGIN_ROOT}/project-template/templates/intake-summary.md
-   defines the INTAKE format; ask Claude to generate first drafts if useful
+2. Draft the documents — the INTAKE format template is at
+   ${CLAUDE_PLUGIN_ROOT}/project-template/templates/intake-summary.md;
+   ask Claude to generate first drafts if useful
 3. Run /capiva:init again once the docs are populated
-
-Template structure for INTAKE-summary.md:
-
-  # Project Intake Summary
-  ## Project Name
-  ## Stakeholders (who, role, decision authority)
-  ## Problem Statement (what problem this solves)
-  ## Scope (in scope / out of scope)
-  ## Key Requirements (numbered, measurable)
-  ## Constraints (timeline, budget, compliance, tech)
-  ## Open Questions (unresolved items that need answers)
-
-Template structure for CONTEXT.md:
-
-  See docs/CONTEXT.md — fill in the Glossary, Acronyms, and Domain Rules.
 ```
 
-**Do NOT proceed to Step 2 until both docs have real content.**
+## Step 2: Read Project Documentation
 
-### Step 2: Read Project Documentation
+- Read `docs/CONTEXT.md` — domain terms, acronyms, business rules
+- Read `docs/specs/INTAKE-summary.md` — project name, scope, stakeholders, requirements, constraints
+- Read `docs/adr/` if present — existing project architectural decisions
 
-Now that docs exist, read them to understand the project:
-
-- Read `docs/CONTEXT.md` — extract domain terms, acronyms, business rules
-- Read `docs/specs/INTAKE-summary.md` — extract project name, scope, stakeholders, requirements, constraints
-- Read `${CLAUDE_PLUGIN_ROOT}/docs/adr/` — check for any existing architectural decisions
-
-Note the project name, domain, and any technology constraints mentioned.
-
-### Step 3: Detect Stack
+## Step 3: Detect Stack
 
 Scan the project root for technology markers:
 
@@ -102,76 +105,79 @@ Scan the project root for technology markers:
 | `package.json` without `next` | Node.js (suggest `nextjs-typescript` or flag as unsupported) |
 | `requirements.txt` or `pyproject.toml` with `fastapi` | Python FastAPI → `python-fastapi` |
 | `requirements.txt` or `pyproject.toml` without `fastapi` | Python (suggest `python-fastapi` or flag as unsupported) |
-| `go.mod` | Go (no blueprint yet — flag) |
-| `Cargo.toml` | Rust (no blueprint yet — flag) |
+| `go.mod` | Go (no shipped blueprint — flag) |
+| `Cargo.toml` | Rust (no shipped blueprint — flag) |
 
-**If multiple markers exist** (e.g., a monorepo), ask the user which stack is the primary target.
+**Multiple markers** (monorepo) → ask which stack is the primary target.
 
-**If no marker matches an available blueprint**, tell the user:
+**No matching blueprint** → tell the user:
 ```
 No matching blueprint found for this stack.
-Available blueprints: dotnet-hexagonal, python-fastapi, nextjs-typescript
+Shipped blueprints: dotnet-hexagonal, python-fastapi, nextjs-typescript
 
 Options:
-1. Create a custom blueprint: ${CLAUDE_PLUGIN_ROOT}/blueprints/<name>/reference.md
-   (use an existing blueprint as template — every § section is required)
+1. Create a custom blueprint in YOUR project: capiva-blueprints/<name>/reference.md
+   (project blueprints override shipped ones; copy a shipped reference.md as the
+   starting structure — every § section is required)
 2. Proceed without a blueprint (not recommended — skills lose stack context)
 ```
 
-### Step 4: Confirm and Configure
-
-Present the detected configuration to the user for approval:
+## Step 4: Confirm
 
 ```
 Project Setup Summary:
 
   Project: [name from INTAKE-summary]
   Stack detected: [stack]
-  Blueprint: [blueprint name]
+  Blueprint: [name] (resolved from: capiva-blueprints/ | plugin)
   Domain terms loaded: [count from CONTEXT.md]
-  ADRs found: [count]
+  Harness version: [from ${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json]
   Constraints: [any from INTAKE-summary]
 
 Proceed with this configuration?
 ```
 
-**Wait for explicit approval before writing any files.**
+**Wait for explicit approval before writing configuration.**
 
-### Step 5: Write Configuration
+## Step 5: Write Configuration (project files only — NEVER into the plugin)
 
-After approval:
+1. Write `.board/harness-config.md`:
 
-1. **Set Active Blueprint** in `${CLAUDE_PLUGIN_ROOT}/rules/laws.md`:
-   - Find the line `Active Blueprint: ${CLAUDE_PLUGIN_ROOT}/blueprints/dotnet-hexagonal` (or whatever the current default is)
-   - Replace with `Active Blueprint: ${CLAUDE_PLUGIN_ROOT}/blueprints/[detected-blueprint]`
+```markdown
+# Harness Config
 
-2. **Verify board exists** — check `.board/tasks.md` exists. If empty, remind the user to populate it:
-   ```
-   .board/tasks.md is empty. Add your backlog before running /capiva:sprint:
+- **Active Blueprint**: [blueprint-name]
+- **Configured**: [ISO date]
+- **Installed Via**: plugin | copy-mode
+```
 
-     ## Backlog
-     - [ ] P1: [first task description] #TASK-001
-     - [ ] P2: [second task description] #TASK-002
-   ```
+2. Write `.board/harness-schema-version` containing exactly the plugin's
+   `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (no
+   newline decoration — the session-context hook and `/capiva:update` compare
+   this stamp).
 
-3. **Verify sprint-state exists** — check `.board/sprint-state.md` exists and has the initial structure.
+3. If `.board/tasks.md` has no tasks, remind the user to populate the backlog
+   before running /capiva:sprint.
 
-### Step 6: Report Readiness
+## Step 6: Report Readiness
 
 ```
 ✓ Harness initialized.
 
-  Active Blueprint: [blueprint name]
+  Active Blueprint: [name]
+  Schema version: [version] (stamped)
   Project docs: ✓ CONTEXT.md + INTAKE-summary.md
   Board: [✓ populated | ⚠ empty — add tasks before /capiva:sprint]
-  Sprint state: ✓ ready
 
-Next step: Run /capiva:sprint to begin the development pipeline.
+Next: run /capiva:sprint to begin the pipeline.
+Update the harness later with `/capiva:update`.
 ```
 
 ## Rules
 
-- **Docs gate is non-negotiable.** No docs = no setup. This prevents the cascade of wrong assumptions downstream.
-- **One-time skill.** After init completes, the harness is configured. Re-running `/init` should detect the existing config and ask if the user wants to reconfigure.
-- **Never auto-select without confirmation.** Always present the detected stack/blueprint and wait for approval.
-- **No code generation.** This skill configures the harness — it doesn't create application code, scaffolds, or boilerplate.
+- **Docs gate is non-negotiable.** No docs = no setup.
+- **Scaffold never overwrites.** Existing files are reported and skipped.
+- **Config is project-side only.** The plugin directory is a versioned read-only cache — writing there is a defect.
+- **Re-running is safe.** Init detects existing config and asks before reconfiguring; it also finishes legacy-migration cleanup when invited to.
+- **Never auto-select without confirmation.** Present the detected stack/blueprint and wait.
+- **No code generation.** Configures the harness only.

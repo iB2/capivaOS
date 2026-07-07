@@ -24,7 +24,7 @@ Check all three conditions:
 
 1. `docs/CONTEXT.md` exists and has **at least one glossary entry or domain rule** (not just empty template headers)
 2. `docs/specs/INTAKE-summary.md` exists and has content
-3. The `Active Blueprint:` line in `${CLAUDE_PLUGIN_ROOT}/rules/laws.md` points to a blueprint directory that exists on disk (e.g., `${CLAUDE_PLUGIN_ROOT}/blueprints/nextjs-typescript/reference.md` is a real file)
+3. `.board/harness-config.md` has an `- **Active Blueprint**:` field whose blueprint resolves on disk — `capiva-blueprints/<name>/reference.md` in the project, or `${CLAUDE_PLUGIN_ROOT}/blueprints/<name>/reference.md` in the plugin
 
 **If ANY condition fails → STOP:**
 
