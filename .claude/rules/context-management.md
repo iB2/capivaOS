@@ -65,7 +65,7 @@ Context management is **enforced mechanically** via Claude Code hooks, not by ag
 
 This means: the agent does NOT need to "track compaction count" — the hooks save and restore state automatically. The agent's job is to follow the phase boundary rules below.
 
-### 2026-07 Re-Benchmark (HARN-009, ADR-0012)
+### 2026-07 Re-Benchmark (ADR-0012)
 
 The heuristics below were re-checked against current Claude Code context management:
 
