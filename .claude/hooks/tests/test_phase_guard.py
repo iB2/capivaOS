@@ -95,10 +95,18 @@ def main():
         cases.append(("missing state: fail-open allow", denied is False and rc == 0))
         cases.append(("missing state: warns on stderr", "failing open" in err))
 
-        # escape hatch
+        # escape hatch (env)
         set_state("IDLE")
         denied, _, err = run_guard(root, "Edit", {"file_path": src}, {"CAPIVA_PHASE_GUARD": "off"})
-        cases.append(("escape hatch: allow + logged", denied is False and "disabled" in err))
+        cases.append(("escape hatch env: allow + logged", denied is False and "disabled" in err))
+
+        # escape hatch (marker file — works when env can't reach the hook process)
+        (root / ".state").mkdir(exist_ok=True)
+        (root / ".state" / "phase-guard-off").write_text("", encoding="utf-8")
+        denied, _, err = run_guard(root, "Edit", {"file_path": src})
+        cases.append(("escape hatch marker: allow + logged", denied is False and "marker" in err))
+        (root / ".state" / "phase-guard-off").unlink()
+        cases.append(("marker removed: deny again", run_guard(root, "Edit", {"file_path": src})[0] is True))
 
         # outside project root
         set_state("IDLE")

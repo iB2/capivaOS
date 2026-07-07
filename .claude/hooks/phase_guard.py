@@ -20,7 +20,12 @@ sprint-state.json — a dual file would drift from the markdown (ADR-0008).
 Fail-open: if sprint-state.md is missing or unparseable, the guard allows the
 call and prints a warning to stderr. It must never brick a project.
 
-Escape hatch: set CAPIVA_PHASE_GUARD=off to disable (logged to stderr).
+Escape hatch (both logged to stderr):
+  - env  CAPIVA_PHASE_GUARD=off  — must be set in Claude Code's own environment
+    at launch (the hook is spawned by Claude Code, so per-command env vars in a
+    shell tool call cannot reach it)
+  - file .state/phase-guard-off  — create to disable mid-session, delete to
+    re-enable; gitignored, explicit, auditable
 
 Keep the field parser in sync with context-persistence.py (same format).
 """
@@ -141,6 +146,9 @@ def _check_shell(tool_input: dict, phase: str, gate: str):
 def main():
     if os.environ.get("CAPIVA_PHASE_GUARD", "").lower() in ("off", "0", "false"):
         print("phase_guard: disabled via CAPIVA_PHASE_GUARD", file=sys.stderr)
+        _allow()
+    if (PROJECT_ROOT / ".state" / "phase-guard-off").is_file():
+        print("phase_guard: disabled via .state/phase-guard-off marker", file=sys.stderr)
         _allow()
 
     try:
