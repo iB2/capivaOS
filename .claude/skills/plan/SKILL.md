@@ -13,20 +13,10 @@ Before decomposing into tasks, the /plan skill MUST validate architectural compl
 
 ### Pre-Decomposition Architecture Check
 
-1. **Read** `enterprise-blueprint.md` for Hexagonal Architecture constraints
-2. **Validate** that every new file in the plan maps to the correct Hexagonal layer:
-   - Domain entities/interfaces → `src/Core/[Project].Domain/`
-   - Use cases, DTOs, validators → `src/Core/[Project].Application/`
-   - Repositories, DbContext → `src/Driven/[Project].Infrastructure/`
-   - Controllers, middleware → `src/Drivers/[Project].Api/`
-   - Azure Function triggers → `src/Drivers/[Project].FunctionDriver/`
-3. **Verify** dependency direction: Drivers → Application → Domain ← Infrastructure
-4. **Check** that enterprise patterns are used:
-   - Use Case pattern (one class per operation, interface + implementation)
-   - Bootstrapper pattern for DI registration
-   - FluentValidation for request validation
-   - ProblemDetails for error responses
-   - Primary constructors, sealed classes, `this.` prefix
+1. **Read** the active blueprint's `reference.md` for architecture constraints (§architecture section)
+2. **Validate** that every new file in the plan maps to the correct architectural layer per the blueprint
+3. **Verify** dependency direction as defined in the blueprint's §architecture
+4. **Check** that enterprise patterns from the blueprint's §enterprise-patterns are used
 5. **Flag** any planned code that would deviate from the blueprint — create a Deviation Record task
 
 If any deviation is identified:
@@ -51,14 +41,14 @@ When spawning the arch role:
 ```
 Agent(
   role: .claude/agents/roles/arch.md
-  input: spec + existing architecture + CONTEXT.md
+  input: spec + existing architecture + CONTEXT.md + blueprint reference.md
   output: ADRs + layer assignments + interface definitions
 )
 ```
 
 The arch role produces:
 - ADRs for significant decisions → `docs/adr/`
-- Layer placement table (every new class → correct Hexagonal project)
+- Layer placement table (every new class → correct project per blueprint §architecture)
 - Interface definitions (precise enough for dev role implementation)
 - Deviation Records for any blueprint non-compliance → `docs/deviations/`
 
@@ -80,6 +70,7 @@ The arch role produces:
 - Read `docs/specs/TASK-ID-spec.md` (the approved spec — NOT just the board task)
 - Read `docs/CONTEXT.md` for domain terms
 - Read `docs/adr/` for architectural constraints
+- Read the active blueprint's `reference.md` for stack-specific patterns
 - Scan the codebase for existing patterns to follow
 
 ### Step 1.5: Documentation Discovery (Context7)
@@ -88,9 +79,9 @@ Before designing the approach, verify that your knowledge of the libraries invol
 Training data may be stale — APIs change, packages get deprecated, new patterns emerge.
 
 1. **Identify libraries this task will use:**
-   - Scan `.csproj` files for `<PackageReference>` entries
+   - Scan the project's dependency files (per blueprint §build-commands — e.g., `.csproj`, `requirements.txt`, `package.json`)
    - Cross-reference with the spec's Technical Context and Integration Points
-   - Include test libraries if the task involves new test patterns (Testcontainers, etc.)
+   - Include test libraries if the task involves new test patterns
 
 2. **Query Context7 for each relevant library:**
    ```
@@ -100,10 +91,6 @@ Training data may be stale — APIs change, packages get deprecated, new pattern
    ```
    
    **Focus queries on what THIS task needs** — don't dump entire library docs.
-   Examples of good queries:
-   - `query-docs(testcontainers-dotnet, "IAsyncLifetime container lifecycle setup")`
-   - `query-docs(entity-framework-core, "ExecuteUpdateAsync bulk operations")`
-   - `query-docs(nsubstitute, "Returns async method substitution")`
 
 3. **Write tech context file:**
    Save to `docs/tech-context/TASK-ID-tech.md`:
@@ -114,9 +101,9 @@ Training data may be stale — APIs change, packages get deprecated, new pattern
    
    ## Libraries Referenced
    
-   | Library | Version (from .csproj) | Context7 ID | Queries |
-   |---------|----------------------|-------------|---------|
-   | [name]  | [version]            | [id]        | [topics queried] |
+   | Library | Version (from dependency file) | Context7 ID | Queries |
+   |---------|-------------------------------|-------------|---------|
+   | [name]  | [version]                     | [id]        | [topics queried] |
    
    ## [Library Name] — [Specific Topic]
    
@@ -152,28 +139,25 @@ Break the approved approach into ordered tasks. Each task contains:
 ```markdown
 ## Task N: [One-sentence description]
 
-**Files:** `src/Core/[Project].Application/UseCases/[Feature]/[File].cs` (create | modify)
-**Layer:** Application (Use Case) | Domain (Entity) | Infrastructure (Repository) | Drivers (Controller)
+**Files:** `[path per blueprint §architecture]` (create | modify)
+**Layer:** [Layer name per blueprint §architecture]
 
 **Code:**
-```csharp
+```[language]
 // Enough code for a zero-context agent to implement
 // Include method signatures, class structure, key logic
+// Follow patterns from blueprint reference.md §coding-standards
 ```
 
 **Test:**
-```csharp
+```[language]
 // The failing test to write FIRST (TDD red phase)
-[Fact]
-public async Task MethodName_Scenario_ExpectedResult()
-{
-    // Arrange / Act / Assert skeleton
-}
+// Follow test conventions from blueprint reference.md §test-stack
 ```
 
 **Verify:**
 ```bash
-dotnet test --filter "ClassName.MethodName_Scenario_ExpectedResult"
+[verification command from blueprint reference.md §build-commands]
 ```
 
 **Depends on:** Task M (if any)
@@ -204,8 +188,9 @@ docs/specs/[TASK-ID]-spec.md
 docs/tech-context/[TASK-ID]-tech.md — [libraries queried, any notable findings]
 
 ## Architecture
-- **Dependency direction verified**: Drivers → Application → Domain ← Infrastructure
-- **Enterprise patterns used**: [Use Case, Bootstrapper, FluentValidation, etc.]
+- **Blueprint**: [active blueprint name]
+- **Dependency direction verified**: [per blueprint §architecture]
+- **Enterprise patterns used**: [per blueprint §enterprise-patterns]
 - **Deviations**: [None | list with Deviation Record references]
 - **ADRs created**: [None | list]
 
@@ -213,9 +198,7 @@ docs/tech-context/[TASK-ID]-tech.md — [libraries queried, any notable findings
 
 | File | Layer | Project | Justification |
 |------|-------|---------|---------------|
-| `QuoteExpirationUseCase.cs` | Application | src/Core/ | Use Case — orchestrates domain logic |
-| `IQuoteRepository.cs` | Domain | src/Core/ | Port — domain defines the interface |
-| `QuoteRepository.cs` | Infrastructure | src/Driven/ | Adapter — implements domain port |
+| [file] | [layer] | [project path] | [reason per blueprint §architecture] |
 
 ## Approach
 [Approved approach from Step 2, informed by verified library docs from Step 1.5]
@@ -248,7 +231,7 @@ Task 1 (interfaces)
 - [ ] Every new method has a corresponding test
 - [ ] CONTEXT.md terms used consistently in code
 - [ ] No ADR violations
-- [ ] No new compiler warnings
+- [ ] No new compiler/linter warnings
 ```
 
 ### Step 6: Present for Approval
@@ -301,18 +284,17 @@ If ANY check fails → STOP. Report: "Spec quality below standard: [specific iss
 Before presenting the plan for approval, validate against `.claude/rules/artifact-standards.md` "Artifact 2: PLAN.md":
 
 - [ ] Every task has Purpose, Files, Context, Implementation, Test, and Verify sections
-- [ ] File paths are absolute from project root (`src/Domain/...` not "in the domain folder")
+- [ ] File paths are absolute from project root (not vague "in the domain folder")
 - [ ] Context section shows existing code the subagent needs to understand (not just "see codebase")
-- [ ] Implementation section shows complete code with namespace, class, method signatures
+- [ ] Implementation section shows complete code with proper structure per blueprint
 - [ ] Test section shows a complete failing test skeleton (not "write a test")
-- [ ] Verify section has an exact `dotnet test --filter` command (not just "dotnet test")
+- [ ] Verify section has an exact test filter command per blueprint §build-commands (not just "run tests")
 - [ ] Dependency graph is present and consistent with task ordering
 - [ ] Risk assessment identifies highest risk task with specific concern
 - [ ] Rejected alternatives section explains what was NOT chosen and why
-- [ ] Layer Assignment table present: every new file mapped to Hexagonal layer with `| File | Layer | Project | Justification |`
-- [ ] Every new file mapped to correct Hexagonal layer (Domain/Application/Infrastructure/Drivers)
-- [ ] Dependency direction verified (no Infrastructure→Application, no Domain→anything)
-- [ ] Enterprise patterns used where applicable (Use Case, Bootstrapper, FluentValidation, ProblemDetails)
+- [ ] Layer Assignment table present: every new file mapped to correct layer per blueprint §architecture
+- [ ] Dependency direction verified per blueprint §architecture
+- [ ] Enterprise patterns used where applicable per blueprint §enterprise-patterns
 - [ ] Deviation Records created for any blueprint non-compliance
 - [ ] Tech Context reference points to existing `docs/tech-context/TASK-ID-tech.md`
 - [ ] Code snippets use API patterns verified by Context7 (not stale training data)
@@ -327,7 +309,7 @@ If ANY check fails → iterate on the plan before presenting.
 - **Code snippets must be sufficient.** Zero-context agent must be able to implement from the task alone.
 - **File paths must be exact.** Not "somewhere in services" — full path.
 - **TDD ordering.** Test task comes before (or is embedded within) implementation task.
-- **PLAN.md is self-contained.** PLAN.md + CONTEXT.md + tech-context = everything a subagent needs.
+- **PLAN.md is self-contained.** PLAN.md + CONTEXT.md + tech-context + blueprint reference.md = everything a subagent needs.
 - **No code.** This skill produces the plan, never implementation code.
 - **Spec is input, not repeated.** Reference the spec file, don't paste it into the plan.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.

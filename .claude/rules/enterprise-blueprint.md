@@ -1,400 +1,58 @@
 # Enterprise Blueprint — Hard Constraints
 
-> These constraints come from the Capiva OS enterprise blueprint template and SDLC Process Documentation.
+> These constraints come from the Capiva OS enterprise blueprint system.
 > They are NOT suggestions — they are enforceable rules. The harness validates compliance at every phase.
 
----
-
-## Architecture: Hexagonal (Ports & Adapters)
-
-Every project MUST follow the Hexagonal Architecture pattern from the blueprint:
-
-```
-src/
-  Core/                          # Inner hexagon — business logic
-    [Project].Domain/            # Entities, value objects, domain interfaces, enums
-    [Project].Application/       # Use cases, DTOs, validators, application interfaces
-  Driven/                        # Secondary adapters — infrastructure
-    [Project].Infrastructure/    # Repositories, EF DbContext, external integrations
-  Drivers/                       # Primary adapters — entry points
-    [Project].Api/               # ASP.NET Core Web API controllers
-    [Project].FunctionDriver/    # Azure Functions triggers (optional)
-
-tests/
-  [Project].Domain.Tests/
-  [Project].Application.Tests/
-  [Project].Infrastructure.Tests/
-  [Project].Integration.Tests/
-```
-
-### Dependency Direction (INVIOLABLE)
-
-```
-Drivers → Application → Domain ← Infrastructure
-```
-
-- **Domain**: Zero dependencies on other project layers. Pure business logic.
-- **Application**: Depends ONLY on Domain. Defines use cases, DTOs, validators.
-- **Infrastructure**: Depends on Domain (implements domain interfaces). NEVER on Application.
-- **Drivers (Api/Functions)**: Depends on Application. Entry points are THIN — delegate to use cases.
-- **NO circular dependencies. NO shortcuts. NO "just this once."**
-
-### Namespace Convention
-
-```
-[Company].[Project].[Layer].[Feature]
-```
-
-Example: `Capiva.OS.Application.UseCases.Quotes`
+Stack-specific enterprise patterns are defined in the active blueprint's `reference.md` file. This document defines the **universal rules** that apply regardless of technology stack.
 
 ---
 
-## .NET Version & Language
+## Architecture Enforcement
 
-- **Target**: .NET 10 (`net10.0`) — NOT .NET 8
-- **C# version**: Latest (C# 13+)
-- **SDK**: 10.0.x
-- **Nullable reference types**: `enable` (project-wide)
-- **Implicit usings**: `enable`
+Every project MUST follow the architecture defined in the active blueprint's `reference.md` §architecture section. The harness validates:
+
+1. **Layer placement**: Every class/module in the correct architectural layer
+2. **Dependency direction**: Dependencies flow inward (as defined per blueprint)
+3. **No circular dependencies. No shortcuts. No "just this once."**
+
+Read the active blueprint's §architecture for the specific project structure, layer rules, and dependency direction for your stack.
 
 ---
 
 ## Enterprise Patterns (MANDATORY)
 
-### Use Case Pattern
+The active blueprint's `reference.md` §enterprise-patterns section defines the mandatory patterns for the stack. Universal requirements across all blueprints:
 
-One class per business operation. Every use case has an interface.
+### Service/Use Case Pattern
+- One class per business operation with interface/abstraction
+- Dependency injection for all dependencies
+- No static methods for business logic
 
-```csharp
-public interface ICreateCustomerUseCase
-{
-    Task<CustomerResponse> ExecuteAsync(CreateCustomerRequest request, CancellationToken ct);
-}
+### Repository Pattern
+- Return domain objects, not DTOs
+- Filter active (non-deleted) records by default
+- Accept cancellation/timeout mechanisms per stack conventions
 
-public sealed class CreateCustomerUseCase(
-    ICustomerRepository customerRepository,
-    IBuilder<CreateCustomerRequest, Customer> customerBuilder) : ICreateCustomerUseCase
-{
-    Task<CustomerResponse> ICreateCustomerUseCase.ExecuteAsync(
-        CreateCustomerRequest request, CancellationToken ct)
-    {
-        // implementation
-    }
-}
-```
-
-**Dependency Records** group related use cases for DI:
-
-```csharp
-public sealed record CustomerUseCaseDependencies(
-    ICreateCustomerUseCase CreateCustomer,
-    IGetCustomerByIdUseCase GetCustomerById,
-    IUpdateCustomerUseCase UpdateCustomer);
-```
-
-### Builder Pattern (Inlined Mapping)
-
-Use `IBuilder<TInput, TOutput>` from `Application/Mapping/` for all DTO ↔ Entity transformations. The mapping interfaces and implementation (`IBuilder`, `Builder`, `MappingExtensions`) live inside the Application project — no external package required.
-
-```csharp
-public sealed class CustomerToResponseBuilder : IBuilder<Customer, CustomerResponse>
-{
-    public CustomerResponse Build(Customer source) => new()
-    {
-        Id = source.Id,
-        Name = source.Name,
-        Email = source.Email
-    };
-}
-```
-
-Auto-registration: `services.AddMapping(assembly)` in the bootstrapper scans and registers all builders.
-
-**Deviation allowed**: If the inlined mapping pattern doesn't fit (e.g., Azure Functions project with simple transforms), manual static mappers are acceptable — but MUST be documented via a Deviation Record (see below).
-
-### Bootstrapper Pattern
-
-Layered DI registration. Each layer owns its registrations:
-
-```csharp
-// In Application project
-public static class ApplicationBootstrapper
-{
-    public static IServiceCollection Register(this IServiceCollection services)
-    {
-        _ = services.AddTransient<ICreateCustomerUseCase, CreateCustomerUseCase>();
-        _ = services.AddMapping(typeof(ApplicationBootstrapper).Assembly);
-        return services;
-    }
-}
-
-// In Infrastructure project
-public static class InfrastructureBootstrapper
-{
-    public static IServiceCollection Register(this IServiceCollection services, IConfiguration configuration)
-    {
-        _ = services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("Default")));
-        _ = services.AddTransient<ICustomerRepository, CustomerRepository>();
-        return services;
-    }
-}
-```
-
-Called from Program.cs: `builder.Services.Register().Register(builder.Configuration);`
-
-### FluentValidation
-
-Auto-validation via `AsyncAutoValidation` filter + `AsyncModelStateFilter`:
-
-```csharp
-public sealed class CreateCustomerRequestValidator : AbstractValidator<CreateCustomerRequest>
-{
-    public CreateCustomerRequestValidator()
-    {
-        this.RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
-        this.RuleFor(x => x.Email).NotEmpty().EmailAddress();
-    }
-}
-```
-
-Registration: `services.AddValidatorsFromAssembly(assembly)` + endpoint filter pipeline.
+### Validation at Boundaries
+- All input validated before reaching business logic
+- Stack-specific validation framework (per blueprint §enterprise-patterns)
 
 ### ProblemDetails for All Errors
-
-All error responses MUST use RFC 7807 ProblemDetails:
-
-```csharp
-public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
-{
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try { await next(context); }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception");
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await context.Response.WriteAsJsonAsync(new ProblemDetails
-            {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "Internal Server Error",
-                Detail = ex.Message
-            });
-        }
-    }
-}
-```
+- All error responses MUST use RFC 7807 ProblemDetails-style JSON
+- Structured error responses with type, title, status, detail
 
 ### Soft Deletes
+- Entities use an active/deleted flag — NEVER hard delete
+- Repository queries filter active records by default
+- "Delete" operations set the flag, never remove the row
 
-Entities use an `Active` boolean flag — NEVER hard delete:
-
-```csharp
-public bool Active { get; set; } = true;
-```
-
-Repository queries filter by `Active == true` by default. "Delete" operations set `Active = false`.
-
-**Deviation allowed**: Status-based lifecycle (e.g., `Resolved`, `Cancelled`) may replace soft deletes when the business domain requires it — document via Deviation Record.
-
----
-
-## Code Style (MANDATORY)
-
-### Primary Constructors (C# 12+)
-
-ALL classes with DI use primary constructors:
-
-```csharp
-// CORRECT
-public sealed class QuoteService(IQuoteRepository repository, ILogger<QuoteService> logger)
-
-// WRONG — do not use traditional constructors for DI
-public class QuoteService
-{
-    private readonly IQuoteRepository _repository;
-    public QuoteService(IQuoteRepository repository) => _repository = repository;
-}
-```
-
-### Sealed Classes
-
-ALL classes are `sealed` unless explicitly designed for inheritance (rare):
-
-```csharp
-public sealed class QuoteService(IQuoteRepository repository) : IQuoteService { }
-```
-
-### Explicit Interface Implementation
-
-Services use explicit interface implementation — consumers access via interface, not concrete type:
-
-```csharp
-public sealed class CreateCustomerUseCase : ICreateCustomerUseCase
-{
-    Task<CustomerResponse> ICreateCustomerUseCase.ExecuteAsync(
-        CreateCustomerRequest request, CancellationToken ct) { }
-}
-```
-
-### `this.` Prefix
-
-Use `this.` for all local member calls:
-
-```csharp
-this.Ok(response);
-this.HttpContext.RequestAborted;
-this.RuleFor(x => x.Name);
-```
-
-### Alphabetical Sorting
-
-Sort members alphabetically within their visibility group, respecting StyleCop ordering:
-1. Constants
-2. Static fields
-3. Instance fields
-4. Constructors
-5. Properties
-6. Methods
-
-Within each group, sort A→Z.
-
-### Discard Pattern
-
-Use `_ =` for fluent API return values that aren't consumed:
-
-```csharp
-_ = services.AddTransient<IQuoteService, QuoteService>();
-_ = app.UseMiddleware<ExceptionHandlingMiddleware>();
-```
-
-### Guard Validation
-
-Use built-in guard methods:
-
-```csharp
-ArgumentNullException.ThrowIfNull(customer);
-ArgumentException.ThrowIfNullOrWhiteSpace(customer.Name);
-```
-
-### Private Field Naming
-
-Use `_camelCase` for private fields (SA1309 suppressed in .editorconfig):
-
-```csharp
-private readonly IQuoteRepository _repository;
-```
-
-### DTOs as Records
-
-All Data Transfer Objects MUST be immutable records:
-
-```csharp
-public sealed record CreateCustomerRequest(string Name, string Email);
-public sealed record CustomerResponse(Guid Id, string Name, string Email);
-```
-
----
-
-## Static Analysis (MANDATORY)
-
-### Required Analyzers
-
-Every project MUST include (via `Directory.Build.props`):
-
-```xml
-<ItemGroup>
-  <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
-  <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all">
-    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-  </PackageReference>
-</ItemGroup>
-```
-
-### Analysis Mode
-
-```xml
-<AnalysisMode>AllEnabledByDefault</AnalysisMode>
-```
-
-### Accepted Suppressions
-
-These StyleCop rules may be suppressed when justified:
-
-| Rule | Description | When Acceptable |
-|------|-------------|-----------------|
-| SA0001 | XML comment analysis disabled | When not producing a public library |
-| SA1101 | `this.` prefix | ONLY suppress if the entire team agrees (blueprint enables it) |
-| SA1309 | Field names must not begin with underscore | Suppressed for `_camelCase` convention |
-| SA1600-SA1602 | XML documentation | When not producing a public library |
-| SA1633 | File header | When file headers are not required |
-
-Any OTHER suppression requires a Deviation Record.
-
----
-
-## CI/CD: Azure Pipelines
-
-**NOT GitHub Actions.** All CI/CD uses Azure Pipelines with a standalone pipeline (build, test, publish, deploy).
-
-### Pipeline Template
-
-See `templates/azure-pipelines.yml` for the base configuration.
-
-### Key Configuration
-
-- **Triggers**: `main`, `release/*`, `develop`
-- **PR triggers**: `main`, `release/*`, `feature/*`, `hotfix/*`, `develop`
-- **SDK**: .NET 10.0.x
-- **SonarQube**: Mandatory for all builds
-- **Coverage**: cobertura + opencover formats
-- **Deploy**: 3 environments (dev, uat, prod) on Linux stack
-
----
-
-## Central Package Management
-
-All projects use `Directory.Packages.props` at solution root. Individual `.csproj` files reference packages WITHOUT version numbers:
-
-```xml
-<!-- In .csproj -->
-<PackageReference Include="FluentValidation" />
-
-<!-- Version defined ONLY in Directory.Packages.props -->
-<PackageVersion Include="FluentValidation" Version="12.1.1" />
-```
-
-See `templates/Directory.Packages.props` for the current version pins.
-
----
-
-## Standard Libraries
-
-| Library | Location | Purpose |
-|---------|----------|---------|
-| Mapping (`IBuilder<TInput, TOutput>`) | `Application/Mapping/` (inlined) | DTO ↔ Entity transformations |
-| Logging | Native `ILogger<T>` | Structured logging via ASP.NET Core |
-
-Additional packages (e.g., Azure Service Bus, audit clients) are added per project as needed from nuget.org.
+### Interface-First Design
+- Every service, repository, and transport has an interface/abstraction
+- No concrete class injected directly
 
 ---
 
 ## SDLC Process Compliance
-
-### Commit Convention — Karma Format
-
-Commit format follows Karma convention. See `.claude/rules/board-protocol.md` for format, scopes, and examples.
-
-### Code Review Standards (from SDLC)
-
-These are enforced during /test-verify and /finish:
-
-1. **SOLID principles** — every class has a single responsibility
-2. **DTOs as immutable records** — never mutable classes for data transfer
-3. **Method parameters**: 0 ideal, 1-2 normal, 3+ needs justification via comment
-4. **`if` blocks**: should contain ONE line of logic. Extract methods for complex conditionals
-5. **No magic numbers** — use named constants
-6. **No deep nesting** — max 2 levels of indentation
 
 ### Environment Progression
 
@@ -403,7 +61,7 @@ DEV → UAT → Sandbox (optional) → Production
 ```
 
 - Merge to `main` happens AFTER production validation (not before)
-- Each environment has its own Azure Pipelines stage
+- Each environment has its own CI pipeline stage (per blueprint §ci-cd)
 - CAB approval required before production deployment
 
 ### Quality Gates Summary (SDLC)
@@ -430,9 +88,9 @@ When a project needs to deviate from ANY blueprint constraint, a Deviation Recor
 
 ### When Required
 
-- Suppressing a StyleCop/SonarQube rule not in the "Accepted Suppressions" list
-- Using a different pattern than specified (e.g., manual mappers instead of `IBuilder<TInput, TOutput>`)
-- Skipping a mandatory pattern (e.g., no soft deletes, no FluentValidation)
+- Suppressing a linter/analyzer rule not in the blueprint's accepted suppressions list
+- Using a different pattern than specified in the blueprint
+- Skipping a mandatory pattern (e.g., no soft deletes, no validation)
 - Adding packages not in the blueprint stack
 - Changing the architecture structure
 - Any SDLC process deviation
@@ -452,7 +110,13 @@ When a project needs to deviate from ANY blueprint constraint, a Deviation Recor
 
 ## Blueprint Reference
 
-The enterprise blueprint is codified in this harness. The harness rules ARE the blueprint — do NOT modify them without an ADR justifying the change.
+Stack-specific patterns, commands, and configurations are in the active blueprint's `reference.md`:
+
+```
+.claude/blueprints/<blueprint-name>/reference.md
+```
+
+The active blueprint is configured in CLAUDE.md under the "Active Blueprint" section. The blueprint reference IS the source of truth for all stack-specific rules.
 
 ---
 

@@ -29,17 +29,15 @@ Execute an approved plan by spawning subagents for each micro-task. TDD is enfor
 2. Read `docs/CONTEXT.md` for domain terms
 3. Read `docs/specs/TASK-ID-spec.md` for acceptance criteria reference
 4. Read `docs/tech-context/TASK-ID-tech.md` for current library documentation (produced by /plan)
-5. Create feature branch:
+5. Read the active blueprint's `reference.md` for stack-specific commands and patterns
+6. Create feature branch:
    ```bash
    git checkout -b feature/TASK-ID-slug
    ```
-5. Verify clean baseline:
-   ```bash
-   dotnet test
-   ```
+7. Verify clean baseline using the test command from blueprint §build-commands.
    All existing tests MUST pass. If they don't → STOP and report.
 
-6. Update `.board/sprint-state.md`:
+8. Update `.board/sprint-state.md`:
    - Register artifact: Branch = `feature/TASK-ID-slug`
 
 ### Step 2: Execute Tasks
@@ -52,6 +50,7 @@ Launch a dev-role subagent (`.claude/agents/roles/dev.md`) with:
 - The task description from PLAN.md (verbatim)
 - `docs/CONTEXT.md` domain terms
 - `docs/tech-context/TASK-ID-tech.md` current library docs (relevant sections for this task's libraries)
+- The active blueprint's `reference.md`
 - Feature branch name
 - Instruction: **write the failing test FIRST**
 - Instruction: **use API patterns from the tech context file, not training data**
@@ -72,7 +71,7 @@ The subagent MUST follow this cycle:
 
 After each subagent completes:
 1. Run the verification command from PLAN.md
-2. Run the full test suite: `dotnet test`
+2. Run the full test suite (per blueprint §build-commands)
 3. Task is complete ONLY when:
    - The new test passes
    - All previously passing tests still pass
@@ -88,7 +87,7 @@ After each task, two-stage review:
 - Does it violate any ADR decisions?
 
 **Stage 2 — Code Quality:**
-- Does it follow existing patterns?
+- Does it follow existing patterns and blueprint conventions?
 - Obvious edge cases not handled?
 - Unnecessary complexity?
 
@@ -111,11 +110,7 @@ Tasks marked parallelizable in PLAN.md can be spawned simultaneously:
 
 ### Step 4: Final Verification
 
-After ALL tasks complete:
-```bash
-dotnet build --no-incremental
-dotnet test
-```
+After ALL tasks complete, run build and test commands from the blueprint §build-commands.
 
 Both must succeed. If any fail → diagnose and fix before proceeding.
 
@@ -178,7 +173,7 @@ Before beginning implementation, validate PLAN.md against `.claude/rules/artifac
 - [ ] PLAN.md exists in working directory
 - [ ] Every task has Files, Context, Implementation, Test, and Verify sections
 - [ ] File paths are absolute from project root
-- [ ] Code snippets include namespace and class context (not just method bodies)
+- [ ] Code snippets include full structural context (not just method bodies)
 - [ ] Each task's Test section has a complete failing test skeleton
 - [ ] Dependency graph is present and task ordering matches it
 
@@ -194,7 +189,7 @@ Before advancing to /test-verify, validate the implementation report against `.c
 - [ ] Test inventory maps tests to AC numbers
 - [ ] AC coverage status shows explicit gaps (not just "covered")
 - [ ] Flags section documents any retries, deviations, or deferred items
-- [ ] `dotnet test` results quoted with exact pass/fail/skip counts
+- [ ] Test results quoted with exact pass/fail/skip counts
 
 ## Rules
 

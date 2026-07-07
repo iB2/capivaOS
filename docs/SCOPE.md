@@ -2,7 +2,7 @@
 
 ## What This Harness IS
 
-A **development pipeline enforcer** for Claude Code that structures how AI agents build production-quality .NET code. It is:
+A **development pipeline enforcer** for Claude Code that structures how AI agents build production-quality code. It is:
 
 - **A state machine** that prevents skills from running out of sequence
 - **A quality framework** that gates progression on artifacts, tests, and human approval
@@ -10,12 +10,13 @@ A **development pipeline enforcer** for Claude Code that structures how AI agent
 - **A board-driven task manager** that persists state to disk, not conversation memory
 - **A spec-first discipline** that forces requirements clarity before implementation
 - **A TDD enforcer** that makes "code without test" mechanically impossible in the pipeline
+- **Stack-agnostic** via pluggable blueprints — the pipeline is universal, stack-specific patterns are injected
 
 ### Target Use Cases
 
 | Use Case | Fit | Notes |
 |----------|-----|-------|
-| New feature development (.NET) | Excellent | The primary design target |
+| New feature development | Excellent | The primary design target — works with any stack via blueprints |
 | Bug fixes with clear reproduction | Good | Full pipeline ensures the fix is tested and spec'd |
 | API endpoint implementation | Excellent | Spec → plan → implement → verify maps naturally |
 | Database schema changes | Good | Grill-spec catches migration edge cases early |
@@ -54,18 +55,6 @@ It produces artifacts (PRs, quality reports) that feed INTO your CI pipeline. Th
 
 If you use Jira, the harness can transition Jira tickets (optional integration in `/finish`), but the board is the sprint-level source of truth.
 
-### Not Language-Agnostic (Currently)
-
-The pipeline structure (6 phases, state machine, artifact gating) is language-agnostic. But the implementation details are .NET-specific:
-
-- Test stack: xUnit, NSubstitute, AwesomeAssertions, Testcontainers, Stryker.NET
-- Quality gates: `dotnet test`, `dotnet build`, coverage via Coverlet
-- Coding standards: C# 12+, .NET 8+, nullable reference types
-- Azure Functions: isolated worker model constraints
-- Static analysis: SonarQube, StyleCop
-
-**Adapting to other stacks**: Replace `.claude/rules/quality-gates.md` and `.claude/rules/coding-standards.md` with your stack's equivalents. Replace test commands in skills. The pipeline phases, state machine, board protocol, and artifact standards are reusable as-is.
-
 ### Not a Framework or Library
 
 You don't import this or add it as a dependency. You **copy** the `.claude/`, `.board/`, and `docs/` directories into your project. It becomes part of your project's Claude Code configuration.
@@ -78,6 +67,46 @@ If you need fully autonomous AI development (no human approval gates), this harn
 
 ---
 
+## Blueprint System
+
+The harness is stack-agnostic. Technology-specific patterns, commands, and standards are defined in **blueprint reference files** at `.claude/blueprints/<stack-name>/reference.md`.
+
+### What's in the Harness (Universal)
+
+- Pipeline phases, state machine, phase guards
+- Artifact gating and quality gate thresholds
+- Board protocol and lock mechanism
+- Agent roles (dev, qa, arch) — reference the active blueprint for stack-specific patterns
+- Skills (/grill-spec, /plan, /implement, /test-verify, /finish) — use blueprint commands
+- Templates (CAB tickets, deviation records, release checklists)
+- Context management and handover protocol
+
+### What's in the Blueprint (Stack-Specific)
+
+- Project structure and architecture rules
+- Coding standards and naming conventions
+- Enterprise patterns (service/use case, repository, DI, validation)
+- Test framework, assertion library, integration test infrastructure
+- Static analysis tools and quality gate tools
+- Build, test, lint, and deploy commands
+- CI/CD pipeline configuration
+
+### Included Blueprints
+
+| Blueprint | Stack | Architecture |
+|-----------|-------|-------------|
+| `dotnet-hexagonal` | .NET 10 / C# 13 | Hexagonal (Ports & Adapters) |
+| `python-fastapi` | Python 3.13 / FastAPI | Layered Architecture |
+
+### Adding a New Blueprint
+
+1. Create `.claude/blueprints/<stack-name>/reference.md` following the section format (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands)
+2. Create a real, buildable reference project locally (blueprint projects stay local, never committed)
+3. Set as active in CLAUDE.md
+4. The harness will automatically use the new blueprint's patterns
+
+---
+
 ## Assumptions
 
 The harness assumes:
@@ -86,11 +115,11 @@ The harness assumes:
 
 2. **Context7 MCP is available.** The `/plan` skill queries Context7 for current library documentation. If Context7 is not configured, the skill logs a warning and falls back to training data — but the quality guarantee is weakened.
 
-3. **Docker is available.** Integration tests use Testcontainers, which requires Docker. Without Docker, integration tests cannot run, and quality gates that require them will fail.
+3. **Stack toolchain is installed.** The active blueprint's §build-commands must be executable. The harness doesn't install toolchains.
 
 4. **Git is initialized.** The pipeline creates feature branches, commits, and PRs. A git repository must exist.
 
-5. **The project compiles.** `dotnet build` and `dotnet test` must succeed on the base branch before the pipeline starts. The harness doesn't fix existing build failures.
+5. **The project builds.** Build and test commands (per blueprint §build-commands) must succeed on the base branch before the pipeline starts. The harness doesn't fix existing build failures.
 
 6. **Tasks are well-scoped.** The pipeline works best with tasks that can be specified, planned, and implemented in 1-3 sessions. Epics should be broken into tasks before entering the board.
 
@@ -123,15 +152,7 @@ Edit `.claude/rules/quality-gates.md`. The thresholds are:
 - **Target**: what you aim for (soft ceiling)
 - **Hard fail**: below this, the PR cannot proceed (hard floor)
 
-Current values are calibrated for enterprise .NET development. Tighter thresholds (e.g., 90% coverage minimum) increase pipeline friction. Looser thresholds (e.g., 50% coverage minimum) weaken the quality guarantee. Document any changes in an ADR.
-
-### Adapting for Another Language
-
-1. Replace `.claude/rules/coding-standards.md` with your language's conventions
-2. Replace `.claude/rules/quality-gates.md` with your test/coverage/analysis tooling
-3. Update test commands in all skills (`dotnet test` → your equivalent)
-4. Update `.claude/agents/roles/dev.md` and `qa.md` with your language's patterns
-5. Keep everything else — the pipeline, state machine, board protocol, artifact standards, and context management are language-independent
+Current values are calibrated for production development. Tighter thresholds increase pipeline friction. Looser thresholds weaken the quality guarantee. Document any changes in an ADR.
 
 ### Adapting for a Different AI Agent
 

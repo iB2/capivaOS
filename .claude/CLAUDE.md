@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A 6-phase development pipeline for Claude Code that enforces spec-driven, test-first .NET development. The pipeline is state-machine driven — every phase reads and updates `.board/sprint-state.md`, every skill enforces phase guards, and no skill can run out of sequence.
+A 6-phase development pipeline for Claude Code that enforces spec-driven, test-first development. The pipeline is state-machine driven — every phase reads and updates `.board/sprint-state.md`, every skill enforces phase guards, and no skill can run out of sequence.
 
 **Three immutable laws:**
 1. If it's not on the board, it doesn't get built.
@@ -13,13 +13,51 @@ A 6-phase development pipeline for Claude Code that enforces spec-driven, test-f
 
 ---
 
+## Active Blueprint
+
+The harness is **stack-agnostic**. Technology-specific patterns, commands, and standards are defined in **blueprint reference files**. The active blueprint determines which stack's conventions are used.
+
+### Configuration
+
+Set the active blueprint by specifying its path:
+
+```
+Active Blueprint: .claude/blueprints/dotnet-hexagonal
+```
+
+### Available Blueprints
+
+| Blueprint | Stack | Reference |
+|-----------|-------|-----------|
+| `dotnet-hexagonal` | .NET 10 / C# 13 / Hexagonal Architecture | `.claude/blueprints/dotnet-hexagonal/reference.md` |
+| `python-fastapi` | Python 3.13 / FastAPI / Layered Architecture | `.claude/blueprints/python-fastapi/reference.md` |
+| `nextjs-typescript` | Node.js 22 / Next.js 15+ / App Router / shadcn/ui | `.claude/blueprints/nextjs-typescript/reference.md` |
+
+### How Blueprints Work
+
+Agent roles, skills, and rules reference the active blueprint's `reference.md` for:
+- **§architecture** — Project structure, layer rules, dependency direction
+- **§coding-standards** — Naming conventions, code style, mandatory patterns
+- **§enterprise-patterns** — Service/repository pattern, DI, validation, error handling
+- **§test-stack** — Test framework, assertion library, test infrastructure
+- **§static-analysis** — Linters, analyzers, quality gate tools
+- **§build-commands** — Build, test, lint, deploy commands
+- **§ci-cd** — Pipeline configuration, environment progression
+- **§qa-checklist** — Stack-specific review items
+
+### Blueprint Projects (Local Only)
+
+Each blueprint has an associated **real, buildable project** on the local filesystem (path defined in §project). These serve as reference implementations. Blueprint projects are **never committed to the harness repo** — they remain local.
+
+---
+
 ## How to Read This Harness
 
 | Audience | Start Here |
 |----------|-----------|
-| **First-time setup** | Jump to "Project Configuration" → copy directories, configure paths, populate `.board/tasks.md`, run `/sprint` |
+| **First-time setup** | Jump to "Project Configuration" → copy directories, configure blueprint, populate `.board/tasks.md`, run `/sprint` |
 | **As an agent** | Start at "MANDATORY — Pipeline Enforcement" → follow phase guards → read the relevant skill for the current phase |
-| **As a maintainer** | Rules in `.claude/rules/`, skills in `.claude/skills/`, roles in `.claude/agents/roles/` |
+| **As a maintainer** | Rules in `.claude/rules/`, skills in `.claude/skills/`, roles in `.claude/agents/roles/`, blueprints in `.claude/blueprints/` |
 
 **Key concept -- three building blocks:**
 - **Skills** = phase executors (what to do). Each slash command (`/grill-spec`, `/plan`, `/implement`, etc.) maps to one skill that owns one phase.
@@ -168,7 +206,7 @@ Table format (see `artifact-standards.md` for the full spec-level format):
 ```
 
 - **Term**: The canonical domain concept (e.g., "TradeOrder")
-- **Used In Code As**: The C# class/property name that dev subagents MUST use for naming
+- **Used In Code As**: The class/property name that dev subagents MUST use for naming
 - **Avoid**: Ambiguous synonyms that MUST NOT appear in code (e.g., "Order", "Trade")
 - Entries are never removed — only added or amended
 - Dev and QA subagents receive CONTEXT.md in their prompt and must respect it
@@ -196,12 +234,12 @@ Subagent-Driven Development. One subagent per micro-task. TDD enforced.
 - **Entry**: Sprint-state Phase = IMPLEMENT, Plan Approved = Yes
 - **Produces**: Code + tests on feature branch
 - **State**: IMPLEMENT → TEST_VERIFY (when all tasks complete + tests green)
-- **Exit**: All micro-tasks done, `dotnet test` passes
+- **Exit**: All micro-tasks done, test suite passes (per blueprint §build-commands)
 - **Invoke next**: /test-verify
 
 ### Phase 4 — Test & Verify (/test-verify)
 
-Two-agent pattern. Integration tests, static analysis (SonarQube + StyleCop), quality reports.
+Two-agent pattern. Integration tests, static analysis (per blueprint §static-analysis), quality reports.
 
 - **Entry**: Sprint-state Phase = TEST_VERIFY
 - **Produces**: `docs/reports/TASK-ID-quality.md`
@@ -275,24 +313,14 @@ Each phase transition appends a row to the sprint-state Phase History table:
 
 ---
 
-## Test Stack (.NET 10)
-
-Test stack packages, versions, and static analysis tools are defined in `.claude/rules/quality-gates.md` (single source of truth).
-
-### Azure Functions Testing
-
-See "Azure Functions Specifics" in `.claude/rules/quality-gates.md` for the isolated worker test limitation and recommended approach.
-
----
-
 ## Quality Gates
 
 All thresholds and measurement procedures are defined in `.claude/rules/quality-gates.md` (single source of truth).
 
 Key gates (summary — refer to quality-gates.md for detailed scoping):
 - **Unit coverage**: Business logic >= 80%, Infrastructure >= 60%, Overall >= 75%
-- **Static analysis**: Zero StyleCop warnings in new code, SonarQube quality gate pass
-- **Integration tests**: All pass (Testcontainers for real Redis/MsSql)
+- **Static analysis**: Zero linter warnings in new code, quality gate pass (per blueprint §static-analysis)
+- **Integration tests**: All pass (using test infrastructure per blueprint §test-stack)
 - **AC coverage**: Every acceptance criterion mapped to at least one passing test
 - **Hard fail**: Any gate below minimum blocks progression to /finish
 
@@ -318,7 +346,7 @@ If an artifact's quality is below the standard → the skill that produced it MU
 |------|---------|
 | `docs/DESIGN.md` | **Design philosophy, source attribution, core principles, rationale for every law** |
 | `docs/SCOPE.md` | **What the harness is/isn't, adaptation guide, assumptions** |
-| `docs/adr/0001-*.md` through `0006-*.md` | **Architecture Decision Records for the harness's own design choices** |
+| `docs/adr/0001-*.md` through `0007-*.md` | **Architecture Decision Records for the harness's own design choices** |
 
 ## Rules (detailed)
 
@@ -329,9 +357,9 @@ If an artifact's quality is below the standard → the skill that produced it MU
 | `state-management.md` | Sprint state machine, board lock protocol, artifact chain, session recovery |
 | `workflow-pipeline.md` | Phase guards, transitions, failure handling, parallelism |
 | `board-protocol.md` | Task format, board sections, write protocol, subagent access |
-| `quality-gates.md` | Coverage thresholds, SonarQube + StyleCop, review policy |
-| `coding-standards.md` | C# conventions, Hexagonal patterns, enterprise style, Karma commits |
-| `enterprise-blueprint.md` | **Enterprise blueprint hard constraints — architecture, packages, CI/CD, SDLC compliance** |
+| `quality-gates.md` | Coverage thresholds, static analysis, review policy |
+| `coding-standards.md` | Universal coding conventions + pointer to active blueprint |
+| `enterprise-blueprint.md` | Universal enterprise constraints + pointer to active blueprint |
 
 ---
 
@@ -343,23 +371,23 @@ The pipeline uses three specialist roles, spawned as subagents by skills:
 |------|------|-----------|---------|
 | Developer | `.claude/agents/roles/dev.md` | /implement, /test-verify | Executes micro-tasks with TDD enforced |
 | QA Reviewer | `.claude/agents/roles/qa.md` | /test-verify | Reviews spec compliance, code quality, blueprint patterns |
-| Architect | `.claude/agents/roles/arch.md` | /plan | Validates Hexagonal layer placement, enterprise patterns, creates ADRs |
+| Architect | `.claude/agents/roles/arch.md` | /plan | Validates layer placement, enterprise patterns, creates ADRs |
 
-Each role receives a focused briefing with the spec, CONTEXT.md, and relevant artifacts. Roles are not interchangeable — dev writes code, QA reviews it, arch validates structure.
+Each role receives a focused briefing with the spec, CONTEXT.md, the active blueprint's reference.md, and relevant artifacts. Roles are not interchangeable — dev writes code, QA reviews it, arch validates structure.
 
-The arch role is invoked during /plan to validate that every new file maps to the correct Hexagonal layer (Domain, Application, Infrastructure, Drivers) and that dependency direction flows inward. If blueprint deviations are identified, arch creates Deviation Record tasks.
+The arch role is invoked during /plan to validate that every new file maps to the correct architectural layer (per blueprint §architecture) and that dependency direction is correct. If blueprint deviations are identified, arch creates Deviation Record tasks.
 
 ### Subagent Execution
 
 Skills spawn subagents using Claude Code's `Agent()` tool. Each subagent receives:
 
 1. **Role briefing**: The full content of the role file (e.g., `.claude/agents/roles/dev.md`)
-2. **Task-specific context**: Spec, PLAN.md task, CONTEXT.md, tech-context — loaded into the agent's prompt
+2. **Task-specific context**: Spec, PLAN.md task, CONTEXT.md, tech-context, blueprint reference.md — loaded into the agent's prompt
 3. **Branch**: The feature branch to work on
 
 ```
 Agent(
-  prompt: "[role file content]\n\n## Your Task\n[task from PLAN.md]\n\n## Context\n[CONTEXT.md + tech-context]",
+  prompt: "[role file content]\n\n## Your Task\n[task from PLAN.md]\n\n## Context\n[CONTEXT.md + tech-context + blueprint reference]",
   description: "Dev: [task title]",
   run_in_background: true  // for parallel micro-tasks
 )
@@ -408,10 +436,9 @@ Agent(
 | Don't | Why | Instead |
 |-------|-----|---------|
 | Implement before writing tests | Violates TDD (RED-GREEN-REFACTOR) | Write failing test first, then implement to green |
-| `catch(Exception)` swallowing | Hides bugs, fails static analysis | Catch specific exceptions, log or rethrow |
-| Use FluentAssertions | License changed to proprietary (v8) | Use **AwesomeAssertions** (Apache 2.0 fork) |
-| Mutable DTOs | Enterprise blueprint requires immutable records | Use `record` types with `init` properties |
-| Constructor injection in Testcontainers | Lifecycle mismatch with test fixtures | Use `IAsyncLifetime` and field injection |
+| Swallow errors silently | Hides bugs, fails static analysis | Catch specific errors, log or rethrow |
+| Ignore blueprint conventions | Breaks consistency, fails QA review | Follow the active blueprint's reference.md patterns |
+| Use wrong architectural layer | Violates dependency direction | Check blueprint §architecture for correct placement |
 
 ---
 
@@ -425,7 +452,7 @@ Agent(
 | Context budget exceeded | Too many file reads or 2+ auto-compactions | Run `/compact` with focus or `/handover` at next phase boundary |
 | Subagent fails 3x | Three-strike rule triggered | Mark the micro-task BLOCKED, report to human with failure details |
 | Spec not found after TRIAGE | Task on board has no spec file yet | `/grill-spec` will create one -- this is normal for new tasks |
-| `dotnet test` fails in IMPLEMENT | RED-GREEN cycle incomplete | Fix failing tests before transitioning to TEST_VERIFY |
+| Tests fail in IMPLEMENT | RED-GREEN cycle incomplete | Fix failing tests before transitioning to TEST_VERIFY |
 | Handover doc missing on resume | Previous session crashed before `/handover` | Read sprint-state for current phase, reconstruct context from artifacts on disk |
 
 ---
@@ -446,52 +473,38 @@ When starting a new session or resuming after a crash:
 ### Required
 1. `.board/tasks.md` — populated with prioritized tasks
 2. `.board/sprint-state.md` — initialized (copy from this harness)
-3. `.sln` file — .NET solution in project root or configured path
+3. Active blueprint configured (see "Active Blueprint" section above)
+4. Project's source code in the working directory
 
 ### Optional
 - **Jira**: Add project key, board ID, transition IDs to this file
 - **Quality overrides**: Edit `.claude/rules/quality-gates.md`
-- **Solution path**: Add `## Paths` section if not in root
+- **Custom blueprint**: Create a new `.claude/blueprints/<name>/reference.md` (see existing blueprints for the format)
 
 ### Adapting for Your Project
 1. Copy `.claude/`, `.board/`, `docs/`, `templates/` directories into your project
-2. Copy `templates/.editorconfig` to solution root
-3. Copy `templates/Directory.Build.props` and `templates/Directory.Packages.props` to solution root
+2. Set the Active Blueprint in this file to match your stack
+3. If your stack isn't covered by existing blueprints, create a new `reference.md` following the section format (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands)
 4. Edit this CLAUDE.md for project-specific config (Jira, paths, domain)
 5. Populate `.board/tasks.md` with your backlog
 6. Run `/sprint` to begin
 
-### Enterprise Architecture
+### Creating a New Blueprint
 
-This harness enforces the enterprise Hexagonal Architecture:
+To add support for a new technology stack:
 
-```
-src/Core/           → Domain + Application (inner hexagon, business logic)
-src/Driven/         → Infrastructure (secondary adapters, data access)
-src/Drivers/        → API + Functions (primary adapters, entry points)
-```
-
-See `.claude/rules/enterprise-blueprint.md` for complete constraints.
-
-### CI/CD
-
-Azure Pipelines (NOT GitHub Actions). See `templates/azure-pipelines.yml` for the base standalone pipeline configuration.
-
-### SDLC Compliance
-
-The pipeline maps to the enterprise SDLC process:
-- Phase 1 (GRILL_SPEC) → SDLC Phase 3 (Requirement Analysis)
-- Phase 2 (PLAN) → SDLC Phase 4 (Solution Design)
-- Phase 3 (IMPLEMENT) → SDLC Phase 6 (Refinement & Development)
-- Phase 4 (TEST_VERIFY) → SDLC Phase 7 (Testing & QA)
-- Phase 5 (FINISH) → SDLC Phases 6-8 (Code Review → CAB → Deploy)
+1. Create directory: `.claude/blueprints/<stack-name>/`
+2. Create `reference.md` with all required sections (use existing blueprints as templates)
+3. Create the blueprint project locally (a real, buildable reference implementation)
+4. Update the "Available Blueprints" table in this file
+5. Set it as the Active Blueprint to activate
 
 ### Deviation Records
 
-When code deviates from the enterprise blueprint, a Deviation Record MUST be created at `docs/deviations/DEV-NNN-[slug].md`. See `templates/deviation-record.md` for the template. See `enterprise-blueprint.md` for when deviations require documentation.
+When code deviates from the active blueprint, a Deviation Record MUST be created at `docs/deviations/DEV-NNN-[slug].md`. See `templates/deviation-record.md` for the template. See `enterprise-blueprint.md` for when deviations require documentation.
 
 ---
 
 *Spec-driven development harness for Claude Code*
 *State-machine enforced, board-locked, artifact-gated*
-*Compatible with .NET 10 projects (enterprise blueprint aligned)*
+*Stack-agnostic via pluggable blueprint system*

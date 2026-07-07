@@ -24,10 +24,7 @@ Wrap up a completed task: create a PR, update the board, transition Jira, and cl
 
 Before creating the PR, verify:
 
-1. **All tests pass:**
-   ```bash
-   dotnet test
-   ```
+1. **All tests pass:** Run the test command from blueprint §build-commands.
 2. **Quality gates met:** Read `docs/reports/TASK-ID-quality.md`, confirm verdict
 3. **No uncommitted changes:**
    ```bash
@@ -41,8 +38,8 @@ Before creating the PR, verify:
    ```bash
    git fetch origin
    git rebase origin/main
-   dotnet test  # re-verify after rebase
    ```
+   Re-run tests after rebase to verify nothing broke.
 
 If ANY check fails → STOP and report. Do NOT create a PR with failing tests.
 
@@ -71,8 +68,8 @@ Create PR using `gh pr create`:
 | Metric | Value | Target |
 |--------|-------|--------|
 | Unit coverage | X% | >= 80% |
-| StyleCop warnings | 0 | 0 |
-| SonarQube quality gate | Pass | Pass |
+| Linter warnings | 0 | 0 |
+| Quality gate | Pass | Pass |
 
 ## Acceptance Criteria
 - [x] AC1: [description] — tested by [test name]
@@ -80,7 +77,7 @@ Create PR using `gh pr create`:
 
 ## SDLC Artifacts
 - Quality report: `docs/reports/[TASK-ID]-quality.md`
-- Coverage HTML: `TestResults/CoverageReport/index.html`
+- Coverage HTML: `[path per blueprint]`
 - CAB ticket: `docs/cab/[TASK-ID]-cab.md` (P0/P1 only)
 - Release checklist: `docs/release/[TASK-ID]-release.md`
 - Solution document: `docs/solution-document.md`
@@ -136,7 +133,7 @@ If the solution document already exists, UPDATE it with:
    ```markdown
    - [x] **TASK-ID** Task title (P1)
      - **PR**: #[number]
-     - **Quality**: [coverage]% / SonarQube [pass/fail]
+     - **Quality**: [coverage]% / [quality gate pass/fail]
      - **Branch**: feature/TASK-ID-slug
      - **Completed**: [ISO date]
    ```
@@ -157,7 +154,7 @@ If Jira not configured → skip silently. Board update in Step 3 is sufficient.
    ```bash
    git worktree remove .worktrees/feature-name 2>/dev/null || true
    ```
-2. Keep TestResults/ for reference until PR is merged
+2. Keep test results for reference until PR is merged
 
 ### Step 6: Present Merge Options
 
@@ -165,10 +162,10 @@ Present to human:
 ```
 PR #[N] created: [title]
 Board updated: [TASK-ID] moved to Done
-Quality: coverage [X]%, StyleCop: 0 warnings, SonarQube: Pass
+Quality: coverage [X]%, Linter: 0 warnings, Quality Gate: Pass
 
 Options:
-1. Merge now — squash merge into main (commit message follows Karma convention)
+1. Merge now — squash merge into main (commit message follows project convention)
 2. Keep for review — leave PR open for team review
 3. Discard — close PR and delete branch (requires confirmation)
 
@@ -206,7 +203,7 @@ Before creating the PR, validate /test-verify output against `.claude/rules/arti
 - [ ] All quality gates have concrete verdicts (not "--" or "pending")
 - [ ] AC coverage matrix has a row for every AC in the spec AND every AC verdict is ✅ (covered by tests)
 - [ ] Overall verdict is PASS or ACCEPTED_SOFT_FAIL (not HARD_FAIL)
-- [ ] All SonarQube issues in new code are analyzed and addressed or justified
+- [ ] All static analysis issues in new code are analyzed and addressed or justified
 
 If ANY check fails → STOP. Report: "Quality report incomplete. Return to /test-verify."
 
@@ -236,7 +233,7 @@ For **ALL tasks** — validate Release Checklist (`docs/release/TASK-ID-release.
 - [ ] Pre-Deployment section lists all prerequisites
 - [ ] Day-of-Deployment steps are specific and ordered
 - [ ] Rollback Trigger Criteria defined (what conditions trigger a rollback)
-- [ ] Environment table filled (DEV/UAT/Production status)
+- [ ] Environment table filled (per blueprint §ci-cd environments)
 
 If any SDLC artifact fails validation → iterate before creating PR.
 
@@ -254,7 +251,7 @@ No silent overrides. HARD_FAIL gates cannot be overridden — they block /finish
 ## Rules
 
 - **Never merge without human approval.** PR is created, not merged. Merging requires explicit "merge it".
-- **PR must include quality metrics.** Coverage and SonarQube status in every PR.
+- **PR must include quality metrics.** Coverage and quality gate status in every PR.
 - **Board update is mandatory.** Even without Jira, `.board/tasks.md` must be updated.
 - **Board lock for writes.** Every board write follows lock protocol.
 - **Clean up artifacts.** Worktrees, temp files — remove them.
@@ -286,13 +283,6 @@ It is typically invoked by `/sprint` as the last phase of the pipeline, or manua
 | Solution Document | `docs/solution-document.md` | First task only (updates for subsequent) |
 | Board update | `.board/tasks.md` → Done section | Always |
 
-### SDLC Phase Mapping
-
-`/finish` maps to three SDLC phases:
-- **Phase 6 (Refinement & Development)**: Code review by Tech Lead → PR review
-- **Phase 7 (Testing & QA)**: UAT sign-off → quality report reference
-- **Phase 8 (Deployment to Production)**: CAB approval → CAB ticket generated
-
 ### Flow After /finish
 
 ```
@@ -306,11 +296,11 @@ It is typically invoked by `/sprint` as the last phase of the pipeline, or manua
 
 Before marking /finish as complete, verify:
 - [ ] PR description follows artifact-standards.md Artifact 5
-- [ ] All commits follow Karma convention (`scope(context): description #taskNumber`)
+- [ ] All commits follow the project's commit convention
 - [ ] CAB ticket generated (P0/P1)
 - [ ] Release checklist generated
 - [ ] Solution document created or updated
 - [ ] All deviation record files in `docs/deviations/` are referenced in PR description
 - [ ] Each deviation record follows `templates/deviation-record.md` format (metadata, justification, impact analysis)
-- [ ] SonarQube quality gate status noted
-- [ ] StyleCop zero warnings confirmed
+- [ ] Quality gate status noted
+- [ ] Linter zero warnings confirmed
