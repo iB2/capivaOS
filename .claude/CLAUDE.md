@@ -31,6 +31,7 @@ Active Blueprint: .claude/blueprints/dotnet-hexagonal
 |-----------|-------|-----------|
 | `dotnet-hexagonal` | .NET 10 / C# 13 / Hexagonal Architecture | `.claude/blueprints/dotnet-hexagonal/reference.md` |
 | `python-fastapi` | Python 3.13 / FastAPI / Layered Architecture | `.claude/blueprints/python-fastapi/reference.md` |
+| `nextjs-typescript` | Node.js 22 / Next.js 15+ / App Router / shadcn/ui | `.claude/blueprints/nextjs-typescript/reference.md` |
 
 ### How Blueprints Work
 
