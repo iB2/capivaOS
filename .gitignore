@@ -3,6 +3,7 @@
 # dogfooding the harness on itself — the shipped templates live in
 # project-template/. Pristine-by-construction (ADR-0013).
 /.board/
+/PLAN.md
 /docs/CONTEXT.md
 /capiva-blueprints/
 /docs/specs/
