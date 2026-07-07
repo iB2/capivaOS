@@ -18,6 +18,9 @@ Checks:
   6. docs/specs/*-acs.json files (machine-readable AC lists, ADR-0009) conform
      to the schema: task/spec strings, non-empty acs list, unique ids, every
      entry has id/text, status in {pending, pass, fail}.
+  7. Plugin manifests (.claude-plugin/plugin.json + marketplace.json): parse,
+     identical plugin/marketplace-entry names, semver version in plugin.json
+     ONLY (single version source), self-referencing "./" source.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -78,6 +81,42 @@ RUNTIME_ARTIFACTS = {
 }
 PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your-", "N-slug")
 ACS_STATUSES = {"pending", "pass", "fail"}
+SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+def lint_manifests(root: Path):
+    """Check 7: plugin + marketplace manifest validity and parity (ADR-0013)."""
+    findings = []
+    pj_path = root / ".claude-plugin" / "plugin.json"
+    mk_path = root / ".claude-plugin" / "marketplace.json"
+    if not pj_path.is_file() and not mk_path.is_file():
+        return findings  # not a plugin repo (self-test fixtures without manifests)
+    try:
+        pj = json.loads(pj_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return [f".claude-plugin/plugin.json: unreadable or invalid ({e})"]
+    try:
+        mk = json.loads(mk_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return [f".claude-plugin/marketplace.json: unreadable or invalid ({e})"]
+
+    if not SEMVER_RE.match(str(pj.get("version", ""))):
+        findings.append(f"plugin.json: version {pj.get('version')!r} is not X.Y.Z semver")
+    entries = mk.get("plugins") or []
+    if len(entries) != 1:
+        findings.append(f"marketplace.json: expected exactly 1 plugin entry, found {len(entries)}")
+        return findings
+    entry = entries[0]
+    if pj.get("name") != entry.get("name") or pj.get("name") != mk.get("name"):
+        findings.append(
+            f"manifest name parity: plugin.json={pj.get('name')!r} "
+            f"marketplace={mk.get('name')!r} entry={entry.get('name')!r} — must be identical")
+    if "version" in entry:
+        findings.append("marketplace entry declares a version — plugin.json is the single "
+                        "version source (Claude Code silently prefers plugin.json)")
+    if entry.get("source") != "./":
+        findings.append(f"marketplace entry source {entry.get('source')!r} — expected \"./\" (self-marketplace)")
+    return findings
 
 
 def lint_acs_file(path: Path, root: Path):
@@ -249,6 +288,9 @@ def lint(root: Path):
         for acs_file in sorted(specs_dir.glob("*-acs.json")):
             findings.extend(lint_acs_file(acs_file, root))
 
+    # 7. plugin manifest validity and parity
+    findings.extend(lint_manifests(root))
+
     return findings
 
 
@@ -290,6 +332,12 @@ def self_test():
             '[{"id": "AC1", "text": "works", "status": "pass"}]}', encoding="utf-8")
         (root / "docs" / "specs" / "BROKEN-1-acs.json").write_text(
             "not json {", encoding="utf-8")
+        (root / ".claude-plugin").mkdir()
+        (root / ".claude-plugin" / "plugin.json").write_text(
+            '{"name": "alpha-plug", "version": "1.0"}', encoding="utf-8")
+        (root / ".claude-plugin" / "marketplace.json").write_text(
+            '{"name": "alpha-plug", "plugins": [{"name": "other-name", '
+            '"source": "./plug", "version": "2.0.0"}]}', encoding="utf-8")
 
         findings = lint(root)
         expected_fragments = [
@@ -309,6 +357,10 @@ def self_test():
             "missing 'text'",
             "status 'maybe' not in",
             "BROKEN-1-acs.json: unreadable or invalid JSON",
+            "is not X.Y.Z semver",
+            "manifest name parity",
+            "marketplace entry declares a version",
+            "expected \"./\"",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

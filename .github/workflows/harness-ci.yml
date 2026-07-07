@@ -7,19 +7,23 @@ on:
 
 jobs:
   lint:
-    name: Cross-reference lint + blueprint parity
+    name: Lint + manifests + release contract
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0 # bump_version --check diffs against the last release tag
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.12"
       - name: Linter self-test (must catch seeded drift)
         run: python scripts/harness_lint.py --self-test
-      - name: Lint harness cross-references
+      - name: Lint cross-references, blueprints, acs schemas, manifests
         run: python scripts/harness_lint.py
       - name: Implementation-report validator self-test
         run: python scripts/validate_impl_report.py --self-test
+      - name: Release contract check (changelog + migration rows)
+        run: python scripts/bump_version.py --check
 
   hook-tests:
     name: Hook tests (${{ matrix.os }})
@@ -29,20 +33,24 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.12"
       - name: Phase guard scenario tests
-        run: python .claude/hooks/tests/test_phase_guard.py
+        run: python hooks/tests/test_phase_guard.py
+      - name: Plugin hook layer tests (dispatcher sh/cmd, session-context, no-op guards)
+        run: python hooks/tests/test_plugin_hooks.py
       - name: Context-persistence entry points smoke test
         shell: bash
         run: |
           export CLAUDE_PROJECT_DIR="$GITHUB_WORKSPACE"
-          python .claude/hooks/context-persistence.py precompact
+          mkdir -p .board
+          cp project-template/.board/sprint-state.md .board/sprint-state.md
+          python hooks/context-persistence.py precompact
           test -f .state/session-state.md
-          python .claude/hooks/context-persistence.py restore | python -c "import json,sys; d=json.load(sys.stdin); assert d['additionalContext']"
+          python hooks/context-persistence.py restore | python -c "import json,sys; d=json.load(sys.stdin); assert d['additionalContext']"
           test ! -f .state/session-state.md
-          python .claude/hooks/context-persistence.py stop
+          python hooks/context-persistence.py stop
           test -f .state/session-state.md
           echo "context-persistence: precompact/restore/stop OK"
