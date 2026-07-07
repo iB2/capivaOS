@@ -1,1 +1,4 @@
-*.cmd text eol=crlf
+# run-hook.cmd is a CMD/sh polyglot and MUST stay LF-only:
+# CR breaks the sh heredoc terminator; cmd tolerates LF for
+# label-free single-line batch (see docs/adr/0013).
+hooks/run-hook.cmd -text

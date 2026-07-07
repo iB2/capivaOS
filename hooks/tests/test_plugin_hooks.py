@@ -73,6 +73,20 @@ def main():
         cases.append(("hooks.json: phase guard covers write + shell tools",
                       any("Edit" in m for m in pre) and any("Bash" in m for m in pre)))
 
+        # --- dispatcher file invariant: mixed line endings by construction ---
+        # cmd.exe needs CRLF for the batch block (LF-only char-shifts lines);
+        # sh needs the heredoc terminator + POSIX section CR-free. A normalizing
+        # editor or gitattributes change breaks one OS silently — assert bytes.
+        raw = (HOOKS_DIR / "run-hook.cmd").read_bytes()
+        cases.append(("dispatcher file: batch block is CRLF", b"@echo off
+" in raw))
+        cases.append(("dispatcher file: heredoc terminator is LF-only",
+                      b"
+CMDBLOCK
+" in raw and b"CMDBLOCK" not in raw))
+        cases.append(("dispatcher file: POSIX section is CR-free",
+                      b"" not in raw.split(b"CMDBLOCK", 2)[-1]))
+
         # --- dispatcher (AC2) ---
         rc, out, _ = run_dispatcher("phase_guard", [], stdin=json.dumps(
             {"tool_name": "Edit", "tool_input": {"file_path": str(harness_project / "src" / "x.py")}}),
