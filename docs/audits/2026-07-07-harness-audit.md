@@ -42,6 +42,16 @@ The weaknesses fall into four themes:
 | F2.2 | `.state/` (hook auto-save target) is NOT gitignored — session state can be committed | `.gitignore` |
 | F2.3 | Hook parses board via substring counts on markdown (`**Status**: In Progress`) — works by accident against actual bulleted format | `.claude/hooks/context-persistence.py` |
 
+**Addendum (found during HARN-001 implementation, 2026-07-07):**
+
+| # | Finding | Status |
+|---|---------|--------|
+| F2.4 | `settings.json` used a flat `{"command": ...}` hook format instead of the official nested `{"matcher", "hooks": [{"type": "command", ...}]}` schema — the hooks likely **never registered at all**, independent of the interpreter question. Worse than F2.1. | Fixed in HARN-001 (816c0e3) |
+| F2.5 | `_sprint_state_summary()` parsed `| phase`-style table rows, but sprint-state.md uses `- **Field**:` bullets — the parser NEVER matched and always fell back to a stub. The auto-saved state contained no actual sprint state. Worse than F2.3. | Fixed in HARN-001 (816c0e3) |
+| — | F2.1 nuance: on the audited machine `python3` DOES resolve (WindowsApps alias forwards to Python 3.12). The portable risk stands for machines without the alias; mitigated by documenting the requirement and using a plain invocation valid in bash/cmd/PowerShell. | Fixed in HARN-001 (816c0e3) |
+
+> HARN-001 status: **Done** (all 4 ACs verified by running precompact/restore/stop manually on Windows).
+
 ### F3. Doc inconsistencies / stale counts
 
 | # | Finding | Location |
