@@ -317,6 +317,39 @@ On sprint end, produce summary:
 - Resume: /capiva:sprint in new session (reads sprint-state to continue)
 ```
 
+## Orchestrator Mode — Phase Isolation (ADR-0014)
+
+When `- **Phase Isolation**: on` in `.board/harness-config.md` (attended opt-in)
+or when running under auto mode (always), the sprint loop stops executing phases
+inline and becomes a thin dispatcher. The orchestrating context holds only
+state-shuttling — it never does phase work, so it never grows.
+
+**Per phase**: spawn a `phase-runner` agent with the briefing package →
+await its completion report → validate the phase's required artifacts exist on
+disk (Law 3 is the ORCHESTRATOR'S check, not the runner's claim) → perform the
+sprint-state transition + Phase History row yourself → proceed.
+
+**Briefing package** (assembled per phase):
+1. The phase's full SKILL body from `${CLAUDE_PLUGIN_ROOT}/skills/<phase>/SKILL.md`
+2. `${CLAUDE_PLUGIN_ROOT}/rules/laws.md` content
+3. Current Task block of `.board/sprint-state.md` + `.board/harness-config.md`
+4. Explicit input artifact paths and the phase's required outputs
+
+**Phase applicability**:
+| Phase | Isolated? |
+|-------|-----------|
+| GRILL_SPEC | NO in attended mode — it is an interview; the interlocutor lives here. (Auto mode never grills — ADR-0014) |
+| PLAN / TEST_VERIFY / FINISH / SPEC_PLAN / VERIFY_FINISH | Yes — via phase-runner |
+| IMPLEMENT | Already isolated by construction: the ORCHESTRATOR dispatches one dev agent per PLAN.md micro-task directly (subagents cannot spawn subagents), collecting validated JSON reports — same TDD/verification protocol as the inline skill |
+
+**Single-writer rule**: only the orchestrator writes `.board/sprint-state.md`.
+A runner that transitions state has violated its briefing; the orchestrator's
+view wins. Runner failure without required artifacts = one strike; three
+strikes = BLOCKED (unchanged).
+
+**Human gates are unchanged by isolation**: in attended mode, gate presentations
+still block here in the main context, exactly as below.
+
 ## Rules
 
 - **Sprint-state is the source of truth.** If it says IMPLEMENT, you're in IMPLEMENT. No overrides.

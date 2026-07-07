@@ -149,6 +149,7 @@ Proceed with this configuration?
 - **Active Blueprint**: [blueprint-name]
 - **Configured**: [ISO date]
 - **Installed Via**: plugin | copy-mode
+- **Phase Isolation**: off
 ```
 
 2. Write `.board/harness-schema-version` containing exactly the plugin's
