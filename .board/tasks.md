@@ -44,6 +44,20 @@
   - **Completed**: 2026-07-07
   - **Notes**: ADR examples in artifact-standards renumbered 0007→0042 to avoid collision with real ADR-0007. Commit d5a62cc.
 
+- [x] **HARN-003** De-.NET the universal layer + delete orphan blueprint.md duplicates (P1)
+  - **Spec**: docs/audits/2026-07-07-harness-audit.md (findings F4.1–F4.7, F5.1)
+  - **AC**: 4/4 verified — universal skills/rules/roles/state files use blueprint-scoped phrasing; orphan blueprint.md files reduced to nextjs-style stubs (grep-verified unreferenced, −1,389 lines net); .gitignore covers all 3 stacks + harness runtime state; AC4 grep hits only labeled examples in artifact-standards.md
+  - **Depends**: HARN-002
+  - **Assignee**: main
+  - **Status**: Done
+  - **Phase**: IDLE
+  - **Branch**: chore/harness-audit-backlog
+  - **PR**: -- (fast-tracked with owner approval; branch PR covers HARN batch)
+  - **Quality**: AC4 grep sweep clean; workflow-complete.mmd and templates/solution-document.md also de-.NETted (beyond audited scope)
+  - **Started**: 2026-07-07
+  - **Completed**: 2026-07-07
+  - **Notes**: artifact-standards.md worked examples stay .NET-flavored under an explicit example-stack label (per task note). Commit 9684553.
+
 ## Backlog — P0 Critical
 
 <!-- Blocking other work or requiring immediate attention -->
@@ -53,24 +67,6 @@
 ## Backlog — P1 Sprint
 
 <!-- Committed for delivery this sprint -->
-
-- [ ] **HARN-003** De-.NET the universal layer + delete orphan blueprint.md duplicates (P1)
-  - **Spec**: Complete the stack-agnostic migration the blueprint-migration-map promised. See audit findings F4.1–F4.7, F5.1.
-  - **AC**:
-    1. Zero SonarQube/StyleCop/`dotnet test` mentions in files classified Universal (sprint, handover, sprint-state.md, artifact-standards, board-protocol, context-management, state-management, qa role) — replaced with "per blueprint §static-analysis / §build-commands" phrasing
-    2. Orphaned `dotnet-hexagonal/blueprint.md` (598 lines) and `python-fastapi/blueprint.md` (818 lines) deleted or reduced to nextjs-style 14-line summaries (referenced by nothing — verify with grep before delete)
-    3. `.gitignore` covers all three stacks (bin/obj, node_modules/.next, __pycache__/.venv) plus harness runtime state
-    4. `grep -ri "sonarqube\|stylecop\|dotnet test" .claude/rules .claude/skills .board` returns only blueprint-scoped hits
-  - **Depends**: HARN-002
-  - **Assignee**: unassigned
-  - **Status**: Backlog
-  - **Phase**: IDLE
-  - **Branch**: --
-  - **PR**: --
-  - **Quality**: --
-  - **Started**: --
-  - **Completed**: --
-  - **Notes**: artifact-standards.md examples may stay .NET-flavored if explicitly labeled as example stack.
 
 - [ ] **HARN-004** Mechanical phase-guard enforcement: PreToolUse hooks + sprint-state.json (P1)
   - **Spec**: Convert Laws 1–2 from prompt-enforced to hook-enforced. See audit finding F6.2, F6.6. Rationale: Anthropic steering guidance — prompted "never do X" is not a guardrail.
