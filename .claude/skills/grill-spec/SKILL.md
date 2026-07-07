@@ -296,3 +296,201 @@ If ANY check fails → iterate on the spec before presenting. Do NOT present a b
 - **The AC list is data.** `docs/specs/TASK-ID-acs.json` ships with every spec. After approval it is immutable except `status` — scope changes regenerate it through this skill.
 - **Open questions block progression.** If there are unresolved ambiguities, /plan CANNOT start.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
+
+---
+
+## Gold Standard (moved from artifact-standards.md, ADR-0011)
+
+The normative template and quality bar for this skill's artifact — the FLOOR, not the ceiling. `artifact-standards.md` keeps the anti-slop rules and validation checklists; the worked examples live here so they load only when this phase runs.
+
+### Artifact 1: Spec Document — Required Sections
+```markdown
+# Spec: [Task Title]
+
+## Task Reference
+- ID: [TASK-ID from board]
+- Priority: [P0-P4]
+- Source: [Jira link or board reference]
+- Related: [other task IDs this depends on or is blocked by]
+
+## Summary
+[3-5 sentences. What this task delivers, why it matters, and how it fits into the
+broader system. NOT a rewording of the title — explain the business value and
+technical significance.]
+
+## Acceptance Criteria
+
+[Numbered. Each criterion is a testable assertion with specific values, inputs,
+and expected outputs. If you can't write a test from it, it's too vague.]
+
+1. GIVEN [precondition with specific data]
+   WHEN [action with specific input]
+   THEN [observable outcome with specific values]
+   AND [side effect if any — database writes, events published, logs emitted]
+
+## Domain Terms
+
+[Terms relevant to THIS task, extracted from CONTEXT.md with any refinements
+from the grill session. Include the "Avoid" column so implementers don't use
+wrong synonyms in code.]
+
+| Term | Definition | Used In Code As | Avoid |
+|------|-----------|-----------------|-------|
+| [term] | [precise definition] | [C# class/property name] | [ambiguous alternatives] |
+
+## Scope
+
+### In Scope
+[Explicit list of what this task DOES deliver. Bullet points, specific.]
+
+### Out of Scope
+[Explicit list of what this task does NOT deliver. This is as important as in-scope.
+Without it, /plan will over-plan.]
+
+### Deferred
+[Items that are in scope for the project but NOT this task. Reference future task IDs
+if they exist.]
+
+## Technical Context
+
+### Integration Points
+[Systems this task touches. For each: protocol, data format, auth, error contract.]
+
+### Data Model
+[Tables, columns, types, constraints affected. Reference the DER if it exists.
+If creating new entities: full column definitions, not just "add a table".]
+
+### Error Scenarios
+[What can go wrong and what should happen. Each error gets:
+ - Trigger condition (specific, not "something fails")
+ - Expected behavior (retry? fallback? propagate? log?)
+ - User/caller impact (HTTP status, error payload, timeout behavior)]
+
+### Performance Constraints
+[If applicable: latency targets, throughput requirements, data volume expectations.
+Quantified, not "should be fast".]
+
+## Clarifications from Grill Session
+
+[Numbered Q&A from the adversarial interview. These are decisions that were made
+during the grill — they're binding unless revisited.]
+
+1. **Q**: [The ambiguity that was identified]
+   **A**: [The decision that was made, with rationale]
+   **Impact**: [How this affects implementation]
+
+## ADRs Created
+[List with file paths and one-line summaries, or "None — no hard-to-reverse decisions in this task"]
+
+## Open Questions
+[ONLY if there are genuinely unresolved items. These BLOCK /plan.
+If this section has entries, the spec is NOT approved.]
+```
+
+### Artifact 1: Spec Document — Quality Bar Examples
+**REJECT** — vague AC:
+```
+1. The service should handle quote expiration correctly
+2. Errors should be logged
+3. Tests should be written
+```
+
+**ACCEPT** — testable AC:
+```
+1. GIVEN a QUOTE row with status = ACTIVE and created_at older than config.quoteExpirationMinutes (default: 30)
+   WHEN the QuoteExpirationJob runs its scheduled sweep
+   THEN the QUOTE.status is updated to EXPIRED
+   AND a QUOTE_EVENT row is inserted with event_type = EXPIRED, timestamp = UTC now
+   AND a metric quote_expired_total is incremented with labels {bank, symbol}
+
+2. GIVEN a QUOTE row with status = EXPIRED
+   WHEN any service attempts to read it via IQuoteRepository.GetActiveQuote(quoteId)
+   THEN the method returns null (not the expired quote)
+   AND no exception is thrown (expired = normal lifecycle, not error)
+
+3. GIVEN the QuoteExpirationJob encounters a SQL timeout during the sweep
+   WHEN the timeout exceeds 5 seconds
+   THEN the job logs a warning with the batch size and timeout duration
+   AND retries once after 10 seconds
+   AND if the retry also times out, logs an error and skips to the next batch
+   AND does NOT mark any quotes as expired from the failed batch (no partial updates)
+```
+
+### Artifact 1: Spec Document — ADR Quality Bar
+ADRs are optional artifacts — most specs produce zero. But when created, they must meet the same quality standard as any other artifact. The harness ships with exemplar ADRs in `docs/adr/` that define the floor.
+
+**REJECT** — missing options:
+```
+# ADR-0042: Use Redis for caching
+
+## Status
+Accepted
+
+## Context
+We need a caching layer.
+
+## Decision
+We will use Redis.
+
+## Consequences
+Caching will be faster.
+```
+
+**Why rejected**: No options considered (why Redis over Memcached, in-memory, or no cache?). Context is one sentence — doesn't explain the problem. Consequences are vague ("faster" — how much? at what cost?).
+
+**ACCEPT** — full analysis:
+```
+# ADR-0042: Redis Over In-Memory Cache for Quote Price Data
+
+## Status
+Accepted
+
+## Context
+The Quote Orchestrator fetches prices from multiple banks (NatWest, Barclays, HSBC)
+via FIX protocol. Each quote has a 30-second TTL. During peak trading, the same
+symbol is requested 50-100 times per second across multiple Azure Function instances.
+
+Without a shared cache, each instance makes redundant FIX requests — increasing
+latency (P99 jumps from 200ms to 1.2s) and risking rate limits from banks.
+The cache must be shared across instances (ruling out in-process) and support
+TTL-based expiration (ruling out simple key-value stores without TTL).
+
+### Options Considered
+
+**Option A: In-process MemoryCache**
+- Built into .NET, zero infrastructure
+- Pro: Lowest latency (~0.1ms), no network hop
+- Con: Not shared across Function instances — each instance caches independently
+- Con: Cold starts on scale-out mean cache misses during traffic spikes
+
+**Option B: Redis (StackExchange.Redis)**
+- Shared cache via Azure Cache for Redis
+- Pro: Shared across all instances — one cache hit serves everyone
+- Pro: Native TTL support per key (maps directly to quote expiration)
+- Pro: Already in the infrastructure (used by the streaming transport layer)
+- Con: Network hop adds ~1-3ms latency
+- Con: Requires Redis availability — outage means fallback to direct FIX calls
+
+**Option C: NCache / Hazelcast distributed cache**
+- Enterprise distributed cache
+- Pro: More features (near-cache, replication topologies)
+- Con: Additional license cost and operational complexity
+- Con: Team has no experience — learning curve during active sprint
+
+## Decision
+**Redis (Option B)** — it's already in our infrastructure, supports TTL natively,
+and is shared across instances. The 1-3ms network hop is acceptable given we're
+avoiding 50-100 redundant FIX calls per second. Option A was rejected because
+Function instance isolation means no cache sharing. Option C was rejected because
+the additional complexity isn't justified when Redis already meets our requirements.
+
+## Consequences
+- Redis becomes a runtime dependency for the Quote Orchestrator (already a dependency for streaming)
+- Quote price lookups add ~1-3ms for cache hit vs. ~200ms for FIX call (99% improvement on cache hit)
+- Redis outage degrades to direct FIX calls (higher latency, not data loss) — acceptable
+- Cache key format: `quote:{symbol}:{bank}` with TTL = config.quoteExpirationSeconds
+- Integration tests require Testcontainers.Redis (already configured)
+```
+
+---
+

@@ -206,3 +206,69 @@ Before advancing to /test-verify, validate the implementation report against `.c
 - **Board lock for writes.** Any board update follows the lock protocol.
 - **Spec ambiguity = STOP.** If implementation reveals ambiguity → halt, document, return to GRILL_SPEC.
 - **Quality floor is non-negotiable.** See artifact-standards.md for the gold standard. Your output must match or exceed it.
+
+---
+
+## Gold Standard (moved from artifact-standards.md, ADR-0011)
+
+The normative template and quality bar for this skill's artifact — the FLOOR, not the ceiling. `artifact-standards.md` keeps the anti-slop rules and validation checklists; the worked examples live here so they load only when this phase runs.
+
+### Artifact 3: Implementation Report — Required Content
+```markdown
+## Implementation Report: [Task Title]
+
+### Branch
+- Name: `feature/TASK-ID-slug`
+- Base: `main` at commit [hash]
+- Commits: [N]
+
+### Tasks Completed
+
+| # | Task Title | Files Changed | Tests Added | Commits | Attempts | Status |
+|---|-----------|---------------|-------------|---------|----------|--------|
+| 1 | IQuoteRepository interface | IQuoteRepository.cs, Quote.cs | QuoteStatusTests (1) | abc1234 | 1 | ✅ |
+| 2 | QuoteRepository SQL impl | QuoteRepository.cs | QuoteRepositoryTests (4) | def5678 | 1 | ✅ |
+| 3 | QuoteOrchestrationService | QuoteOrchestrationService.cs | QuoteOrchestrationTests (6) | ghi9012 | 2 | ✅ (retry: NSubstitute setup issue) |
+
+### Files Changed (complete list)
+
+| File | Action | Lines | Purpose |
+|------|--------|-------|---------|
+| `src/Domain/Interfaces/IQuoteRepository.cs` | CREATE | 15 | Repository interface for quote operations |
+| `src/Domain/Models/Quote.cs` | MODIFY | +3 | Added QuoteStatus.Expired enum value |
+| `src/Infrastructure/Repositories/QuoteRepository.cs` | CREATE | 87 | SQL Server implementation of IQuoteRepository |
+| `src/Application/Services/QuoteOrchestrationService.cs` | CREATE | 142 | Quote lifecycle orchestration |
+| `tests/Domain/QuoteStatusTests.cs` | CREATE | 12 | Enum validation |
+| `tests/Infrastructure/QuoteRepositoryTests.cs` | CREATE | 98 | Repository integration tests (Testcontainers.MsSql) |
+| `tests/Application/QuoteOrchestrationTests.cs` | CREATE | 156 | Service unit tests with NSubstitute mocks |
+
+### Test Inventory (from TDD)
+
+| Test Class | Tests | Type | AC Coverage |
+|-----------|-------|------|-------------|
+| QuoteStatusTests | 1 | Unit | AC none (infrastructure) |
+| QuoteRepositoryTests | 4 | Integration | AC 1 (get active), AC 2 (expiration sweep) |
+| QuoteOrchestrationTests | 6 | Unit | AC 1, AC 2, AC 3 (partial — no SQL timeout test) |
+
+### AC Coverage Status (pre-verification)
+
+| AC# | Description | Covered By TDD? | Gaps |
+|-----|-------------|-----------------|------|
+| 1 | Quote expiration sweep updates status + event | ✅ Partial | Missing: metric increment assertion |
+| 2 | Expired quotes not returned by GetActiveQuote | ✅ Full | — |
+| 3 | SQL timeout retry + skip behavior | ❌ Not covered | Needs integration test with simulated timeout |
+
+### Flags & Deviations
+- Task 3 required 2 attempts (first subagent misconfigured NSubstitute returns)
+- No deviations from PLAN.md
+- AC 3 (timeout handling) partially deferred to /test-verify — requires Testcontainers with fault injection
+
+### Test Results
+```
+dotnet test — 11 passed, 0 failed, 0 skipped
+Build: 0 warnings
+```
+```
+
+---
+

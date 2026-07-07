@@ -165,7 +165,7 @@ The CLAUDE.md file states seven "immutable laws" (summarized by a three-line cre
 
 **Problem it solves**: Artifact gating (Law 3) checks that files EXIST — it says nothing about whether they're any good. Without a quality floor, the agent satisfies the gate with placeholder specs ("TBD"), single-sentence sections, and vague acceptance criteria — artifacts that pass the existence check but poison every downstream phase.
 
-**Why gold-standard examples, not just rules**: Models anchor on examples. A rule that says "write detailed ACs" produces marginally better output; a worked example of a rich GIVEN/WHEN/THEN block with concrete values sets the floor at that level. `artifact-standards.md` therefore ships full exemplar artifacts for every phase, plus anti-slop rules that name the failure modes explicitly (no placeholders, no unnamed entities, quantify when possible).
+**Why gold-standard examples, not just rules**: Models anchor on examples. A rule that says "write detailed ACs" produces marginally better output; a worked example of a rich GIVEN/WHEN/THEN block with concrete values sets the floor at that level. The harness therefore ships full exemplar artifacts for every phase — the anti-slop rules and validation checklists live in `artifact-standards.md`, and the worked examples live in each producing skill's "Gold Standard" section, loaded exactly when that phase runs ([ADR-0011](adr/0011-slim-always-loaded-layer.md)).
 
 ---
 
@@ -185,6 +185,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0008](adr/0008-phase-guard-hook-enforcement.md) | Hook-enforced phase guards parsing sprint-state.md directly |
 | [0009](adr/0009-machine-readable-ac-gating.md) | Machine-readable AC list gating verification; adversarial QA framing |
 | [0010](adr/0010-fast-lane-pipeline.md) | Fast lane as an alternate state-machine path for small, low-risk tasks |
+| [0011](adr/0011-slim-always-loaded-layer.md) | Gold-standard examples moved into skills; always-loaded layer slimmed |
 
 ---
 

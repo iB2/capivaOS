@@ -143,6 +143,16 @@ The harness assumes:
 
 ---
 
+## Project Setup (moved from CLAUDE.md, ADR-0011)
+
+1. Copy `.claude/`, `.board/`, `docs/`, `templates/` into your project
+2. Populate project docs: `docs/CONTEXT.md` (domain glossary) and `docs/specs/INTAKE-summary.md` (project scope — see `templates/intake-summary.md`)
+3. Run `/init` — validates docs, detects your stack, selects the matching blueprint, writes the config
+4. Populate `.board/tasks.md` with your backlog
+5. Run `/sprint` to begin
+
+Optional: Jira integration (add project key, board ID, transition IDs to CLAUDE.md), quality-threshold overrides (edit `.claude/rules/quality-gates.md` + ADR), custom blueprints (below).
+
 ## Adaptation Guide
 
 ### Adding a New Phase
