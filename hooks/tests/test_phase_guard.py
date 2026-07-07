@@ -66,6 +66,10 @@ def main():
         cases.append(("IDLE: deny gh pr create", run_guard(root, "Bash", {"command": "gh pr create --title t"})[0] is True))
         cases.append(("IDLE: allow other bash", run_guard(root, "Bash", {"command": "git status"})[0] is False))
 
+        set_state("IDLE")
+        cases.append(("IDLE: allow capiva-blueprints (project blueprint config)",
+                      run_guard(root, "Write", {"file_path": str(root / "capiva-blueprints" / "x" / "reference.md")})[0] is False))
+
         set_state("GRILL_SPEC")
         cases.append(("GRILL_SPEC: deny src edit", run_guard(root, "Edit", {"file_path": src})[0] is True))
 
