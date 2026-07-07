@@ -157,6 +157,7 @@ Proceed with this configuration?
 - **Configured**: [ISO date]
 - **Installed Via**: plugin | copy-mode
 - **Phase Isolation**: off
+- **Dual Review**: off
 ```
 
 2. Write `.board/harness-schema-version` containing exactly the plugin's

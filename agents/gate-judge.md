@@ -34,6 +34,7 @@ Attack, don't confirm (same discipline as the QA refuter):
   All statuses `pass` with e2e evidence? Any refuted-then-refixed claim, any
   flagged-but-unresolved item, any coverage arithmetic that doesn't add →
   ESCALATE.
+- **Dual-review disagreement** (when the quality report carries two reviewers): any unresolved disagreement = ESCALATE, always.
 - **CLEAR requires zero anomalies.** You are not weighing trade-offs — where
   judgment is required, judgment belongs to the human. You clear arithmetic,
   never arguments.
