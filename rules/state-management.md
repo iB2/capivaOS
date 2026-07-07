@@ -23,6 +23,8 @@ The file uses Markdown field syntax: `- **Field Name**: Value`. All phase guards
 | Plan Approved | Yes / No | /capiva:sprint (after human approval) |
 | Quality Gate | PASS, ACCEPTED_SOFT_FAIL, HARD_FAIL, or `--` | /capiva:test-verify |
 | Branch | `feature/TASK-ID-slug` or `--` | /capiva:implement |
+| Loop Active | yes / (absent = no loop) | auto-mode driver (LOOP-007) |
+| Loop Task Cap / Loop Tasks Done / Loop Token Budget / Loop Stop Reason | counters for the active auto run | auto-mode driver; read by session_context for [AUTO_LOOP_RESUME] after compaction |
 
 Phase guards check: `Phase`, `Spec Approved`, `Plan Approved`, `Quality Gate`.
 Template: `.board/sprint-state.md` (initialized with IDLE state, empty history, and artifacts registry).

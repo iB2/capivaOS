@@ -45,6 +45,8 @@ def make_harness_project(root: Path, phase="IDLE", schema_version=None):
         "# Sprint State\n\n## Current Task\n\n"
         f"- **Task ID**: TST-9\n- **Task Title**: test task\n- **Phase**: {phase}\n"
         "- **Quality Gate**: --\n\n## Phase History\n", encoding="utf-8")
+    (root / ".board" / "tasks.md").write_text(
+        "# Task Board\n\n## In Progress\n", encoding="utf-8")
     if schema_version:
         (root / ".board" / "harness-schema-version").write_text(schema_version, encoding="utf-8")
 

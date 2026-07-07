@@ -42,6 +42,29 @@ def _read(path: Path) -> str:
         return ""
 
 
+def _loop_resume_block(state: str) -> str:
+    """[AUTO_LOOP_RESUME] injection when a loop is active (ADR-0014 / LOOP-004).
+
+    The loop driver persists its counters as sprint-state fields; after a
+    compaction this block restores the loop's position so it continues instead
+    of silently dying with the context."""
+    if not re.search(r"^- \*\*Loop Active\*\*:\s*yes\s*$", state, re.MULTILINE | re.IGNORECASE):
+        return ""
+    def field(name, default="?"):
+        m = re.search(rf"^- \*\*{name}\*\*:\s*(.+)$", state, re.MULTILINE)
+        return m.group(1).strip() if m else default
+    done = field("Loop Tasks Done", "0")
+    cap = field("Loop Task Cap")
+    return (
+        f"\n[AUTO_LOOP_RESUME] An auto-mode loop was active when this context "
+        f"compacted. Progress: {done}/{cap} tasks; budget note: {field('Loop Token Budget', 'see driver defaults')}. "
+        f"Re-read .board/sprint-state.md and .board/approvals.md, then CONTINUE the "
+        f"loop from the current phase per the auto-mode contract (never re-run "
+        f"completed phases; artifacts on disk are the source of truth). "
+        f"Stop reason so far: {field('Loop Stop Reason', '--')}."
+    )
+
+
 def _current_task_block(state: str) -> str:
     m = re.search(r"## Current Task\n(.*?)(?=\n## )", state, re.DOTALL)
     return m.group(1).strip() if m else state[:800]
@@ -81,6 +104,9 @@ def main():
     parts = []
     if source == "compact":
         parts.append(f"[capivaOS credo reminder after compaction] {CREDO}")
+        resume = _loop_resume_block(state)
+        if resume:
+            parts.append(resume)
     else:
         laws = _read(PLUGIN_ROOT / "rules" / "laws.md")
         if laws:
