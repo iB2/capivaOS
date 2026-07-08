@@ -34,6 +34,7 @@ edits and format transforms only.
 | From → To | Migration |
 |-----------|-----------|
 | 1.0.0 → 1.1.0 | No project-file migration required. Guard allowlist gained `capiva-blueprints/`; laws text updated (ships with the engine). OPTIONAL: `.board/harness-config.md` MAY add `- **Phase Isolation**: on|off` (absent = off). Re-stamp only. |
+| 1.1.0 → 1.1.1 | No project-file migration required. Manifest-only hotfix (install fix) + CI/lint hardening; nothing under project-template/ or the hook-parsed field formats changed. Re-stamp only. |
 
 Maintainer note: when a release changes anything under
 `${CLAUDE_PLUGIN_ROOT}/project-template/` or any field format that
