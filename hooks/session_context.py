@@ -44,7 +44,7 @@ def _read(path: Path) -> str:
 
 
 def _loop_resume_block(state: str) -> str:
-    """[AUTO_LOOP_RESUME] injection when a loop is active (ADR-0014 / LOOP-004).
+    """[AUTO_LOOP_RESUME] injection when a loop is active (ADR-0014).
 
     The loop driver persists its counters as sprint-state fields; after a
     compaction this block restores the loop's position so it continues instead

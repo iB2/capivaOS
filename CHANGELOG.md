@@ -7,16 +7,15 @@ Schema-affecting changes MUST land with a matching migration row in
 
 ## [1.2.1] — 2026-07-09
 
-Patch: the grilled remainder of the 2026-07-08 audit (AUD-018/020) — every
-Low/Cosmetic finding interrogated before acceptance; 2 auditor remedies
-rejected with rationale, 1 audit finding refuted, the rest shipped.
+Patch: consistency and claims hardening — the remainder of the 2026-07
+external-review follow-up.
 
 - **Lint check 14** — quantitative-claim parity: SECURITY.md's "~N lines"
   figure is recomputed against `wc -l` at ±15% (the figure went stale in both
   directions across two releases; now it cannot rot silently)
 - **Lint check 15** — private board IDs (LOOP/CAP/AUD-n) may not appear in
   skills/, rules/, agents/: adopters cannot resolve this repo's own task IDs.
-  The check caught 3 refs introduced by the remediation epic itself, pre-commit
+  The check caught 3 further refs pre-commit, before they ever shipped
 - SDLC mapping unified across all three blueprints (named stages, namespaced
   commands — the numeric scheme collided with enterprise-blueprint gate
   numbers); python-fastapi §ci-cd now ships the GitHub Actions workflow its
@@ -29,16 +28,15 @@ rejected with rationale, 1 audit finding refuted, the rest shipped.
 
 ## [1.2.0] — 2026-07-08
 
-The honesty release: the 2026-07-08 external audit (6 evidence reports) found
-that "mechanically enforced" claimed more than the hooks delivered — and that
-the audience this product courts would find the gap in minutes. 1.2.0 closes
-the enforcement holes, re-segments every claim, and converts each audited bug
-class into a lint check so the class cannot recur. 17 tasks (AUD-001..017),
-one PR each.
+The honesty release: an external code review found that "mechanically
+enforced" claimed more than the hooks delivered — and that the audience this
+product courts would find the gap in minutes. 1.2.0 closes the enforcement
+holes, re-segments every claim, and converts each identified bug class into a
+lint check so the class cannot recur.
 
 ### Enforcement (phase guard)
 - **Kill-switch protected**: `.state/phase-guard-off` is HUMAN_ONLY — an agent
-  can no longer disable its own guard (the audit's top code finding)
+  can no longer disable its own guard (the review's top code finding)
 - **Merge verbs denied everywhere**: `gh pr merge` (any form) and `git push`
   targeting the default branch, in every phase and mode — "AUTO never merges"
   is now hook-backed, not prose
@@ -84,7 +82,7 @@ one PR each.
 ### Tooling
 - harness_lint grows from 8 to 13 checks, every new one self-tested: manifest
   key allowlists, agent-roster parity, personal paths, hook-literal skill
-  refs, plugin-root write-intent, field parity (HARN-005), claims parity
+  refs, plugin-root write-intent, field parity, claims parity
 - `--check-blueprint <dir>`: custom-blueprint authoring validation, run by
   init; shipped blueprints now validate against the 11-section contract
 - CI: real `claude plugin install` against two pinned CLIs (floor 2.1.50 +

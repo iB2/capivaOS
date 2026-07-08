@@ -3,7 +3,7 @@
 
     python3 hooks/tests/scenario_phase_guard.py
 
-Named scenario_* deliberately (AUD-010): the old test_* names made
+Named scenario_* deliberately: the old test_* names made
 `pytest hooks/tests/` collect ZERO tests and exit green — a green-but-empty
 trap for any CI author. These are self-contained runners, not pytest suites.
 """
@@ -113,7 +113,7 @@ def main():
         set_state("FINISH", "ACCEPTED_SOFT_FAIL")
         cases.append(("FINISH+SOFT_FAIL: allow gh pr create", run_guard(root, "Bash", {"command": "gh pr create"})[0] is False))
 
-        # merge verbs (AUD-004 / ADR-0014 never-list item 1): denied in EVERY
+        # merge verbs (ADR-0014 never-list item 1): denied in EVERY
         # phase — even at FINISH+PASS, the most PR-permissive state
         set_state("FINISH", "PASS")
         cases.append(("FINISH+PASS: deny gh pr merge", run_guard(root, "Bash", {"command": "gh pr merge 5 --squash"})[0] is True))
@@ -133,7 +133,7 @@ def main():
         cases.append(("IMPLEMENT: deny push to main (never-phase)", run_guard(root, "Bash", {"command": "git push origin main"})[0] is True))
         cases.append(("IMPLEMENT: allow bare git push (documented limit)", run_guard(root, "Bash", {"command": "git push"})[0] is False))
 
-        # approval-policy protection (LOOP-006 / ADR-0014): denied in EVERY phase
+        # approval-policy protection (ADR-0014): denied in EVERY phase
         policy = str(root / ".board" / "approval-policy.md")
         set_state("IDLE")
         cases.append(("IDLE: deny approval-policy write", run_guard(root, "Write", {"file_path": policy})[0] is True))
@@ -141,7 +141,7 @@ def main():
         cases.append(("IMPLEMENT: deny approval-policy write (self-licensing)", run_guard(root, "Edit", {"file_path": policy})[0] is True))
         cases.append(("IMPLEMENT: other board writes still allowed", run_guard(root, "Write", {"file_path": str(root / ".board" / "tasks.md")})[0] is False))
 
-        # kill-switch marker protection (AUD-003 / ADR-0014): the guard's own
+        # kill-switch marker protection (ADR-0014): the guard's own
         # off-switch is agent-unwritable in EVERY phase — .state general
         # writability must not bypass it
         marker = str(root / ".state" / "phase-guard-off")
@@ -155,7 +155,7 @@ def main():
         set_state("FINISH", "PASS")
         cases.append(("FINISH+PASS: deny kill-switch marker write", run_guard(root, "Write", {"file_path": marker})[0] is True))
 
-        # shell write parity (AUD-005): a Bash write to X is denied iff Write
+        # shell write parity: a Bash write to X is denied iff Write
         # to X would be — same decision function, both routes
         set_state("GRILL_SPEC")
         cases.append(("GRILL_SPEC: deny redirect into src", run_guard(root, "Bash", {"command": "cat > src/service.py <<EOF\nx = 1\nEOF"})[0] is True))
@@ -211,7 +211,7 @@ def main():
         outside = str(Path(tempfile.gettempdir()) / "scratch-note.py")
         cases.append(("IDLE: allow path outside project", run_guard(root, "Edit", {"file_path": outside})[0] is False))
 
-        # claims-parity meta (AUD-011): ENFORCED_SURFACES is the source of
+        # claims-parity meta: ENFORCED_SURFACES is the source of
         # truth harness_lint locks the docs to — if this tuple changes, the
         # deny logic, the scenarios above, and both doc tables change with it
         guard_src = GUARD.read_text(encoding="utf-8")

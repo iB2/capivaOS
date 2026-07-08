@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Scenario tests for the plugin hook layer (CAP-002): run-hook.cmd dispatcher,
+"""Scenario tests for the plugin hook layer: run-hook.cmd dispatcher,
 session_context.py injection, context-persistence no-op guard, hooks.json shape.
 
     python3 hooks/tests/scenario_plugin_hooks.py
 
-Named scenario_* deliberately (AUD-010): the old test_* names made
+Named scenario_* deliberately: the old test_* names made
 `pytest hooks/tests/` collect ZERO tests and exit green. Self-contained
 runner, not a pytest suite.
 """
@@ -142,7 +142,7 @@ def main():
             compact_ok = "Law 1" not in ctx2 and "credo" in ctx2.lower() and "TST-9" in ctx2
         cases.append(("session_context: compact -> credo reminder only, no full laws", compact_ok))
 
-        # loop persistence (LOOP-004)
+        # loop persistence
         loop_project = Path(td) / "loop"
         make_harness_project(loop_project, phase="IMPLEMENT")
         st = loop_project / ".board" / "sprint-state.md"
@@ -156,7 +156,7 @@ def main():
         if rc == 0 and out.strip():
             ctx3 = json.loads(out)["hookSpecificOutput"]["additionalContext"]
             loop_ok = ("AUTO_LOOP_RESUME" in ctx3 and "1/3" in ctx3
-                       and "budget note: 15" in ctx3)  # the real budget, not the fallback (AUD-009)
+                       and "budget note: 15" in ctx3)  # the real budget, not the fallback
         cases.append(("session_context: compact + active loop -> AUTO_LOOP_RESUME with counters", loop_ok))
 
         rc, out, _ = run_script("session_context.py", [], stdin='{"source":"compact"}',
@@ -166,7 +166,7 @@ def main():
             no_loop_ok = "AUTO_LOOP_RESUME" not in json.loads(out)["hookSpecificOutput"]["additionalContext"]
         cases.append(("session_context: compact + no loop -> no resume block", no_loop_ok))
 
-        # compaction counter (AUD-014): precompact increments; compact injects;
+        # compaction counter: precompact increments; compact injects;
         # startup resets — the "2 compactions = handover" rule becomes readable
         cc_project = Path(td) / "ccount"
         make_harness_project(cc_project, phase="IMPLEMENT")

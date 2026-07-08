@@ -7,7 +7,7 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
 
   - Edit/MultiEdit/Write/NotebookEdit to source paths -> only when Phase =
     IMPLEMENT (test paths also allowed when Phase = TEST_VERIFY/VERIFY_FINISH)
-  - shell writes (redirects, tee, sed -i, touch) -> TOOL PARITY (AUD-005): a
+  - shell writes (redirects, tee, sed -i, touch) -> TOOL PARITY: a
     Bash/PowerShell write to path X is denied exactly when Write to X would
     be. Best-effort by construction: quoted strings and heredoc bodies are
     stripped before scanning (prose containing '>' can't false-deny), so a
@@ -77,14 +77,14 @@ TEST_PATH_RE = re.compile(
 PASSING_GATES = {"PASS", "ACCEPTED_SOFT_FAIL"}
 
 # The complete inventory of what this hook mechanically DENIES — the single
-# source of truth for every "mechanically enforced" claim (AUD-011).
+# source of truth for every "mechanically enforced" claim.
 # harness_lint check 13 asserts each surface carries its documentation marker
 # (<!-- enforced: X -->) in README.md AND SECURITY.md, and that no unknown
 # marker exists — claims and code cannot drift apart without failing CI.
 # Add a surface ONLY together with its deny logic, its scenarios, and both
 # doc rows; the lint fails on any partial landing.
 ENFORCED_SURFACES = (
-    "source-writes-outside-implement",  # write tools + shell parity, AUD-005
+    "source-writes-outside-implement",  # write tools + shell parity
     "pr-create-gate",                   # FINISH/VERIFY_FINISH + passing gate
     "human-only-files",                 # approval-policy.md + kill-switch marker
     "merge-verbs",                      # gh pr merge; git push -> default branch
@@ -127,7 +127,7 @@ GH_PR_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b")
 GIT_PUSH_RE = re.compile(r"\bgit\s+push\b")
 DEFAULT_BRANCHES = {"main", "master"}
 
-# Shell write parity (AUD-005). Strip heredoc BODIES and quoted strings first
+# Shell write parity. Strip heredoc BODIES and quoted strings first
 # so prose containing '>' (commit messages, echo'd text) can never false-deny;
 # the cost is that quoted targets are invisible — fail-open prefers false
 # negatives over blocking legitimate work. Then extract targets of: > and >>
@@ -204,7 +204,7 @@ def _read_state():
     if "<<<<<<<" in content:
         # A conflicted state file is neither missing nor unparseable — the
         # first `Phase:` regex match would silently win, enforcing whichever
-        # side sorts first (AUD-005; enforcement-code audit §6). Never trust
+        # side sorts first (enforcement-code audit §6). Never trust
         # it: fail open LOUDLY instead.
         print(
             "phase_guard: .board/sprint-state.md contains merge-conflict "
@@ -250,7 +250,7 @@ def _is_always_allowed(path: Path) -> bool:
 
 
 def _write_denial(path: Path, phase: str):
-    """The single write decision, shared by every route (AUD-005 tool parity):
+    """The single write decision, shared by every route (tool parity):
     Edit/MultiEdit/Write/NotebookEdit and shell-extracted write targets all
     resolve here. Returns a deny reason, or None to allow."""
     try:
