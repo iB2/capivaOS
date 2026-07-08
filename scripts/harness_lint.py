@@ -42,6 +42,8 @@ Checks:
      names an undeclared surface.
  14. Quantitative-claim parity (AUD-018): SECURITY.md's "~N lines" figure
      stays within +/-15% of the real wc -l over hooks/*.py.
+ 15. Private board IDs (LOOP/CAP/AUD-n) must not appear in skills/, rules/,
+     agents/ - adopters cannot resolve this repo's own task IDs (AUD-020).
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -575,6 +577,23 @@ def lint(root: Path):
                     f"is {actual} (>15% off) — update the figure; stale "
                     f"quantitative claims are audit findings (AUD-018)")
 
+    # 15. private board IDs in shipped engine content (AUD-020): skills/,
+    #     rules/ and agents/ are read by ADOPTERS — references to this repo's
+    #     own (untracked) board tasks (LOOP-006, CAP-003, ...) resolve to
+    #     nothing for them. Engine content anchors to shipped documents
+    #     (ADRs, rules) or plain descriptions, never to private task IDs.
+    PRIVATE_ID_RE = re.compile(r"\b(?:LOOP|CAP|AUD|HARN)-\d+\b")
+    for f, text in all_text.items():
+        rel_f = f.relative_to(root).as_posix()
+        if not (rel_f.startswith("skills/") or rel_f.startswith("rules/")
+                or rel_f.startswith("agents/")):
+            continue
+        for m in PRIVATE_ID_RE.finditer(text):
+            findings.append(
+                f"{rel_f}: private board ID {m.group(0)} in shipped engine "
+                f"content — adopters cannot resolve it; anchor to an ADR or "
+                f"describe the behavior instead (AUD-020)")
+
     return findings
 
 
@@ -597,6 +616,7 @@ def self_test():
             "alpha beta and §ghost-section\n"
             "Built at C:\\Users\\johndoe\\proj (personal path seed)\n"
             "Create ${CLAUDE_PLUGIN_ROOT}/docs/adr/NNNN-slug.md when needed.\n"
+            "Contract per LOOP-042 (see the board).\n"
             "Read ${CLAUDE_PLUGIN_ROOT}/rules/gone.md for details.\n"
             "Also read skills/plan/SKILL.md directly.\n", encoding="utf-8")
         (root / "docs" / "DESIGN.md").write_text(
@@ -687,6 +707,7 @@ def self_test():
             "missing required section §build-commands",
             "unknown section §made-up-section",
             "claims ~700 lines of hook Python",
+            "private board ID LOOP-042",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

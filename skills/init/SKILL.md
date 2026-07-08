@@ -124,7 +124,7 @@ Shipped blueprints: dotnet-hexagonal, python-fastapi, nextjs-typescript
 
 Options:
 1. Create a custom blueprint in YOUR project: capiva-blueprints/<name>/reference.md
-   Then VALIDATE it before accepting the configuration (AUD-015):
+   Then VALIDATE it before accepting the configuration (blueprint authoring contract):
    `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/harness_lint.py --check-blueprint capiva-blueprints/<name>`
    — a blueprint missing contract sections fails init here, not mid-pipeline
    when a skill reads a contract section that does not exist.
@@ -202,7 +202,7 @@ on this step (air-gapped installs must work).
    `- **Branch Protection**: configured [date] | verified [date] | declined [date] (+reason)`
 
 Note for auto mode: the auto skill re-checks at run start and refuses (with
-explicit override) on unprotected branches — contract per LOOP-002 AC5.
+explicit override) on unprotected branches — contract per ADR-0014.
 
 ## Step 6: Report Readiness
 

@@ -124,7 +124,7 @@ At every phase boundary, BEFORE invoking the next skill:
 CHECK context pressure:
   Read the hook-maintained count: the [COMPACTION COUNT] block injected
   after every compaction, or .state/compaction-count directly (0 if absent).
-  Never estimate it yourself — the counter is mechanical (AUD-014).
+  Never estimate it yourself — the counter is hook-maintained (mechanical).
 
   IF count >= 2 → HANDOVER (mandatory)
   IF count == 1 AND next phase is IMPLEMENT or TEST_VERIFY → HANDOVER

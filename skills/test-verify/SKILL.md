@@ -69,7 +69,7 @@ Refutation targets (minimum set):
 
 If any claim is REFUTED: iterate once (fix code/tests, re-review). If claims remain refuted after iteration, flag for human.
 
-#### Agent 3: Second Independent Reviewer (optional — Dual Review, LOOP-008)
+#### Agent 3: Second Independent Reviewer (optional — Dual Review)
 
 Only when `- **Dual Review**: on` in `.board/harness-config.md` (absent/off =
 skip this agent entirely; attended behavior unchanged). A second qa-role agent
