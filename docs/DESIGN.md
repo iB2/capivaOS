@@ -155,7 +155,7 @@ The CLAUDE.md file states seven "immutable laws" (summarized by a three-line cre
 
 **Why silence ≠ approval**: In conversation-based AI interaction, the human might step away, context might compact, or the approval message might be ambiguous. The only safe default is: if the human hasn't explicitly said "approved" / "sim" / "go ahead," the pipeline waits.
 
-**How autonomy fits without breaking this** ([ADR-0014](adr/0014-autonomy-contract.md)): auto mode does not remove human judgment — it re-routes it. The human writes an approval policy once, deliberately; an independent judge clears only zero-anomaly cases within explicit bounds; everything else escalates to a queue. A hard-coded never-list (merge, P0/P1 gates, human-less spec approval, policy silence) is beyond all delegation, and the policy file itself is hook-protected from agent edits (self-licensing prevention). The gates were never the weakness; auto mode makes them asynchronous, not optional.
+**How autonomy fits without breaking this** ([ADR-0014](adr/0014-autonomy-contract.md)): auto mode does not remove human judgment — it re-routes it. The human writes an approval policy once, deliberately; a context-fresh judge (same base model — independence is of context) clears only zero-anomaly cases within explicit bounds; everything else escalates to a queue. A hard-coded never-list (merge, P0/P1 gates, human-less spec approval, policy silence) is beyond all delegation, and the policy file itself is hook-protected from agent edits (self-licensing prevention). The gates were never the weakness; auto mode makes them asynchronous, not optional.
 
 ### Law 6: Context Budget Is a Hard Limit
 
@@ -193,6 +193,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0012](adr/0012-native-agent-primitives.md) | Native agent definitions with tool allowlists; structured subagent reports |
 | [0013](adr/0013-plugin-distribution.md) | Plugin distribution: engine/state split, self-marketplace, session injection |
 | [0014](adr/0014-autonomy-contract.md) | Autonomy contract: policy+judge gate routing, never-list, isolation-first context |
+| [0015](adr/0015-transition-validation.md) | Sprint-state transition validation: the guard learns the state machine (design approved; implementation scheduled) |
 
 ---
 
