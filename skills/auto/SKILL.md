@@ -12,6 +12,13 @@ default; this mode is opt-in **per run** — never a standing repo state.
 ## Entry Gate (MANDATORY — refuse politely, never improvise past it)
 
 1. **Init check**: same as /capiva:sprint Step 0 (docs, blueprint, config).
+1b. **Guard liveness** (MANDATORY, PRD-001): the phase guard must be proven
+   alive before accepting autonomy. Check `.state/guard-heartbeat` is fresh
+   (updated this session). If absent, run a probe: attempt an out-of-phase
+   source write that MUST be denied, then confirm the heartbeat updated. If
+   the guard cannot be shown alive (no heartbeat, probe not denied — e.g. a
+   dead POSIX dispatcher), REFUSE to start. A guard that might be dead is a
+   guard that is not there; autonomy on top of it is unacceptable.
 2. **Branch protection re-check** (ADR-0014 prerequisite): verify the default
    branch requires PRs. Unprotected → REFUSE with the init Step 5b explanation;
    the human may override with an explicit "run unprotected" — record the

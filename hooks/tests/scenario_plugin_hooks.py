@@ -188,6 +188,22 @@ def main():
         cases.append(("session_context: startup resets the counter to 0",
                       rc == 0 and cc_file.read_text(encoding="utf-8").strip() == "0"))
 
+        # guard liveness surfacing (PRD-001)
+        live = Path(td) / "live"
+        make_harness_project(live, phase="IMPLEMENT")
+        # active task, no heartbeat -> loud warning
+        rc, out, _ = run_script("session_context.py", [], stdin='{"source":"startup"}',
+                                project_dir=live)
+        warn_ok = rc == 0 and "GUARD LIVENESS" in out and "NO heartbeat" in out
+        cases.append(("session_context: active task + no heartbeat -> loud warning", warn_ok))
+        # heartbeat present -> 'last fired' line, no warning
+        (live / ".state").mkdir(parents=True, exist_ok=True)
+        (live / ".state" / "guard-heartbeat").write_text("2026-07-09T10:00:00Z phase=IMPLEMENT\n", encoding="utf-8")
+        rc, out, _ = run_script("session_context.py", [], stdin='{"source":"startup"}',
+                                project_dir=live)
+        fresh_ok = rc == 0 and "last fired" in out and "NO heartbeat" not in out
+        cases.append(("session_context: fresh heartbeat -> last-fired line, no warning", fresh_ok))
+
         (loop_project / ".board" / "harness-config.md").write_text(
             "- **Active Blueprint**: x\n", encoding="utf-8")
         rc, _, _ = run_script("context-persistence.py", ["stop"], project_dir=loop_project)

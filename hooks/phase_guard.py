@@ -45,6 +45,11 @@ Escape hatch (both logged to stderr, both HUMAN-only by construction):
     HUMAN_ONLY_FILE — a guard whose off-switch is agent-writable enforces
     nothing; the exact self-licensing class ADR-0014 exists to prevent)
 
+Enforcement heartbeat: every enforced invocation refreshes
+.state/guard-heartbeat (PRD-001). A missing/stale heartbeat means the
+guard is not firing (e.g. the POSIX dispatch died) — session_context warns
+and /capiva:auto refuses to run. Silence must never read as healthy.
+
 Keep the field parser in sync with context-persistence.py (same format).
 """
 
@@ -52,10 +57,16 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
+# Enforcement heartbeat (PRD-001): proof-of-life the guard actually fired.
+# session_context surfaces it; /capiva:auto refuses autonomy without it.
+# On POSIX a non-executable/misdispatched hook fails before the .py runs,
+# so a fresh heartbeat is the mechanical signal that enforcement is alive.
+HEARTBEAT = PROJECT_ROOT / ".state" / "guard-heartbeat"
 
 WRITE_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
@@ -321,6 +332,17 @@ def _check_shell(tool_input: dict, phase: str, gate: str):
     _allow()
 
 
+def _touch_heartbeat(phase: str):
+    """Drop a proof-of-life marker on every enforced invocation. Best-effort:
+    a heartbeat failure must never block a tool call."""
+    try:
+        HEARTBEAT.parent.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        HEARTBEAT.write_text(f"{stamp} phase={phase or '--'}\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
 def main():
     if os.environ.get("CAPIVA_PHASE_GUARD", "").lower() in ("off", "0", "false"):
         print("phase_guard: disabled via CAPIVA_PHASE_GUARD", file=sys.stderr)
@@ -346,6 +368,7 @@ def main():
         )
         _allow()
     phase, gate, _task = state
+    _touch_heartbeat(phase)
 
     if tool_name in WRITE_TOOLS:
         _check_file_write(tool_input, phase)

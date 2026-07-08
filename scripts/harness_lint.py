@@ -46,6 +46,8 @@ Checks:
      skills/, rules/, agents/, root public docs, hook and script code -
      adopters cannot resolve this repo's own task IDs. docs/adr/ is the
      documented exception (design history cites incidents as provenance).
+ 16. Heartbeat parity (PRD-001): if SECURITY.md claims a guard heartbeat,
+     phase_guard.py must actually write .state/guard-heartbeat.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -609,6 +611,20 @@ def lint(root: Path):
                 f"{rel_f}: private board ID {m.group(0)} in shipped "
                 f"content — adopters cannot resolve it; anchor to an ADR or "
                 f"describe the behavior instead")
+
+    # 16. heartbeat parity (PRD-001): if SECURITY.md claims the guard writes a
+    #     heartbeat, phase_guard.py must actually write .state/guard-heartbeat.
+    #     A liveness claim that no code backs is the same false-mechanism class
+    #     the lint philosophy rejects.
+    sec = root / "SECURITY.md"
+    pg = root / "hooks" / "phase_guard.py"
+    if sec.is_file() and pg.is_file():
+        claims_hb = "guard-heartbeat" in sec.read_text(encoding="utf-8", errors="replace")
+        writes_hb = ".state" in (pgt := pg.read_text(encoding="utf-8", errors="replace")) and "guard-heartbeat" in pgt and "write_text" in pgt
+        if claims_hb and not writes_hb:
+            findings.append(
+                "SECURITY.md claims a guard heartbeat but hooks/phase_guard.py "
+                "does not write .state/guard-heartbeat (false-mechanism, PRD-001)")
 
     return findings
 

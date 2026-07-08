@@ -5,6 +5,23 @@ receive updates only when the version in `.claude-plugin/plugin.json` is bumped.
 Schema-affecting changes MUST land with a matching migration row in
 `skills/update-project/SKILL.md`.
 
+## [1.3.0] — 2026-07-09
+
+Production-readiness release: resilience and containment hardening from a
+second external code review (the resilience/containment lens). Guardrails gain
+a proof-of-life, the state file the guard trusts stops being freely rewritable,
+and the write surface stops self-licensing.
+
+### Guard liveness (PRD-001)
+- **POSIX dispatch fixed**: `hooks/run-hook.cmd` now ships with the exec bit; a
+  CI job fires the hook by bare path on Linux/macOS. The dispatcher was
+  shebang-less mode-0644 — on POSIX that meant the guard could be silently
+  absent for every non-Windows adopter, masked by both CI paths.
+- **Enforcement heartbeat**: the guard writes `.state/guard-heartbeat` on every
+  enforced invocation; SessionStart warns loudly if a task is active with no
+  heartbeat; `/capiva:auto` refuses to start without a live heartbeat. Silence
+  no longer reads as a healthy guard. Lint check 16 keeps the claim honest.
+
 ## [1.2.1] — 2026-07-09
 
 Patch: consistency and claims hardening — the remainder of the 2026-07

@@ -39,6 +39,14 @@ in `hooks/phase_guard.py`, so it cannot silently over- or under-claim:
 4. The merge verbs: `gh pr merge`, `git push` to the default branch <!-- enforced: merge-verbs -->
 5. Read-only agents (qa, gate-judge) via platform tool allowlists <!-- enforced: agent-allowlists -->
 
+Mechanical liveness (not a denial, a proof-of-life): the phase guard writes
+`.state/guard-heartbeat` on every enforced invocation. session_context warns
+loudly at SessionStart if a task is active but no heartbeat exists, and
+`/capiva:auto` refuses to start without a live heartbeat. This exists because
+a misdispatched hook on POSIX fails silently — silence must never read as a
+healthy guard. A CI job fires the dispatcher by bare path on Linux/macOS to
+prove the guard actually runs there.
+
 Everything else the harness does — phase sequencing, artifact gating, the
 acs.json contract, board lock, human checkpoints, quality thresholds — is
 *structurally encouraged*: it reliably holds a compliant model and is not

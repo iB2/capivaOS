@@ -37,6 +37,7 @@ edits and format transforms only.
 | 1.1.0 → 1.1.1 | No project-file migration required. Manifest-only hotfix (install fix) + CI/lint hardening; nothing under project-template/ or the hook-parsed field formats changed. Re-stamp only. |
 | 1.1.1 → 1.2.0 | In `.board/sprint-state.md`: if a `- **Loop Token Budget**:` field exists (parked auto run), RENAME it to `- **Loop Phase Budget**:` — same value; the field was renamed to match what the auto driver writes (1.2.0 wiring fix). Scaffold: create `docs/adr/.gitkeep` and `docs/handover/.gitkeep` if the directories are absent (init now scaffolds both). If `.state/phase-guard-off` exists, tell the human: as of 1.2.0 the marker is agent-unwritable (human-only); an existing marker still disables the guard until the HUMAN deletes it. Re-stamp. |
 | 1.2.0 → 1.2.1 | No project-file migration required. Engine content/doc fixes + lint checks 14-15; templates changed only in wording (read from the plugin at runtime); no hook-parsed field formats changed. Re-stamp only. |
+| 1.2.1 → 1.3.0 | No project-file migration required. New engine behavior only (guard heartbeat at `.state/guard-heartbeat`, transition validation, mechanical board lock, run-log at `.state/run-log.jsonl` — all in `.state/`, gitignored, auto-created). If a custom `.claude/settings.json` exists in dev/copy mode, re-copy its hook matchers from the current template (PreToolUse matcher gained `MultiEdit`). Re-stamp. |
 
 Maintainer note: when a release changes anything under
 `${CLAUDE_PLUGIN_ROOT}/project-template/` or any field format that

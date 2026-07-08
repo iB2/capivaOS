@@ -27,6 +27,7 @@ PLUGIN_ROOT = Path(os.environ.get("CLAUDE_PLUGIN_ROOT") or Path(__file__).resolv
 
 SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
 COMPACTION_COUNT = PROJECT_ROOT / ".state" / "compaction-count"
+GUARD_HEARTBEAT = PROJECT_ROOT / ".state" / "guard-heartbeat"
 SCHEMA_STAMP = PROJECT_ROOT / ".board" / "harness-schema-version"
 
 CREDO = (
@@ -131,6 +132,22 @@ def main():
         else:
             parts.append(f"[capivaOS] {CREDO} (laws.md unavailable — read "
                          f"rules in the capiva plugin directory before pipeline work)")
+
+    # Guard liveness surfacing (PRD-001): if a task is active but the guard
+    # has left no heartbeat, the enforcement layer is probably not firing
+    # (e.g. the POSIX dispatch died). Silence must never read as healthy.
+    phase_line = re.search(r"^- \*\*Phase\*\*:\s*(.+)$", state, re.MULTILINE)
+    active = bool(phase_line) and phase_line.group(1).strip().upper() not in ("IDLE", "--", "")
+    hb = _read(GUARD_HEARTBEAT).strip()
+    if active and not hb:
+        parts.append(
+            "\n\u26a0\ufe0f [GUARD LIVENESS] A pipeline task is active but the phase "
+            "guard has left NO heartbeat (.state/guard-heartbeat missing). The "
+            "enforcement layer may not be firing \u2014 on POSIX this happens when the "
+            "hook dispatcher is not executable. Do NOT trust phase enforcement or "
+            "start /capiva:auto until a write refreshes the heartbeat.")
+    elif hb:
+        parts.append(f"\n[GUARD LIVENESS] Phase guard last fired: {hb}")
 
     parts.append("\n## Current Sprint State (live from .board/sprint-state.md)\n\n"
                  + _current_task_block(state)

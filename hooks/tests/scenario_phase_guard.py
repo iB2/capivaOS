@@ -221,6 +221,16 @@ def main():
                       declared == {"source-writes-outside-implement", "pr-create-gate",
                                    "human-only-files", "merge-verbs"}))
 
+        # enforcement heartbeat (PRD-001): every enforced invocation drops
+        # a proof-of-life marker session_context / auto mode can check
+        set_state("IMPLEMENT")
+        hb = root / ".state" / "guard-heartbeat"
+        if hb.exists():
+            hb.unlink()
+        run_guard(root, "Edit", {"file_path": src})
+        cases.append(("heartbeat: dropped on enforced invocation",
+                      hb.is_file() and "phase=IMPLEMENT" in hb.read_text(encoding="utf-8")))
+
         # garbage stdin never blocks
         env = dict(os.environ); env["CLAUDE_PROJECT_DIR"] = str(root)
         r = subprocess.run([sys.executable, str(GUARD)], input="not json", capture_output=True, text=True, env=env)
