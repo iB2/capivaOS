@@ -12,7 +12,7 @@ default; this mode is opt-in **per run** — never a standing repo state.
 ## Entry Gate (MANDATORY — refuse politely, never improvise past it)
 
 1. **Init check**: same as /capiva:sprint Step 0 (docs, blueprint, config).
-2. **Branch protection re-check** (LOOP-002 contract): verify the default
+2. **Branch protection re-check** (ADR-0014 prerequisite): verify the default
    branch requires PRs. Unprotected → REFUSE with the init Step 5b explanation;
    the human may override with an explicit "run unprotected" — record the
    override in Phase History.
@@ -33,19 +33,19 @@ default; this mode is opt-in **per run** — never a standing repo state.
 
 Write the loop fields to sprint-state: `Loop Active: yes`, caps, `Loop Tasks
 Done: 0`, `Loop Stop Reason: --`. (These power the AUTO_LOOP_RESUME injection
-after any compaction — LOOP-004.)
+after any compaction.)
 
 ## The Loop
 
 ```
 WHILE tasks-done < cap AND phases-used < budget:
-  task = next eligible per dependency-aware triage (LOOP-005; cycles = stop + report)
+  task = next eligible per dependency-aware triage (sprint Step 2 order; cycles = board defect, stop + report)
   none eligible -> stop (reason: board empty / all awaiting grill or approvals)
-  run phases via Phase Isolation (LOOP-003): phase-runner per phase,
+  run phases via Phase Isolation (ADR-0014 isolation-first): phase-runner per phase,
     orchestrator validates artifacts + transitions state (single writer)
   AT EACH GATE (never the merge gate):
     policy explicitly covers it?         -> CLEAR, log `gate-delegated` + basis
-    else gate-judge (LOOP-006) verdict (briefing MUST include the original
+    else gate-judge (ADR-0014) verdict (briefing MUST include the original
       board task text — the judge checks spec-AC-to-board-AC traceability):
       CLEAR (zero anomalies, in bounds)  -> log `gate-delegated` + basis
       ESCALATE -> append ESC entry to .board/approvals.md,
