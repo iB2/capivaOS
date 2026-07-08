@@ -66,8 +66,16 @@ def main():
         cases.append(("IDLE: deny src edit", run_guard(root, "Edit", {"file_path": src})[0] is True))
         cases.append(("IDLE: allow docs edit", run_guard(root, "Write", {"file_path": doc})[0] is False))
         cases.append(("IDLE: allow PLAN.md", run_guard(root, "Write", {"file_path": str(root / "PLAN.md")})[0] is False))
-        cases.append(("IDLE: allow scripts/ tooling", run_guard(root, "Write", {"file_path": str(root / "scripts" / "lint.py")})[0] is False))
-        cases.append(("IDLE: allow .github/ CI config", run_guard(root, "Write", {"file_path": str(root / ".github" / "workflows" / "ci.yml")})[0] is False))
+        # PRD-002: scripts/ and .github/ are NO LONGER always-allowed — they
+        # are source (writable only in IMPLEMENT). Self-licensing routes closed.
+        cases.append(("IDLE: deny scripts/ write (was self-licensing)", run_guard(root, "Write", {"file_path": str(root / "scripts" / "lint.py")})[0] is True))
+        cases.append(("IDLE: deny .github/ CI write (arbitrary code on push)", run_guard(root, "Write", {"file_path": str(root / ".github" / "workflows" / "ci.yml")})[0] is True))
+        cases.append(("IMPLEMENT: allow scripts/ write (legit per-task)", (lambda: (set_state("IMPLEMENT"), run_guard(root, "Write", {"file_path": str(root / "scripts" / "lint.py")})[0] is False)[1])()))
+        set_state("IDLE")
+        cases.append(("IDLE: deny .claude/settings.json (hook dereg)", run_guard(root, "Write", {"file_path": str(root / ".claude" / "settings.json")})[0] is True))
+        cases.append(("IMPLEMENT: deny .claude/settings.json (human-only)", (lambda: (set_state("IMPLEMENT"), run_guard(root, "Write", {"file_path": str(root / ".claude" / "settings.json")})[0] is True)[1])()))
+        cases.append(("IMPLEMENT: deny root CLAUDE.md (instruction injection)", run_guard(root, "Write", {"file_path": str(root / "CLAUDE.md")})[0] is True))
+        set_state("IDLE")
         cases.append(("IDLE: deny gh pr create", run_guard(root, "Bash", {"command": "gh pr create --title t"})[0] is True))
         cases.append(("IDLE: allow other bash", run_guard(root, "Bash", {"command": "git status"})[0] is False))
 

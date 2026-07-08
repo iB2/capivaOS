@@ -22,6 +22,18 @@ and the write surface stops self-licensing.
   heartbeat; `/capiva:auto` refuses to start without a live heartbeat. Silence
   no longer reads as a healthy guard. Lint check 16 keeps the claim honest.
 
+### Write-surface integrity (PRD-002)
+- `.github/`, `scripts/`, and `.claude/` are **no longer writable in any
+  phase** — they are source now, writable only in IMPLEMENT (a task whose plan
+  covers them). Blanket always-allow was a self-licensing route: CI YAML is
+  arbitrary code on push, `scripts/` are the validators the pipeline trusts.
+- `.claude/settings.json` (dev-mode hook registration) and root `CLAUDE.md`
+  (auto-loaded instructions) join the human-only files — an agent can no longer
+  deregister its own guard or plant project instructions.
+- `.claude/settings.json` PreToolUse matcher gains `MultiEdit` (it bypassed the
+  dev-mode guard; the 1.2.0 fix reached hooks.json only). Lint check 17 keeps
+  the two registrations in parity.
+
 ## [1.2.1] — 2026-07-09
 
 Patch: consistency and claims hardening — the remainder of the 2026-07

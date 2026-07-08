@@ -35,7 +35,7 @@ in `hooks/phase_guard.py`, so it cannot silently over- or under-claim:
 
 1. Source writes outside IMPLEMENT (write tools + best-effort shell parity) <!-- enforced: source-writes-outside-implement -->
 2. `gh pr create` outside FINISH/VERIFY_FINISH with a passing gate <!-- enforced: pr-create-gate -->
-3. Agent writes to the two human-only files (approval policy, kill-switch) <!-- enforced: human-only-files -->
+3. Agent writes to the human-only files (approval policy, kill-switch, dev-mode `.claude/settings.json`, root `CLAUDE.md`) <!-- enforced: human-only-files -->
 4. The merge verbs: `gh pr merge`, `git push` to the default branch <!-- enforced: merge-verbs -->
 5. Read-only agents (qa, gate-judge) via platform tool allowlists <!-- enforced: agent-allowlists -->
 

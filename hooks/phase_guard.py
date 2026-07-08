@@ -23,8 +23,10 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
     -> DENIED in every phase and mode (ADR-0014 never-list item 1 — the
     merge decision is never delegated to any agent)
 
-Pipeline artifacts (.board/, docs/, .claude/, templates/, PLAN.md, root *.md)
-are writable in every phase — the pipeline itself produces them.
+Pipeline artifacts (.board/, docs/, templates/, reports/, capiva-blueprints/,
+PLAN.md) are writable in every phase — the pipeline produces them. NOT
+.github/scripts/.claude (source, IMPLEMENT-only) nor the human-only files
+(.claude/settings.json, root CLAUDE.md) — see PRD-002.
 
 State source: parses `.board/sprint-state.md` directly (the `- **Field**:`
 format defined in state-management.md). There is deliberately NO separate
@@ -71,8 +73,14 @@ HEARTBEAT = PROJECT_ROOT / ".state" / "guard-heartbeat"
 WRITE_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
-# Paths writable in ANY phase — pipeline artifacts plus harness/CI tooling.
-ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", ".github", "docs", "scripts", "templates", "reports", "capiva-blueprints")
+# Dirs writable in ANY phase = genuine pipeline-artifact surfaces only.
+# NOT .github / scripts / .claude (PRD-002): CI config is arbitrary code
+# execution, scripts are the validators the pipeline trusts, and
+# .claude/settings.json IS the hook registration in dev mode — all three
+# are self-licensing routes if always-writable. They are source now:
+# writable only in IMPLEMENT (a task whose plan legitimately covers them),
+# never in IDLE/GRILL/PLAN/TEST_VERIFY.
+ALWAYS_ALLOWED_DIRS = (".board", ".state", "docs", "templates", "reports", "capiva-blueprints")
 ALWAYS_ALLOWED_FILES = ("PLAN.md", ".gitignore", ".mcp.json")
 
 # Heuristics for "this is a test file" (blueprint test layouts: tests/,
@@ -120,6 +128,18 @@ HUMAN_ONLY_FILES = {
         "self-licensing prevention). If you believe enforcement must be "
         "disabled, stop and ask the human — they create the marker from "
         "their own terminal."
+    ),
+    ".claude/settings.json": (
+        "Phase guard: .claude/settings.json registers the hooks themselves "
+        "(dev/copy mode) — an agent that rewrites it can DEREGISTER its own "
+        "guard (PRD-002, same self-licensing class as the kill switch). "
+        "Humans edit hook registration directly."
+    ),
+    "CLAUDE.md": (
+        "Phase guard: a root CLAUDE.md is auto-loaded by Claude Code as project "
+        "instructions — rewriting it is a prompt-level self-licensing channel "
+        "(PRD-002). Agents may not edit it in any phase; humans author project "
+        "instructions directly."
     ),
 }
 # Fast lane (ADR-0010): VERIFY_FINISH combines TEST_VERIFY + FINISH.

@@ -48,6 +48,8 @@ Checks:
      documented exception (design history cites incidents as provenance).
  16. Heartbeat parity (PRD-001): if SECURITY.md claims a guard heartbeat,
      phase_guard.py must actually write .state/guard-heartbeat.
+ 17. Hook-registration parity (PRD-002): hooks.json and .claude/settings.json
+     PreToolUse matchers match (a tool must not bypass the guard in one mode).
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -626,6 +628,28 @@ def lint(root: Path):
                 "SECURITY.md claims a guard heartbeat but hooks/phase_guard.py "
                 "does not write .state/guard-heartbeat (false-mechanism, PRD-001)")
 
+    # 17. hook-registration parity (PRD-002 / T8): the PreToolUse matchers in
+    #     hooks/hooks.json (plugin mode) and .claude/settings.json (dev/copy
+    #     mode) must match — a matcher present in one but not the other means a
+    #     tool bypasses the guard in that mode (MultiEdit did, shipped in 1.2.0
+    #     to hooks.json only). Drift class the linter exists to catch.
+    import json as _json17
+    hj = root / "hooks" / "hooks.json"
+    sj = root / ".claude" / "settings.json"
+    if hj.is_file() and sj.is_file():
+        def _pretooluse_matchers(fp):
+            try:
+                d = _json17.loads(fp.read_text(encoding="utf-8", errors="replace"))
+            except (OSError, ValueError):
+                return None
+            return sorted(e.get("matcher", "") for e in d.get("hooks", {}).get("PreToolUse", []))
+        hm, sm = _pretooluse_matchers(hj), _pretooluse_matchers(sj)
+        if hm is not None and sm is not None and hm != sm:
+            findings.append(
+                f"hook-registration parity: hooks.json PreToolUse matchers {hm} "
+                f"!= .claude/settings.json {sm} — a tool bypasses the guard in "
+                f"one mode (PRD-002)")
+
     return findings
 
 
@@ -702,9 +726,18 @@ def self_test():
         (root / "capiva-blueprints" / "custom" / "reference.md").write_text(
             "## §stack\n## §made-up-section\n", encoding="utf-8")
 
+        # check 17 seed: mismatched PreToolUse matchers (settings drops MultiEdit)
+        (root / "hooks").mkdir(exist_ok=True)
+        (root / "hooks" / "hooks.json").write_text(
+            '{"hooks": {"PreToolUse": [{"matcher": "Edit|MultiEdit|Write"}]}}', encoding="utf-8")
+        (root / ".claude").mkdir(exist_ok=True)
+        (root / ".claude" / "settings.json").write_text(
+            '{"hooks": {"PreToolUse": [{"matcher": "Edit|Write"}]}}', encoding="utf-8")
+
         findings = lint(root)
         findings.extend(check_blueprint(root / "capiva-blueprints" / "custom"))
         expected_fragments = [
+            "hook-registration parity",
             "un-namespaced skill reference /plan",
             "dead plugin-root reference rules/gone.md",
             "bare engine path skills/plan/SKILL.md",
