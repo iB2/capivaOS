@@ -2,7 +2,11 @@
 """Scenario tests for the plugin hook layer (CAP-002): run-hook.cmd dispatcher,
 session_context.py injection, context-persistence no-op guard, hooks.json shape.
 
-    python3 hooks/tests/test_plugin_hooks.py
+    python3 hooks/tests/scenario_plugin_hooks.py
+
+Named scenario_* deliberately (AUD-010): the old test_* names made
+`pytest hooks/tests/` collect ZERO tests and exit green. Self-contained
+runner, not a pytest suite.
 """
 import json
 import os

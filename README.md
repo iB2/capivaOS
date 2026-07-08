@@ -49,6 +49,15 @@ Runs the safe ritual: marketplace refresh → plugin update → `/reload-plugins
 
 Optional: enable per-marketplace auto-update in `/plugin` → Marketplaces → capiva. Releases are explicit semver — you only receive updates when a version is cut, never on raw pushes ([CHANGELOG.md](CHANGELOG.md)).
 
+## Uninstall
+
+```
+claude plugin uninstall capiva@capiva
+claude plugin marketplace remove capiva
+```
+
+What stays in your repo: `.board/`, `.state/`, `docs/specs|reports|tech-context|adr|handover/`, and two `.gitignore` lines. All of it is **inert without the plugin** — no hooks run, nothing is enforced; the files are plain markdown you can keep (they are your project's decision history) or delete. The plugin never writes outside your project (see [SECURITY.md](SECURITY.md)), so uninstalling is the complete exit — no cleanup owed.
+
 ## What This Does
 
 Instead of ad-hoc prompting, the harness enforces a strict pipeline via a state machine:
@@ -143,13 +152,29 @@ Each arrow = artifact verification. Missing artifact = skill refuses to run.
 
 ## Quality Gates
 
-| Metric | Target | Hard Fail |
-|--------|--------|-----------|
-| Unit coverage | >= 80% | < 60% |
-| Linter warnings (new code) | 0 | Any warning |
-| Quality gate (per blueprint) | Pass | Fail |
-| Integration tests | All pass | Any failure |
-| AC statuses in acs.json | All `pass` (test + e2e evidence) | Any `pending`/`fail` |
+Coverage is scoped (normative table: `rules/quality-gates.md` — below minimum = the gate fails):
+
+| Metric | Minimum (gate) | Target |
+|--------|----------------|--------|
+| Unit coverage — business logic | 80% | 90% |
+| Unit coverage — infrastructure | 60% | 75% |
+| Unit coverage — overall | 75% | 85% |
+| Linter warnings (new code) | 0 | 0 |
+| Integration tests | all pass | all pass |
+| AC statuses in acs.json | all `pass` (test + e2e evidence) | — |
+
+## What This Costs
+
+Figures from the ADR benchmarks ([ADR-0004](docs/adr/0004-token-bounded-execution.md), [ADR-0010](docs/adr/0010-fast-lane-pipeline.md)) — estimates as of 2026-07, not guarantees:
+
+| | Full lane | Fast lane (qualifying P2/P3) |
+|---|---|---|
+| Blocking human gates | 4 (spec, plan, quality, merge) plus the grill interview (typically 6–12 questions) | 2 (combined spec+plan, combined quality+merge) |
+| Pipeline token overhead | ~165K typical | ~75K typical |
+| Heaviest phases | IMPLEMENT ~60–100K, TEST_VERIFY ~40–70K | combined verify+finish |
+| Sessions per task | 1–2 (handover on complex tasks is expected, not a failure) | usually 1 |
+
+The overhead buys the artifact chain (spec, acs.json, PLAN.md, quality report) and the mechanical enforcement. If a task doesn't merit that, it doesn't belong in the pipeline — see [docs/SCOPE.md](docs/SCOPE.md) for what the harness is deliberately NOT for.
 
 ## Requirements
 

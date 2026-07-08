@@ -83,12 +83,13 @@ Attack each of these. Every finding must reference a specific file and line.
 
 Know the thresholds (you don't enforce them — /capiva:test-verify does — but flag if you see obvious gaps):
 
-| Metric | Target | Hard Fail |
-|--------|--------|-----------|
-| Business logic coverage | >= 80% | < 60% |
-| Linter/analyzer warnings (new) | 0 | Any |
-| Quality gate | Pass | Fail |
-| AC coverage | All covered | Any uncovered |
+| Metric | Minimum (gate) | Target |
+|--------|----------------|--------|
+| Business-logic coverage | 80% | 90% |
+| Infrastructure coverage | 60% | 75% |
+| Overall coverage | 75% | 85% |
+| Linter/analyzer warnings (new) | 0 | 0 |
+| AC coverage | all covered | all covered |
 
 If you see that a major code path has zero test coverage, flag it even if overall numbers look OK.
 

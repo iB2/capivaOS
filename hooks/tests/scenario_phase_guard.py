@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Scenario tests for phase_guard.py. Run with any python3; exit 0 iff all pass.
 
-    python3 .claude/hooks/tests/test_phase_guard.py
+    python3 hooks/tests/scenario_phase_guard.py
+
+Named scenario_* deliberately (AUD-010): the old test_* names made
+`pytest hooks/tests/` collect ZERO tests and exit green — a green-but-empty
+trap for any CI author. These are self-contained runners, not pytest suites.
 """
 import json
 import os
