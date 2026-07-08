@@ -58,6 +58,38 @@ jobs:
           claude plugin list < /dev/null | grep -qi capiva
           echo "plugin-install: real CLI accepted the manifest and cached the plugin"
 
+  posix-hook-exec:
+    # Fires run-hook.cmd EXACTLY as Claude Code's hook runner does — by direct
+    # path from hooks.json, NOT via an `sh` prefix (which the scenario tests use
+    # and which masks the exec-bit question). On POSIX a non-executable,
+    # shebang-less dispatcher fails before the .py runs, silently removing ALL
+    # enforcement for non-Windows adopters. This job is the empirical proof the
+    # dispatch works; PRD-001 committed the exec bit to make it pass.
+    name: POSIX hook exec (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Dispatcher must be executable as committed
+        run: test -x hooks/run-hook.cmd
+      - name: Fire the guard by BARE PATH (as Claude Code does), expect a deny
+        run: |
+          export CLAUDE_PROJECT_DIR="$GITHUB_WORKSPACE"
+          mkdir -p .board
+          printf -- '- **Phase**: IDLE\n- **Quality Gate**: --\n' > .board/sprint-state.md
+          OUT=$(printf '{"tool_name":"Edit","tool_input":{"file_path":"src/x.py"}}' \
+            | ./hooks/run-hook.cmd phase_guard)
+          echo "$OUT"
+          echo "$OUT" | python -c "import json,sys; d=json.load(sys.stdin); assert d['hookSpecificOutput']['permissionDecision']=='deny'"
+          test -f .state/guard-heartbeat
+          echo "posix-hook-exec: guard fired by bare path AND dropped a heartbeat"
+
   hook-tests:
     name: Hook tests (${{ matrix.os }})
     strategy:

@@ -5,6 +5,51 @@ receive updates only when the version in `.claude-plugin/plugin.json` is bumped.
 Schema-affecting changes MUST land with a matching migration row in
 `skills/update-project/SKILL.md`.
 
+## [1.3.0] — 2026-07-09
+
+Production-readiness release: resilience and containment hardening from a
+second external code review (the resilience/containment lens). Guardrails gain
+a proof-of-life, the state file the guard trusts stops being freely rewritable,
+and the write surface stops self-licensing.
+
+### Guard liveness (PRD-001)
+- **POSIX dispatch fixed**: `hooks/run-hook.cmd` now ships with the exec bit; a
+  CI job fires the hook by bare path on Linux/macOS. The dispatcher was
+  shebang-less mode-0644 — on POSIX that meant the guard could be silently
+  absent for every non-Windows adopter, masked by both CI paths.
+- **Enforcement heartbeat**: the guard writes `.state/guard-heartbeat` on every
+  enforced invocation; SessionStart warns loudly if a task is active with no
+  heartbeat; `/capiva:auto` refuses to start without a live heartbeat. Silence
+  no longer reads as a healthy guard. Lint check 16 keeps the claim honest.
+
+### Write-surface integrity (PRD-002)
+- `.github/`, `scripts/`, and `.claude/` are **no longer writable in any
+  phase** — they are source now, writable only in IMPLEMENT (a task whose plan
+  covers them). Blanket always-allow was a self-licensing route: CI YAML is
+  arbitrary code on push, `scripts/` are the validators the pipeline trusts.
+- `.claude/settings.json` (dev-mode hook registration) and root `CLAUDE.md`
+  (auto-loaded instructions) join the human-only files — an agent can no longer
+  deregister its own guard or plant project instructions.
+- `.claude/settings.json` PreToolUse matcher gains `MultiEdit` (it bypassed the
+  dev-mode guard; the 1.2.0 fix reached hooks.json only). Lint check 17 keeps
+  the two registrations in parity.
+
+### State-file integrity (PRD-003)
+- **Transition validation (ADR-0015, now implemented)**: the guard validates
+  Phase transitions in `sprint-state.md` against the legal full/fast-lane
+  chain. Illegal jumps (IDLE→IMPLEMENT), a forged `Quality Gate: PASS` with no
+  report on disk, and Phase-blanking are denied. Entering IMPLEMENT requires
+  PLAN.md + acs.json; entering FINISH requires the quality report (Law 3 rises
+  from prompt to hook). The state file the guard trusts is no longer freely
+  rewritable by the constrained party — closing the review's core loophole.
+- **Mechanical board lock (ADR-0016, supersedes ADR-0003)**: `board_lock.py`
+  with atomic `O_EXCL` acquire, one staleness window, and `time.time()`
+  timestamps replaces the prose ritual (which carried two contradictory
+  staleness numbers). The guard denies board writes held by another live
+  holder. Enforced only when the lock mechanism is in use — no adopter is
+  bricked mid-migration.
+- Lint checks 18 (staleness parity) keep the two constants from drifting.
+
 ## [1.2.1] — 2026-07-09
 
 Patch: consistency and claims hardening — the remainder of the 2026-07

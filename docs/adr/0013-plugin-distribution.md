@@ -100,3 +100,21 @@ Three constraints shaped the port:
   schema-touching release — enforced mechanically, not by memory.
 - Revisit when: Claude Code adds native always-loaded plugin context or plugin
   scaffold/migration primitives — Decisions 2 and 4 shrink accordingly.
+
+---
+
+## Amendment (2026-07-09 — guard liveness)
+
+A production-readiness review found the dispatcher shipped mode 0644 (no
+exec bit) and shebang-less. On POSIX, Claude Code's bare-path invocation of
+a non-executable dispatcher fails before any hook `.py` runs — so the entire
+enforcement layer was silently absent for non-Windows adopters, and both CI
+paths masked it (scenario tests `sh`-prefix the file; the install job never
+fires a hook). Fix: the exec bit is now committed (`git update-index
+--chmod=+x`), `.gitattributes` still forces LF, and a CI job fires the hook
+by bare path on Linux/macOS — the empirical proof, not an assumption.
+
+Deeper lesson (Principle: silence != healthy): a guard that can be silently
+absent needs a proof-of-life. phase_guard now writes `.state/guard-heartbeat`
+on every enforced invocation; session_context warns when a task is active
+with no heartbeat; `/capiva:auto` refuses autonomy without one.

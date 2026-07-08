@@ -193,7 +193,8 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0012](adr/0012-native-agent-primitives.md) | Native agent definitions with tool allowlists; structured subagent reports |
 | [0013](adr/0013-plugin-distribution.md) | Plugin distribution: engine/state split, self-marketplace, session injection |
 | [0014](adr/0014-autonomy-contract.md) | Autonomy contract: policy+judge gate routing, never-list, isolation-first context |
-| [0015](adr/0015-transition-validation.md) | Sprint-state transition validation: the guard learns the state machine (design approved; implementation scheduled) |
+| [0015](adr/0015-transition-validation.md) | Sprint-state transition validation: the guard learns the state machine (implemented 1.3.0) |
+| [0016](adr/0016-mechanical-board-lock.md) | Mechanical board lock: code + guard enforcement, supersedes ADR-0003's prose ritual |
 
 ---
 

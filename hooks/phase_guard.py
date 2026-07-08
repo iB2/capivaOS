@@ -22,9 +22,17 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
   - merge verbs (`gh pr merge`; `git push` targeting the default branch)
     -> DENIED in every phase and mode (ADR-0014 never-list item 1 — the
     merge decision is never delegated to any agent)
+  - sprint-state.md Phase transitions -> validated against the legal
+    full/fast-lane chain (ADR-0015); illegal jumps, forged Quality Gate =
+    PASS without a report, and phase blanking are DENIED. The state file
+    the guard trusts is no longer freely rewritable by the constrained party
+  - board writes under a live foreign board.lock -> DENIED (PRD-003
+    mechanical lock; enforced only when board_lock.py is in use)
 
-Pipeline artifacts (.board/, docs/, .claude/, templates/, PLAN.md, root *.md)
-are writable in every phase — the pipeline itself produces them.
+Pipeline artifacts (.board/, docs/, templates/, reports/, capiva-blueprints/,
+PLAN.md) are writable in every phase — the pipeline produces them. NOT
+.github/scripts/.claude (source, IMPLEMENT-only) nor the human-only files
+(.claude/settings.json, root CLAUDE.md) — see PRD-002.
 
 State source: parses `.board/sprint-state.md` directly (the `- **Field**:`
 format defined in state-management.md). There is deliberately NO separate
@@ -45,6 +53,11 @@ Escape hatch (both logged to stderr, both HUMAN-only by construction):
     HUMAN_ONLY_FILE — a guard whose off-switch is agent-writable enforces
     nothing; the exact self-licensing class ADR-0014 exists to prevent)
 
+Enforcement heartbeat: every enforced invocation refreshes
+.state/guard-heartbeat (PRD-001). A missing/stale heartbeat means the
+guard is not firing (e.g. the POSIX dispatch died) — session_context warns
+and /capiva:auto refuses to run. Silence must never read as healthy.
+
 Keep the field parser in sync with context-persistence.py (same format).
 """
 
@@ -52,16 +65,34 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
+# Enforcement heartbeat (PRD-001): proof-of-life the guard actually fired.
+# session_context surfaces it; /capiva:auto refuses autonomy without it.
+# On POSIX a non-executable/misdispatched hook fails before the .py runs,
+# so a fresh heartbeat is the mechanical signal that enforcement is alive.
+HEARTBEAT = PROJECT_ROOT / ".state" / "guard-heartbeat"
+BOARD_LOCK = PROJECT_ROOT / ".board" / "board.lock"
+LOCK_HOLDER = PROJECT_ROOT / ".state" / "lock-holder"
+SPRINT_STATE_REL = ".board/sprint-state.md"
+BOARD_FILES = (".board/sprint-state.md", ".board/tasks.md")
+# Board-lock staleness — keep in sync with scripts/board_lock.py (lint 18).
+LOCK_STALE_SECONDS = 120
 
 WRITE_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
-# Paths writable in ANY phase — pipeline artifacts plus harness/CI tooling.
-ALWAYS_ALLOWED_DIRS = (".board", ".claude", ".state", ".github", "docs", "scripts", "templates", "reports", "capiva-blueprints")
+# Dirs writable in ANY phase = genuine pipeline-artifact surfaces only.
+# NOT .github / scripts / .claude (PRD-002): CI config is arbitrary code
+# execution, scripts are the validators the pipeline trusts, and
+# .claude/settings.json IS the hook registration in dev mode — all three
+# are self-licensing routes if always-writable. They are source now:
+# writable only in IMPLEMENT (a task whose plan legitimately covers them),
+# never in IDLE/GRILL/PLAN/TEST_VERIFY.
+ALWAYS_ALLOWED_DIRS = (".board", ".state", "docs", "templates", "reports", "capiva-blueprints")
 ALWAYS_ALLOWED_FILES = ("PLAN.md", ".gitignore", ".mcp.json")
 
 # Heuristics for "this is a test file" (blueprint test layouts: tests/,
@@ -88,6 +119,8 @@ ENFORCED_SURFACES = (
     "pr-create-gate",                   # FINISH/VERIFY_FINISH + passing gate
     "human-only-files",                 # approval-policy.md + kill-switch marker
     "merge-verbs",                      # gh pr merge; git push -> default branch
+    "sprint-state-transitions",         # illegal Phase jumps / forged gate / blanking
+    "board-lock",                       # board writes under a live foreign lock
 )  # NOTE: no parentheses inside this tuple — lint check 13 parses it with a
    # first-closing-paren regex; keep comments paren-free.
 
@@ -109,6 +142,18 @@ HUMAN_ONLY_FILES = {
         "self-licensing prevention). If you believe enforcement must be "
         "disabled, stop and ask the human — they create the marker from "
         "their own terminal."
+    ),
+    ".claude/settings.json": (
+        "Phase guard: .claude/settings.json registers the hooks themselves "
+        "(dev/copy mode) — an agent that rewrites it can DEREGISTER its own "
+        "guard (PRD-002, same self-licensing class as the kill switch). "
+        "Humans edit hook registration directly."
+    ),
+    "CLAUDE.md": (
+        "Phase guard: a root CLAUDE.md is auto-loaded by Claude Code as project "
+        "instructions — rewriting it is a prompt-level self-licensing channel "
+        "(PRD-002). Agents may not edit it in any phase; humans author project "
+        "instructions directly."
     ),
 }
 # Fast lane (ADR-0010): VERIFY_FINISH combines TEST_VERIFY + FINISH.
@@ -273,11 +318,160 @@ def _write_denial(path: Path, phase: str):
     )
 
 
-def _check_file_write(tool_input: dict, phase: str):
+
+# Legal sprint-state Phase transitions (PRD-003 / ADR-0015). The guard now
+# validates the Phase field on writes to sprint-state.md instead of trusting a
+# file the constrained party can freely rewrite. Same-phase (field updates),
+# ANY->BLOCKED, ANY->IDLE (abort), and BLOCKED->* (resume) are always legal;
+# the rest must follow the full- or fast-lane chain.
+_LEGAL_EDGES = {
+    ("IDLE", "TRIAGE"), ("TRIAGE", "GRILL_SPEC"), ("GRILL_SPEC", "PLAN"),
+    ("PLAN", "IMPLEMENT"), ("IMPLEMENT", "TEST_VERIFY"), ("TEST_VERIFY", "FINISH"),
+    ("FINISH", "IDLE"),
+    ("TRIAGE", "SPEC_PLAN"), ("SPEC_PLAN", "IMPLEMENT"),
+    ("IMPLEMENT", "VERIFY_FINISH"), ("VERIFY_FINISH", "IDLE"),
+    ("SPEC_PLAN", "GRILL_SPEC"), ("VERIFY_FINISH", "TEST_VERIFY"),
+}
+
+
+def _transition_legal(old_phase: str, new_phase: str) -> bool:
+    if not old_phase or old_phase == new_phase:
+        return True            # first write / field update within a phase
+    if new_phase in ("BLOCKED", "IDLE"):
+        return True            # escalation / abort always legal
+    if old_phase == "BLOCKED":
+        return True            # resume from BLOCKED (prior phase unknown here)
+    return (old_phase, new_phase) in _LEGAL_EDGES
+
+
+def _projected_content(tool_name: str, tool_input: dict, disk: str):
+    """Reconstruct the sprint-state content this write would produce, or None
+    if it can't be determined (then transition validation is skipped)."""
+    if tool_name == "Write":
+        return tool_input.get("content")
+    if tool_name == "Edit":
+        old_s = tool_input.get("old_string")
+        new_s = tool_input.get("new_string")
+        if old_s is None or new_s is None or old_s not in disk:
+            return None
+        count = -1 if tool_input.get("replace_all") else 1
+        return disk.replace(old_s, new_s) if count == -1 else disk.replace(old_s, new_s, 1)
+    if tool_name == "MultiEdit":
+        content = disk
+        for e in tool_input.get("edits", []):
+            o, n = e.get("old_string"), e.get("new_string")
+            if o is None or n is None or o not in content:
+                return None
+            content = content.replace(o, n) if e.get("replace_all") else content.replace(o, n, 1)
+        return content
+    return None
+
+
+def _transition_denial(tool_name: str, tool_input: dict):
+    """Validate a write to sprint-state.md: legal Phase transition, artifact
+    preconditions on entering IMPLEMENT/FINISH, no forged PASS, no phase blanking.
+    Returns a deny reason or None. Fails OPEN only when the new content can't be
+    reconstructed (reads fail open; writes fail closed on a corrupt transition)."""
+    try:
+        disk = SPRINT_STATE.read_text(encoding="utf-8")
+    except OSError:
+        disk = ""
+    new = _projected_content(tool_name, tool_input, disk)
+    if new is None:
+        return None  # can't reconstruct (e.g. shell redirect) — don't block
+    old_phase = _parse_field(disk, "Phase").upper()
+    new_phase = _parse_field(new, "Phase").upper()
+
+    # phase blanking: a valid active phase must not vanish (fail-open exploit)
+    if old_phase and old_phase not in ("IDLE", "") and not new_phase:
+        return ("Phase guard: this write blanks the Phase field while a pipeline "
+                "task is active (was %s). A blank phase silently disables "
+                "enforcement (fail-open) — refused. Set an explicit legal phase."
+                % old_phase)
+
+    if not _transition_legal(old_phase, new_phase):
+        return ("Phase guard: illegal phase transition %s -> %s in sprint-state.md "
+                "(ADR-0015). Legal steps follow the full/fast lane; use "
+                "/capiva:sprint to advance, or -> BLOCKED / IDLE to escalate/abort."
+                % (old_phase or "(none)", new_phase or "(none)"))
+
+    task_id = _parse_field(new, "Task ID")
+    # artifact preconditions on ENTERING a phase (Law 3 rising to the hook)
+    if new_phase == "IMPLEMENT" and old_phase != "IMPLEMENT":
+        missing = []
+        if not (PROJECT_ROOT / "PLAN.md").is_file():
+            missing.append("PLAN.md")
+        if task_id and not (PROJECT_ROOT / "docs" / "specs" / f"{task_id}-acs.json").is_file():
+            missing.append(f"docs/specs/{task_id}-acs.json")
+        if missing:
+            return ("Phase guard: cannot enter IMPLEMENT without %s on disk "
+                    "(ADR-0015 artifact precondition). Produce the plan and the "
+                    "acs.json first." % " + ".join(missing))
+    if new_phase == "FINISH" and old_phase != "FINISH":
+        if task_id and not (PROJECT_ROOT / "docs" / "reports" / f"{task_id}-quality.md").is_file():
+            return ("Phase guard: cannot enter FINISH without the quality report "
+                    "docs/reports/%s-quality.md on disk (ADR-0015). Run "
+                    "/capiva:test-verify first." % task_id)
+
+    # forged pass: PASS/ACCEPTED_SOFT_FAIL can only be SET when a report exists
+    old_gate = _parse_field(disk, "Quality Gate").upper()
+    new_gate = _parse_field(new, "Quality Gate").upper()
+    if new_gate in PASSING_GATES and old_gate not in PASSING_GATES:
+        if task_id and not (PROJECT_ROOT / "docs" / "reports" / f"{task_id}-quality.md").is_file():
+            return ("Phase guard: cannot set Quality Gate = %s without a quality "
+                    "report (docs/reports/%s-quality.md) on disk — a gate is not "
+                    "PASS just because the field says so (ADR-0015)." % (new_gate, task_id))
+    return None
+
+
+def _board_lock_denial(rel: str):
+    """Deny a board write held by another live holder (PRD-003 mechanical lock).
+    Enforced only when the lock mechanism is in use (both board.lock and
+    .state/lock-holder exist) — absent either, defer to the prose ritual so an
+    adopter mid-migration is never bricked."""
+    if rel not in BOARD_FILES or not BOARD_LOCK.is_file() or not LOCK_HOLDER.is_file():
+        return None
+    try:
+        holder = epoch = None
+        for line in BOARD_LOCK.read_text(encoding="utf-8").splitlines():
+            if line.startswith("holder="):
+                holder = line[7:].strip()
+            elif line.startswith("epoch="):
+                epoch = float(line[6:].strip())
+        mine = LOCK_HOLDER.read_text(encoding="utf-8").strip()
+    except (OSError, ValueError):
+        return None
+    if holder is None or epoch is None:
+        return None
+    from time import time as _now
+    if (_now() - epoch) > LOCK_STALE_SECONDS:
+        return None  # stale — ignore
+    if holder == mine:
+        return None  # this session holds it
+    return ("Phase guard: %s is board-locked by another holder (%s). Wait for "
+            "release or, if the lock is stale, let board_lock.py steal it — do "
+            "not write the board under a live foreign lock (PRD-003)." % (rel, holder))
+
+
+def _check_file_write(tool_name: str, tool_input: dict, phase: str):
     raw = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
     if not raw:
         _allow()
     path = Path(raw) if os.path.isabs(raw) else PROJECT_ROOT / raw
+    try:
+        rel = str(path.resolve().relative_to(PROJECT_ROOT)).replace("\\", "/")
+    except ValueError:
+        rel = ""
+    # board-lock + transition validation run BEFORE the always-allowed
+    # short-circuit (sprint-state/.board are always-allowed for writes, but
+    # WHICH writes is exactly what PRD-003 governs).
+    lock_reason = _board_lock_denial(rel)
+    if lock_reason:
+        _deny(lock_reason)
+    if rel == SPRINT_STATE_REL:
+        tr = _transition_denial(tool_name, tool_input)
+        if tr:
+            _deny(tr)
     reason = _write_denial(path, phase)
     if reason:
         _deny(reason)
@@ -321,6 +515,17 @@ def _check_shell(tool_input: dict, phase: str, gate: str):
     _allow()
 
 
+def _touch_heartbeat(phase: str):
+    """Drop a proof-of-life marker on every enforced invocation. Best-effort:
+    a heartbeat failure must never block a tool call."""
+    try:
+        HEARTBEAT.parent.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        HEARTBEAT.write_text(f"{stamp} phase={phase or '--'}\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
 def main():
     if os.environ.get("CAPIVA_PHASE_GUARD", "").lower() in ("off", "0", "false"):
         print("phase_guard: disabled via CAPIVA_PHASE_GUARD", file=sys.stderr)
@@ -346,9 +551,10 @@ def main():
         )
         _allow()
     phase, gate, _task = state
+    _touch_heartbeat(phase)
 
     if tool_name in WRITE_TOOLS:
-        _check_file_write(tool_input, phase)
+        _check_file_write(tool_name, tool_input, phase)
     elif tool_name in SHELL_TOOLS:
         _check_shell(tool_input, phase, gate)
     _allow()
