@@ -33,6 +33,9 @@ Checks:
  11. Bare skill references inside hooks/*.py string literals - deny messages
      said "Run /sprint" while the doc surface is /capiva:*; the .md-only scan
      could not see them.
+ 12. Field parity (HARN-005): every sprint-state field a hook reads exists in
+     the rules/state-management.md registry - hooks reading fields nothing
+     writes degrade silently (the Loop Token/Phase Budget bug, AUD-009).
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -455,6 +458,33 @@ def lint(root: Path):
         if board.is_file():
             findings.extend(lint_board_dependencies(board, root))
 
+    # 12. field parity (HARN-005 / ADR-0008 debt, delivered by AUD-009): every
+    #     sprint-state field a hook reads must be documented in the
+    #     rules/state-management.md registry. The Loop Token/Phase Budget bug
+    #     hid exactly here: session_context read a field no skill wrote, and
+    #     the post-compaction resume injection silently degraded.
+    registry = root / "rules" / "state-management.md"
+    if registry.is_file() and (root / "hooks").is_dir():
+        reg_text = registry.read_text(encoding="utf-8", errors="replace")
+        FIELD_CALL_RE = re.compile(
+            r"_parse_field\([^,]+,\s*\"([^\"]+)\"\)"
+            r"|\bfield\(\s*'([^']+)'"
+            r"|\bfield\(\s*\"([^\"]+)\"")
+        for hook_file in sorted((root / "hooks").glob("*.py")):
+            src = hook_file.read_text(encoding="utf-8", errors="replace")
+            names = {a or b or c for a, b, c in FIELD_CALL_RE.findall(src)}
+            parts = src.split("\\*\\*")  # inline compiled patterns: \*\*Name\*\*
+            for i in range(1, len(parts), 2):
+                seg = parts[i]
+                if re.fullmatch(r"[A-Za-z0-9 /-]{2,40}", seg):
+                    names.add(seg)
+            for name in sorted(names):
+                if name and name not in reg_text:
+                    findings.append(
+                        f"{hook_file.relative_to(root).as_posix()}: reads sprint-state "
+                        f"field {name!r} not documented in rules/state-management.md "
+                        f"(field-parity, HARN-005)")
+
     return findings
 
 
@@ -487,7 +517,10 @@ def self_test():
         (root / "agents" / "rogue.md").write_text("# rogue agent\n", encoding="utf-8")
         (root / "hooks").mkdir()
         (root / "hooks" / "guard.py").write_text(
-            'MSG = "Run /plan to continue; see .board/sprint-state.md"\n', encoding="utf-8")
+            'MSG = "Run /plan to continue; see .board/sprint-state.md"\n'
+            'PHASE = _parse_field(content, "Ghost Field")\n', encoding="utf-8")
+        (root / "rules" / "state-management.md").write_text(
+            "| Field | Meaning |\n|---|---|\n| Phase | current phase |\n", encoding="utf-8")
         (root / "docs" / "adr" / "0003-unindexed.md").write_text("# ADR-0003\n", encoding="utf-8")
         (root / "blueprints" / "alpha" / "reference.md").write_text(
             "## §stack\n## §build-commands\n", encoding="utf-8")
@@ -549,6 +582,7 @@ def self_test():
             "personal path",
             "hooks/guard.py: bare skill reference /plan",
             "write-intent into the read-only plugin cache",
+            "reads sprint-state field 'Ghost Field'",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

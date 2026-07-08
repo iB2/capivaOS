@@ -45,7 +45,8 @@ WHILE tasks-done < cap AND phases-used < budget:
     orchestrator validates artifacts + transitions state (single writer)
   AT EACH GATE (never the merge gate):
     policy explicitly covers it?         -> CLEAR, log `gate-delegated` + basis
-    else gate-judge (LOOP-006) verdict:
+    else gate-judge (LOOP-006) verdict (briefing MUST include the original
+      board task text — the judge checks spec-AC-to-board-AC traceability):
       CLEAR (zero anomalies, in bounds)  -> log `gate-delegated` + basis
       ESCALATE -> append ESC entry to .board/approvals.md,
                   log `gate-escalated`, PARK THIS TASK, continue loop

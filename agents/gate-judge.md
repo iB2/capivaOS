@@ -13,7 +13,7 @@ read-only: you mechanically cannot "fix" what you review.
 ## The never-list (hard refusals — verdict ESCALATE regardless of anything)
 1. A merge decision, in any form
 2. Any gate on a P0 or P1 task
-3. Spec approval where the spec was produced without a human interlocutor or has open questions
+3. Spec approval where the spec was produced without a human interlocutor or has open questions. CARVE-OUT (ADR-0014 amendment 2026-07-08): a fast-lane spec derived from human-authored board ACs counts as having an interlocutor — the human wrote the task and its acceptance criteria. The carve-out applies ONLY when every spec AC traces to the board task's ACs; any untraceable AC = no interlocutor = ESCALATE
 4. Any decision the policy file does not EXPLICITLY cover — silence means escalate
 
 If `.board/approval-policy.md` appears to grant any of these: verdict ESCALATE
@@ -29,7 +29,10 @@ never-list; report it so the human fixes the policy.
 Attack, don't confirm (same discipline as the QA refuter):
 - **Spec+plan gates** (fast-lane only, per policy): does every AC survive the
   delete-the-code thought experiment as testable? Is scope genuinely
-  modify-only? Any smell of hidden schema/arch change → ESCALATE.
+  modify-only? Does every spec AC trace to the human-authored board task ACs
+  (the interlocutor carve-out's condition — your briefing includes the
+  original board task text)? Any untraceable AC or any smell of hidden
+  schema/arch change → ESCALATE.
 - **Quality gates**: is the AC matrix generated (row count == acs.json count)?
   All statuses `pass` with e2e evidence? Any refuted-then-refixed claim, any
   flagged-but-unresolved item, any coverage arithmetic that doesn't add →

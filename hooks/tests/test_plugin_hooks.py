@@ -143,14 +143,16 @@ def main():
         make_harness_project(loop_project, phase="IMPLEMENT")
         st = loop_project / ".board" / "sprint-state.md"
         st.write_text(st.read_text(encoding="utf-8")
-                      + "- **Loop Active**: yes\n- **Loop Task Cap**: 3\n- **Loop Tasks Done**: 1\n",
+                      + "- **Loop Active**: yes\n- **Loop Task Cap**: 3\n- **Loop Tasks Done**: 1\n"
+                      + "- **Loop Phase Budget**: 15\n",
                       encoding="utf-8")
         rc, out, _ = run_script("session_context.py", [], stdin='{"source":"compact"}',
                                 project_dir=loop_project)
         loop_ok = False
         if rc == 0 and out.strip():
             ctx3 = json.loads(out)["hookSpecificOutput"]["additionalContext"]
-            loop_ok = "AUTO_LOOP_RESUME" in ctx3 and "1/3" in ctx3
+            loop_ok = ("AUTO_LOOP_RESUME" in ctx3 and "1/3" in ctx3
+                       and "budget note: 15" in ctx3)  # the real budget, not the fallback (AUD-009)
         cases.append(("session_context: compact + active loop -> AUTO_LOOP_RESUME with counters", loop_ok))
 
         rc, out, _ = run_script("session_context.py", [], stdin='{"source":"compact"}',
