@@ -1,6 +1,6 @@
 {
   "name": "capiva",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "State-machine-enforced, spec-driven, test-first development pipeline for Claude Code. Board-driven tasks, adversarial spec grilling, TDD subagents, machine-readable AC gating, hook-enforced phase guards.",
   "author": {
     "name": "Capiva",

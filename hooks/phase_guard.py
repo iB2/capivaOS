@@ -10,8 +10,12 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
   - `gh pr create`                           -> only when Phase = FINISH or
     VERIFY_FINISH (fast lane, ADR-0010) and Quality Gate is PASS /
     ACCEPTED_SOFT_FAIL
-  - .board/approval-policy.md                -> agent writes DENIED in every
-    phase (ADR-0014 self-licensing prevention; humans edit it directly)
+  - human-only files (.board/approval-policy.md, .state/phase-guard-off)
+    -> agent writes DENIED in every phase (ADR-0014 self-licensing
+    prevention; humans edit/create them directly)
+  - merge verbs (`gh pr merge`; `git push` targeting the default branch)
+    -> DENIED in every phase and mode (ADR-0014 never-list item 1 — the
+    merge decision is never delegated to any agent)
 
 Pipeline artifacts (.board/, docs/, .claude/, templates/, PLAN.md, root *.md)
 are writable in every phase — the pipeline itself produces them.
@@ -23,12 +27,15 @@ sprint-state.json — a dual file would drift from the markdown (ADR-0008).
 Fail-open: if sprint-state.md is missing or unparseable, the guard allows the
 call and prints a warning to stderr. It must never brick a project.
 
-Escape hatch (both logged to stderr):
+Escape hatch (both logged to stderr, both HUMAN-only by construction):
   - env  CAPIVA_PHASE_GUARD=off  — must be set in Claude Code's own environment
     at launch (the hook is spawned by Claude Code, so per-command env vars in a
     shell tool call cannot reach it)
-  - file .state/phase-guard-off  — create to disable mid-session, delete to
-    re-enable; gitignored, explicit, auditable
+  - file .state/phase-guard-off  — a HUMAN creates it from their own terminal
+    to disable mid-session, deletes it to re-enable; gitignored, explicit,
+    auditable. Agent writes to this marker are DENIED in every phase (it is a
+    HUMAN_ONLY_FILE — a guard whose off-switch is agent-writable enforces
+    nothing; the exact self-licensing class ADR-0014 exists to prevent)
 
 Keep the field parser in sync with context-persistence.py (same format).
 """
@@ -62,13 +69,66 @@ TEST_PATH_RE = re.compile(
 PASSING_GATES = {"PASS", "ACCEPTED_SOFT_FAIL"}
 
 # Human-only files: agent writes denied in EVERY phase (ADR-0014 self-licensing
-# prevention). The approval policy is the delegated portion of Law 5 — an agent
-# that can edit it can grant itself permissions. Checked BEFORE the
-# always-allowed dirs so .board's general writability doesn't bypass it.
-HUMAN_ONLY_FILES = (".board/approval-policy.md",)
+# prevention), each with its own deny message. The approval policy is the
+# delegated portion of Law 5 — an agent that can edit it can grant itself
+# permissions. The kill-switch marker is the guard's own off-switch — an agent
+# that can write it can disable ALL enforcement for the session. Checked BEFORE
+# the always-allowed dirs so .board/.state general writability doesn't bypass.
+HUMAN_ONLY_FILES = {
+    ".board/approval-policy.md": (
+        "Phase guard: .board/approval-policy.md is human-authored law "
+        "(ADR-0014). Agents may not edit it in any phase — propose the "
+        "change as an escalation in .board/approvals.md instead."
+    ),
+    ".state/phase-guard-off": (
+        "Phase guard: .state/phase-guard-off is the guard's own kill switch. "
+        "Agents may not create or edit it in any phase (ADR-0014 "
+        "self-licensing prevention). If you believe enforcement must be "
+        "disabled, stop and ask the human — they create the marker from "
+        "their own terminal."
+    ),
+}
 # Fast lane (ADR-0010): VERIFY_FINISH combines TEST_VERIFY + FINISH.
 TEST_WRITE_PHASES = {"TEST_VERIFY", "VERIFY_FINISH"}
 PR_PHASES = {"FINISH", "VERIFY_FINISH"}
+
+# Merge verbs (ADR-0014 never-list item 1): denied in EVERY phase and mode.
+# `gh pr merge` in any form; `git push` whose target resolves to the default
+# branch. Bare `git merge` is deliberately NOT matched — merging the default
+# branch INTO a feature branch is legitimate mid-IMPLEMENT work, and knowing
+# the direction would require running git inside the hook. Known limits
+# (documented in SECURITY.md): a bare `git push` on a checked-out default
+# branch, the GitHub web UI, and GitHub MCP tools are not interceptable here —
+# branch protection is the backstop for those routes.
+GH_PR_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b")
+GIT_PUSH_RE = re.compile(r"\bgit\s+push\b")
+DEFAULT_BRANCHES = {"main", "master"}
+
+
+def _push_targets_default_branch(command: str) -> bool:
+    """True if any `git push` segment of the command targets main/master.
+
+    Tokenizes each push segment (up to the next shell separator). A token
+    denies when it is the default branch itself, a refspec whose DESTINATION
+    is the default branch (HEAD:main, refs/heads/main), or --all/--mirror
+    (which push the default branch among everything else). A refspec whose
+    destination is elsewhere (main:backup) and branch names that merely
+    contain 'main' (feature/main-menu) do not match.
+    """
+    for m in GIT_PUSH_RE.finditer(command):
+        segment = re.split(r"[;&|]", command[m.end():])[0]
+        for tok in segment.split():
+            tok = tok.strip("'\"")
+            if tok.startswith("-"):
+                if tok in ("--all", "--mirror"):
+                    return True
+                continue
+            dst = tok.split(":", 1)[1] if ":" in tok else tok
+            if dst.startswith("refs/heads/"):
+                dst = dst[len("refs/heads/"):]
+            if dst in DEFAULT_BRANCHES:
+                return True
+    return False
 
 
 def _parse_field(content: str, field: str) -> str:
@@ -126,11 +186,7 @@ def _check_file_write(tool_input: dict, phase: str):
     try:
         rel = str(path.resolve().relative_to(PROJECT_ROOT)).replace("\\", "/")
         if rel in HUMAN_ONLY_FILES:
-            _deny(
-                "Phase guard: .board/approval-policy.md is human-authored law "
-                "(ADR-0014). Agents may not edit it in any phase — propose the "
-                "change as an escalation in .board/approvals.md instead."
-            )
+            _deny(HUMAN_ONLY_FILES[rel])
     except ValueError:
         pass
     if _is_always_allowed(path):
@@ -149,6 +205,19 @@ def _check_file_write(tool_input: dict, phase: str):
 
 def _check_shell(tool_input: dict, phase: str, gate: str):
     command = tool_input.get("command", "")
+    if GH_PR_MERGE_RE.search(command):
+        _deny(
+            "Phase guard: `gh pr merge` is the merge decision — item 1 of the "
+            "ADR-0014 never-list. No agent may merge in any phase or mode. "
+            "The human merges from their own terminal or the GitHub UI."
+        )
+    if _push_targets_default_branch(command):
+        _deny(
+            "Phase guard: `git push` targeting the default branch "
+            "(main/master) is denied in every phase — changes land only via "
+            "reviewed pull requests (ADR-0014 never-list). Push a feature "
+            "branch and open the PR at FINISH instead."
+        )
     if re.search(r"\bgh\s+pr\s+create\b", command):
         if phase not in PR_PHASES:
             _deny(

@@ -108,6 +108,26 @@ def main():
         set_state("FINISH", "ACCEPTED_SOFT_FAIL")
         cases.append(("FINISH+SOFT_FAIL: allow gh pr create", run_guard(root, "Bash", {"command": "gh pr create"})[0] is False))
 
+        # merge verbs (AUD-004 / ADR-0014 never-list item 1): denied in EVERY
+        # phase — even at FINISH+PASS, the most PR-permissive state
+        set_state("FINISH", "PASS")
+        cases.append(("FINISH+PASS: deny gh pr merge", run_guard(root, "Bash", {"command": "gh pr merge 5 --squash"})[0] is True))
+        cases.append(("FINISH+PASS: deny gh pr merge --auto", run_guard(root, "PowerShell", {"command": "gh pr merge --auto --rebase"})[0] is True))
+        cases.append(("FINISH+PASS: deny push to main", run_guard(root, "Bash", {"command": "git push origin main"})[0] is True))
+        cases.append(("FINISH+PASS: deny force-push to master", run_guard(root, "Bash", {"command": "git push -f origin master"})[0] is True))
+        cases.append(("FINISH+PASS: deny refspec push HEAD:main", run_guard(root, "Bash", {"command": "git push origin HEAD:main"})[0] is True))
+        cases.append(("FINISH+PASS: deny push -u origin main", run_guard(root, "Bash", {"command": "git push -u origin main"})[0] is True))
+        cases.append(("FINISH+PASS: deny push --delete main", run_guard(root, "Bash", {"command": "git push origin --delete main"})[0] is True))
+        cases.append(("FINISH+PASS: deny push --all", run_guard(root, "Bash", {"command": "git push --all origin"})[0] is True))
+        cases.append(("FINISH+PASS: deny compound push to main", run_guard(root, "Bash", {"command": "git add -A && git commit -m x && git push origin main"})[0] is True))
+        cases.append(("FINISH+PASS: allow push feature branch", run_guard(root, "Bash", {"command": "git push -u origin fix/manifest-install"})[0] is False))
+        cases.append(("FINISH+PASS: allow refspec dst != default", run_guard(root, "Bash", {"command": "git push origin main:backup-main"})[0] is False))
+        cases.append(("FINISH+PASS: allow branch containing 'main'", run_guard(root, "Bash", {"command": "git push origin feature/main-menu"})[0] is False))
+        set_state("IMPLEMENT")
+        cases.append(("IMPLEMENT: deny gh pr merge (never-phase)", run_guard(root, "Bash", {"command": "gh pr merge"})[0] is True))
+        cases.append(("IMPLEMENT: deny push to main (never-phase)", run_guard(root, "Bash", {"command": "git push origin main"})[0] is True))
+        cases.append(("IMPLEMENT: allow bare git push (documented limit)", run_guard(root, "Bash", {"command": "git push"})[0] is False))
+
         # approval-policy protection (LOOP-006 / ADR-0014): denied in EVERY phase
         policy = str(root / ".board" / "approval-policy.md")
         set_state("IDLE")
@@ -115,6 +135,20 @@ def main():
         set_state("IMPLEMENT")
         cases.append(("IMPLEMENT: deny approval-policy write (self-licensing)", run_guard(root, "Edit", {"file_path": policy})[0] is True))
         cases.append(("IMPLEMENT: other board writes still allowed", run_guard(root, "Write", {"file_path": str(root / ".board" / "tasks.md")})[0] is False))
+
+        # kill-switch marker protection (AUD-003 / ADR-0014): the guard's own
+        # off-switch is agent-unwritable in EVERY phase — .state general
+        # writability must not bypass it
+        marker = str(root / ".state" / "phase-guard-off")
+        set_state("IDLE")
+        cases.append(("IDLE: deny kill-switch marker write", run_guard(root, "Write", {"file_path": marker})[0] is True))
+        set_state("GRILL_SPEC")
+        cases.append(("GRILL_SPEC: deny kill-switch marker write", run_guard(root, "Edit", {"file_path": marker})[0] is True))
+        set_state("IMPLEMENT")
+        cases.append(("IMPLEMENT: deny kill-switch marker write (self-licensing)", run_guard(root, "Write", {"file_path": marker})[0] is True))
+        cases.append(("IMPLEMENT: other .state writes still allowed", run_guard(root, "Write", {"file_path": str(root / ".state" / "session-state.md")})[0] is False))
+        set_state("FINISH", "PASS")
+        cases.append(("FINISH+PASS: deny kill-switch marker write", run_guard(root, "Write", {"file_path": marker})[0] is True))
 
         # fail-open: missing state file
         (root / ".board" / "sprint-state.md").unlink()

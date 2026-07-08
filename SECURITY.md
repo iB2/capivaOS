@@ -53,11 +53,15 @@ A plugin named "capiva" from any other source is not ours.
 
 ## Autonomy prerequisite
 
-Auto mode (`/capiva:auto`, v1.1+) never merges — but that guarantee is only
-mechanical if your default branch requires pull requests. `/capiva:init` checks
-this and offers to configure it; do not enable auto mode on an unprotected
-branch. (The check uses YOUR `gh` authentication — the plugin itself still
-makes no network calls.)
+Auto mode (`/capiva:auto`, v1.1+) never merges. Since 1.2.0 the phase guard
+denies the merge verbs mechanically in every phase and mode: `gh pr merge` in
+any form, and `git push` whose target resolves to the default branch
+(main/master — including `HEAD:main` refspecs, `--delete`, `--all`/`--mirror`).
+Routes a PreToolUse hook cannot see (the GitHub web UI, GitHub MCP tools, a
+bare `git push` while the default branch is checked out) are covered by branch
+protection: `/capiva:init` checks it and offers to configure it; do not enable
+auto mode on an unprotected branch. (The check uses YOUR `gh` authentication —
+the plugin itself still makes no network calls.)
 
 ## Reporting a vulnerability
 
