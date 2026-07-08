@@ -44,6 +44,7 @@ Checks:
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
   python3 scripts/harness_lint.py --self-test  # verify the linter catches seeded drift
+  python3 scripts/harness_lint.py --check-blueprint <dir>  # validate a custom blueprint (AUD-015)
 
 Scanned files (plugin layout, ADR-0013): README.md, rules/*.md (incl.
 laws.md), skills/*/SKILL.md, agents/*.md, docs/DESIGN.md, docs/SCOPE.md,
@@ -108,6 +109,17 @@ CREATION_TOKENS = ("NNNN", "000N", "N-slug", "DEV-NNN", "TASK-ID")
 PERSONAL_PATH_RE = re.compile(r"(?:C:\\+Users\\+|/Users/|/home/)(?!<)[A-Za-z0-9_.$-]+")
 ACS_STATUSES = {"pending", "pass", "fail"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+# The blueprint authoring contract (AUD-015): every reference.md — shipped or
+# custom — must carry exactly this §-section set. Single source of truth for
+# check 5 (shipped parity) and --check-blueprint (custom authoring). Changing
+# it is a schema change: bump + migration row + all shipped blueprints move
+# together.
+REQUIRED_BLUEPRINT_SECTIONS = {
+    "§project", "§stack", "§architecture", "§coding-standards",
+    "§enterprise-patterns", "§test-stack", "§static-analysis",
+    "§build-commands", "§ci-cd", "§qa-checklist", "§deviation-rules",
+}
 
 # Manifest key allowlists — mirror the Claude Code CLI validator (strict mode).
 # CLI 2.1.50 rejected `$schema` and `displayName` at install; unknown keys are
@@ -278,6 +290,25 @@ def lint_acs_file(path: Path, root: Path):
     return findings
 
 
+def check_blueprint(path: Path):
+    """Validate one blueprint directory against the authoring contract
+    (AUD-015). Used by --check-blueprint <dir> — the command /capiva:init
+    runs when the adopter configures a custom capiva-blueprints/<name>/."""
+    findings = []
+    ref = path / "reference.md"
+    if not ref.is_file():
+        return [f"{path}: missing reference.md (the blueprint contract file)"]
+    sections = set(SECTION_HEADING_RE.findall(
+        ref.read_text(encoding="utf-8", errors="replace")))
+    for s in sorted(REQUIRED_BLUEPRINT_SECTIONS - sections):
+        findings.append(f"{ref}: missing required section {s}")
+    for s in sorted(sections - REQUIRED_BLUEPRINT_SECTIONS):
+        findings.append(
+            f"{ref}: unknown section {s} — not part of the contract; skills "
+            f"reference sections by name and will never read it")
+    return findings
+
+
 def scanned_files(root: Path):
     patterns = [
         "README.md",
@@ -429,6 +460,8 @@ def lint(root: Path):
             findings.append(f"blueprints/{bp.name}: missing reference.md")
             continue
         section_sets[bp.name] = set(SECTION_HEADING_RE.findall(ref.read_text(encoding="utf-8", errors="replace")))
+        for s in sorted(REQUIRED_BLUEPRINT_SECTIONS - section_sets[bp.name]):
+            findings.append(f"blueprints/{bp.name}: missing contract section {s} (AUD-015)")
     if len(section_sets) > 1:
         names = sorted(section_sets)
         base_name, base = names[0], section_sets[names[0]]
@@ -589,7 +622,12 @@ def self_test():
             '{"name": "alpha-plug", "plugins": [{"name": "other-name", '
             '"source": "./plug", "version": "2.0.0"}]}', encoding="utf-8")
 
+        (root / "capiva-blueprints" / "custom").mkdir(parents=True)
+        (root / "capiva-blueprints" / "custom" / "reference.md").write_text(
+            "## §stack\n## §made-up-section\n", encoding="utf-8")
+
         findings = lint(root)
+        findings.extend(check_blueprint(root / "capiva-blueprints" / "custom"))
         expected_fragments = [
             "un-namespaced skill reference /plan",
             "dead plugin-root reference rules/gone.md",
@@ -622,6 +660,8 @@ def self_test():
             "reads sprint-state field 'Ghost Field'",
             "enforced surface 'ghost-surface' has no",
             "unknown enforced-surface marker 'invented-surface'",
+            "missing required section §build-commands",
+            "unknown section §made-up-section",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]
@@ -639,6 +679,20 @@ def self_test():
 
 
 def main():
+    if "--check-blueprint" in sys.argv:
+        idx = sys.argv.index("--check-blueprint")
+        if idx + 1 >= len(sys.argv):
+            print("usage: harness_lint.py --check-blueprint <blueprint-dir>")
+            sys.exit(2)
+        findings = check_blueprint(Path(sys.argv[idx + 1]))
+        if findings:
+            print(f"check-blueprint: {len(findings)} finding(s)\n")
+            for f in findings:
+                print(f"  ✗ {f}")
+            sys.exit(1)
+        print("check-blueprint: OK — all contract sections present")
+        sys.exit(0)
+
     if "--self-test" in sys.argv:
         ok = self_test()
         print("self-test:", "PASS" if ok else "FAIL")
