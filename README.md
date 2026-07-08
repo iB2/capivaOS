@@ -184,6 +184,10 @@ Coverage is scoped (normative table: `rules/quality-gates.md` — below minimum 
 | Integration tests | all pass | all pass |
 | AC statuses in acs.json | all `pass` (test + e2e evidence) | — |
 
+## How This Compares
+
+Full table with source-verified mechanisms and dated figures: [docs/COMPARISON.md](docs/COMPARISON.md). The one-liner: *Spec Kit's lifecycle breadth, tdd-guard's mechanical teeth* — and the caveats live in the comparison itself.
+
 ## What This Costs
 
 Figures from the ADR benchmarks ([ADR-0004](docs/adr/0004-token-bounded-execution.md), [ADR-0010](docs/adr/0010-fast-lane-pipeline.md)) — estimates as of 2026-07, not guarantees:
