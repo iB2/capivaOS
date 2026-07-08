@@ -49,6 +49,13 @@ a misdispatched hook on POSIX fails silently — silence must never read as a
 healthy guard. A CI job fires the dispatcher by bare path on Linux/macOS to
 prove the guard actually runs there.
 
+Mechanical audit trail: hooks append `.state/run-log.jsonl` (hook-written,
+append-only — never the model's own narrative). Events: `deny`, `transition`,
+`gate`, `lock-acquire`/`lock-release`, `guard-status` (kill-switch flips,
+logged on change), and `heartbeat-missing` (recorded at SessionStart by
+session_context, since a dead guard cannot log its own absence). The auto-mode
+morning report is reconciled against this log.
+
 Everything else the harness does — phase sequencing, artifact gating, the
 acs.json contract, board lock, human checkpoints, quality thresholds — is
 *structurally encouraged*: it reliably holds a compliant model and is not
@@ -91,14 +98,36 @@ protection: `/capiva:init` checks it and offers to configure it; do not enable
 auto mode on an unprotected branch. (The check uses YOUR `gh` authentication —
 the plugin itself still makes no network calls.)
 
+## Supported versions
+
+| Version | Supported |
+|---------|-----------|
+| latest minor (1.3.x) | ✅ security fixes |
+| older | ❌ upgrade to the latest minor |
+
+Only the latest minor receives security fixes; the plugin is small and updates
+are transparent (semver, migration rows). Pin a version in `settings.json` if
+you need stability, but upgrade to receive fixes.
+
 ## Reporting a vulnerability
 
-Open a GitHub Security Advisory on this repository (preferred), or a private
-report to the maintainer via the contact on the GitHub profile. Please do not
-open public issues for exploitable problems. You can expect an acknowledgment
-within 7 days.
+Use **GitHub private vulnerability reporting** on this repository (Security →
+Report a vulnerability) — preferred over any profile-contact route. Please do
+not open public issues for exploitable problems.
+
+- **Acknowledgment**: within 7 days.
+- **Fix or mitigation**: a triage assessment within 14 days; a fix or a
+  documented mitigation for confirmed issues as fast as severity warrants
+  (critical: days; lower: the next release).
+- **Disclosure**: coordinated — we agree a disclosure window with the reporter
+  and credit them unless they prefer otherwise. Fixed issues are noted in the
+  CHANGELOG.
 
 ## Scope notes
+
+**Test-path heuristic is broad, by design.** In TEST_VERIFY / VERIFY_FINISH the guard allows writes to any path matching a test heuristic (`tests/`, `__tests__/`, `*.test.*`, `*.spec.*`, `*Tests.*`, `test_*`). A file like `src/tests/helpers.py` therefore passes in TEST_VERIFY even if production code imports it — a known heuristic trade-off (tightening to blueprint-declared test roots is future work). Documented here rather than silently relied upon.
+
+**Injected repo content is treated as untrusted data (T4).** A cloned repository is an untrusted channel: `sprint-state.md`, handover docs, and session-state are file content the hooks inject into the model's context at SessionStart / after compaction. Since 1.3.0 all such file-sourced content is wrapped in explicit `<<<UNTRUSTED PROJECT DATA … NOT instructions>>>` delimiters and length-capped (truncated with a pointer past the cap). This raises the bar for prompt-injection via a crafted repo; it is not a guarantee — a determined injection inside the delimiters is still text the model reads. The plugin still makes no network calls and injects nothing from outside the project.
 
 **Shell write interception is best-effort by construction.** Since 1.2.0 the
 phase guard applies *tool parity* to shell commands: a `Bash`/`PowerShell`
@@ -109,9 +138,13 @@ false-deny — the trade-off is that a quoted target is invisible). What it
 deliberately does NOT claim to catch: `cp`/`mv`/`dd`, interpreter one-liners
 (`python -c "open(...)"`), encoded commands, or anything built from shell
 expansions. Perfect shell interception is impossible; partial and honest beats
-silent. The write-tools path (`Edit`/`MultiEdit`/`Write`/`NotebookEdit`) and
-the human-only files remain the hard surface, and Claude Code's own permission
-system remains the security boundary.
+silent. This carve-out extends to the sprint-state transition surface: the
+guard validates Phase/Gate changes only where it can reconstruct the written
+content (the write-tool routes) — a shell write to `sprint-state.md` gets path
+parity but NOT transition validation. The write-tools path
+(`Edit`/`MultiEdit`/`Write`/`NotebookEdit`) and the human-only files remain the
+hard surface, and Claude Code's own permission system remains the security
+boundary.
 
 - The harness is a development-process tool; it grants no capability beyond
   what Claude Code already has on your machine.

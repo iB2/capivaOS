@@ -52,6 +52,8 @@ Checks:
      PreToolUse matchers match (a tool must not bypass the guard in one mode).
  18. Board-lock staleness parity (PRD-003): phase_guard LOCK_STALE_SECONDS
      == board_lock STALE_SECONDS.
+ 19. False-mechanism (PRD-004): no doc claims a hash-audit mechanism unless
+     code actually computes a hash.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -668,6 +670,22 @@ def lint(root: Path):
                 f"board-lock staleness drift: phase_guard LOCK_STALE_SECONDS={a} "
                 f"!= board_lock STALE_SECONDS={b} (PRD-003)")
 
+    # 19. false-mechanism guard (PRD-004): a doc must not claim a hash/audit
+    #     mechanism that no code implements. The approval-policy template once
+    #     said "changes detected by hash and logged" while no hashlib call
+    #     existed anywhere — a false claim the honesty lint exists to kill.
+    HASH_CLAIM_RE = re.compile(r"detected by hash|hash(?:ed|es)? .{0,40}(?:logged|audit)", re.IGNORECASE)
+    hash_impl = any(
+        "hashlib" in f.read_text(encoding="utf-8", errors="replace")
+        for f in list(root.glob("hooks/*.py")) + list(root.glob("scripts/*.py")))
+    if not hash_impl:
+        for doc in list(root.glob("project-template/templates/*.md")) + \
+                   [root / "SECURITY.md", root / "README.md"]:
+            if doc.is_file() and HASH_CLAIM_RE.search(doc.read_text(encoding="utf-8", errors="replace")):
+                findings.append(
+                    f"{doc.relative_to(root).as_posix()}: claims a hash-audit "
+                    f"mechanism but no code computes any hash (false-mechanism, PRD-004)")
+
     return findings
 
 
@@ -697,6 +715,9 @@ def self_test():
             "| [0001](adr/0001-real.md) | x |\n| [0002](adr/0002-stale.md) | y |\nalpha beta\n",
             encoding="utf-8")
         (root / "docs" / "SCOPE.md").write_text("alpha only\n", encoding="utf-8")  # beta missing
+        (root / "project-template" / "templates").mkdir(parents=True, exist_ok=True)
+        (root / "project-template" / "templates" / "policy.md").write_text(
+            "Changes are detected by hash and logged.\n", encoding="utf-8")
         (root / "SECURITY.md").write_text(
             "auditable in ~700 lines of dependency-free Python\n", encoding="utf-8")
         (root / "docs" / "adr" / "0001-real.md").write_text("# ADR-0001\n", encoding="utf-8")
@@ -759,6 +780,7 @@ def self_test():
         expected_fragments = [
             "hook-registration parity",
             "board-lock staleness drift",
+            "false-mechanism, PRD-004",
             "un-namespaced skill reference /plan",
             "dead plugin-root reference rules/gone.md",
             "bare engine path skills/plan/SKILL.md",

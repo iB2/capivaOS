@@ -106,6 +106,8 @@ jobs:
         run: python hooks/tests/scenario_phase_guard.py
       - name: Plugin hook layer tests (dispatcher sh/cmd, session-context, no-op guards)
         run: python hooks/tests/scenario_plugin_hooks.py
+      - name: State-machine behavioral eval (deterministic, no LLM)
+        run: python hooks/tests/scenario_state_machine.py
       - name: Context-persistence entry points smoke test
         shell: bash
         run: |

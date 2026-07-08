@@ -1,0 +1,5 @@
+{
+  "clean-quality-report.md": "CLEAR",
+  "anomaly-untested-ac.md": "ESCALATE",
+  "anomaly-coverage-mismatch.md": "ESCALATE"
+}

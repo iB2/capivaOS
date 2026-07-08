@@ -75,6 +75,13 @@ Parking is always clean: mid-phase budget death abandons that phase's runner
 
 ## Morning Report (always written: `docs/reports/auto-run-[date].md`)
 
+**Reconcile against the mechanical run-log.** Read `.state/run-log.jsonl`
+(hook-written: deny / transition / gate / lock / guard-status /
+heartbeat-missing events) and cross-check your
+narrative against it. Any transition or gate you report MUST have a matching
+run-log line; any deny in the log MUST be explained. The log is the ground
+truth the model narrative is checked against — not the other way around.
+
 Line 1 is ALWAYS why the loop stopped: board-empty | task-cap | phase-budget |
 provider-limit | escalation-pile-up | cycle-defect. Then:
 - PRs created (links) — awaiting YOUR merge decision

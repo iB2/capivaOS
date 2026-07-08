@@ -19,18 +19,32 @@ ONE staleness number, here, quoted by the rules docs — never restated.
 Zero dependencies; never raises in a way that bricks a caller.
 """
 
+import json
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 BOARD_LOCK = PROJECT_ROOT / ".board" / "board.lock"
 LOCK_HOLDER = PROJECT_ROOT / ".state" / "lock-holder"
+RUN_LOG = PROJECT_ROOT / ".state" / "run-log.jsonl"
 
 # The single source of truth for lock staleness. phase_guard.py keeps a copy
 # with a "keep in sync" note; lint check 18 asserts they match.
 STALE_SECONDS = 120
+
+
+def _log(event: str, **fields):
+    try:
+        RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
+        rec = {"ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "event": event}
+        rec.update(fields)
+        with RUN_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 
 def _token() -> str:
@@ -74,6 +88,7 @@ def acquire() -> int:
         # stale (or unparseable) — steal it
         BOARD_LOCK.write_text(payload, encoding="utf-8")
     LOCK_HOLDER.write_text(token, encoding="utf-8")
+    _log("lock-acquire", holder=token)
     print(token)
     return 0
 
@@ -91,6 +106,7 @@ def release() -> int:
             LOCK_HOLDER.unlink()
     except OSError:
         pass
+    _log("lock-release", holder=mine or "(none)")
     return 0
 
 

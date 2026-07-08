@@ -74,8 +74,10 @@ human judgment (written policy + exception escalation), never its removal.
 **Option B: Human-authored, hook-enforced (chosen)**
 - `phase_guard.py` denies agent writes to `.board/approval-policy.md` in every
   phase (same enforcement class as `gh pr create` gating). The agent may
-  *propose* amendments only as escalation items; the loop logs policy-file hash
-  changes in Phase History.
+  *propose* amendments only as escalation items. (Historical note: earlier
+  drafts spoke of a policy-file *hash* audit; that was never implemented and
+  the claim was removed in 1.3.0 — the mechanical audit trail is the run-log,
+  not a hash.)
 
 **Axis 3 — Overnight spec drafting**
 
@@ -123,7 +125,8 @@ Two modes, one contract:
    mechanical gates PASS and the independent judge finds zero anomalies.
 4. **Policy is human law:** `.board/approval-policy.md`, `- **Field**:` format,
    human-authored only (hook-denied to agents; implementation lands with
-   LOOP-006), agent proposes via escalation, hash changes logged.
+   LOOP-006), agent proposes via escalation. (The policy-file hash audit
+   mentioned in earlier drafts was removed in 1.3.0 — see the note above.)
 5. **Escalation is file-based:** `.board/approvals.md` queue with
    exception-first summaries + a morning report artifact; SessionStart injection
    surfaces the pending count. Notification is a documented adopter-side recipe
