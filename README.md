@@ -85,17 +85,38 @@ Each 🧑 is a blocking human checkpoint. Silence is NOT approval. The fast lane
 
 ### Enforcement Mechanisms
 
+Two honest tiers. **Mechanically enforced** — a hook or the platform denies
+the action; model compliance is not involved (this list is generated from
+`ENFORCED_SURFACES` in `hooks/phase_guard.py` and lint-checked against it —
+claims and code cannot drift apart without failing CI):
+
+| Mechanism | What It Denies |
+|-----------|----------------|
+| **Phase guard: source writes** (PreToolUse) <!-- enforced: source-writes-outside-implement --> | Source writes outside IMPLEMENT (tests also allowed in TEST_VERIFY/VERIFY_FINISH) — via Edit/MultiEdit/Write/NotebookEdit AND shell writes (redirects, `tee`, `sed -i`, `touch`) under tool parity |
+| **Phase guard: PR gate** <!-- enforced: pr-create-gate --> | `gh pr create` outside FINISH/VERIFY_FINISH or without a passing quality-gate status |
+| **Phase guard: human-only files** <!-- enforced: human-only-files --> | Agent writes to `.board/approval-policy.md` and to the guard's own kill-switch marker, in every phase |
+| **Phase guard: merge verbs** <!-- enforced: merge-verbs --> | `gh pr merge` and `git push` targeting the default branch, in every phase and mode (ADR-0014 never-list item 1) |
+| **Tool-restricted agents** (platform, ADR-0012) <!-- enforced: agent-allowlists --> | qa and gate-judge are read-only *by construction* — they cannot modify what they review |
+
+Also mechanical (persistence, not denial): sprint state on disk + PreCompact/Stop
+snapshots + SessionStart re-injection — pipeline position survives crashes and
+compaction. Known limits of the deny surface are documented plainly in
+[SECURITY.md](SECURITY.md): shell interception is best-effort; the GitHub web
+UI and MCP merge routes are covered by branch protection, not hooks.
+
+**Structurally encouraged** — the pipeline makes the disciplined path the easy
+path; these hold a compliant model, and are honestly NOT walls against a
+drifting one:
+
 | Mechanism | What It Prevents |
 |-----------|-----------------|
 | **Init gate** | Running the pipeline without project docs or blueprint config |
-| **Phase guards** | Skills running out of sequence |
-| **Phase guard hook** (PreToolUse) | Source edits outside IMPLEMENT; PRs outside FINISH — denied at the tool layer |
+| **Phase sequencing in skills** | Skills running out of sequence |
 | **Artifact gates** | Advancing without required outputs |
-| **acs.json contract** | ACs silently dropped or marked done without a test AND an end-to-end exercise |
-| **Tool-restricted agents** | The QA reviewer is read-only by construction — it cannot modify what it reviews |
-| **Board lock** | Concurrent writes corrupting state |
-| **Sprint state + SessionStart injection** | Session crashes or compaction losing pipeline position |
-| **Quality gates** | PRs without adequate test coverage |
+| **acs.json contract** | ACs silently dropped (the diff is visible; status flips are agent-attested — ADR-0009 names this residual gap) |
+| **Board lock protocol** | Concurrent writes corrupting state (convention, ADR-0003 — no lock code exists by design) |
+| **Human checkpoints** | Silence-as-approval (prompt discipline; the hook enforces only the recorded gate status at PR time) |
+| **Quality gates** | PRs below thresholds (agent-executed checks per the blueprint) |
 
 ## Skills
 

@@ -1,6 +1,6 @@
 ---
 name: gate-judge
-description: Independent gate reviewer for capivaOS auto mode (ADR-0014). Scores a gate artifact against the artifact standards and the human's approval policy, then verdicts CLEAR (zero anomalies, within explicit bounds) or ESCALATE (with an exception-first summary). Read-only by construction; never judges its own output.
+description: Context-fresh gate reviewer for capivaOS auto mode (ADR-0014) — same base model as the producer, zero shared task context. Scores a gate artifact against the artifact standards and the human's approval policy, then verdicts CLEAR (zero anomalies, within explicit bounds) or ESCALATE (with an exception-first summary). Read-only by construction; never judges its own output.
 tools: Read, Grep, Glob
 ---
 

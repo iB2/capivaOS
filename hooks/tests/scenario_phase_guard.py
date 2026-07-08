@@ -9,6 +9,7 @@ trap for any CI author. These are self-contained runners, not pytest suites.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -209,6 +210,16 @@ def main():
         set_state("IDLE")
         outside = str(Path(tempfile.gettempdir()) / "scratch-note.py")
         cases.append(("IDLE: allow path outside project", run_guard(root, "Edit", {"file_path": outside})[0] is False))
+
+        # claims-parity meta (AUD-011): ENFORCED_SURFACES is the source of
+        # truth harness_lint locks the docs to — if this tuple changes, the
+        # deny logic, the scenarios above, and both doc tables change with it
+        guard_src = GUARD.read_text(encoding="utf-8")
+        m = re.search(r"ENFORCED_SURFACES\s*=\s*\(([^)]*)\)", guard_src)
+        declared = set(re.findall(r'"([^"]+)"', m.group(1))) if m else set()
+        cases.append(("ENFORCED_SURFACES declares exactly the 4 deny classes",
+                      declared == {"source-writes-outside-implement", "pr-create-gate",
+                                   "human-only-files", "merge-verbs"}))
 
         # garbage stdin never blocks
         env = dict(os.environ); env["CLAUDE_PROJECT_DIR"] = str(root)

@@ -80,7 +80,7 @@ You don't import this or add it as a dependency. It installs as a **Claude Code 
 
 **Attended** (default): four blocking human checkpoints per full-lane task, exactly as designed — see [DESIGN.md](DESIGN.md) "Human in the Loop, Machine in the Pipeline."
 
-**Auto** (opt-in per run): the loop works a backlog of tasks whose specs you already approved (or fast-lane qualifiers), routing gates through your written approval policy and an independent judge, escalating exceptions to `.board/approvals.md`. Hard limits by contract: a never-list no machine may clear (merge, P0/P1 gates, human-less spec approval, policy silence), mandatory task+token budgets, clean parking at phase boundaries.
+**Auto** (opt-in per run): the loop works a backlog of tasks whose specs you already approved (or fast-lane qualifiers), routing gates through your written approval policy and a context-fresh judge (same base model, zero task context — see the gate-judge agent), escalating exceptions to `.board/approvals.md`. Hard limits by contract: a never-list no machine may clear (merge, P0/P1 gates, human-less spec approval, policy silence), mandatory task+token budgets, clean parking at phase boundaries.
 
 Honest expectations: per-task output quality in auto mode is somewhat below an attended session — the machine floor (acs.json contract, adversarial QA, judge) catches the worst, and the merge gate remains absolutely yours. Auto mode buys throughput on work that doesn't deserve your live attention; it does not replace the attended grill for ambiguous work — un-specced full-lane tasks are skipped, never improvised.
 

@@ -76,6 +76,21 @@ TEST_PATH_RE = re.compile(
 
 PASSING_GATES = {"PASS", "ACCEPTED_SOFT_FAIL"}
 
+# The complete inventory of what this hook mechanically DENIES — the single
+# source of truth for every "mechanically enforced" claim (AUD-011).
+# harness_lint check 13 asserts each surface carries its documentation marker
+# (<!-- enforced: X -->) in README.md AND SECURITY.md, and that no unknown
+# marker exists — claims and code cannot drift apart without failing CI.
+# Add a surface ONLY together with its deny logic, its scenarios, and both
+# doc rows; the lint fails on any partial landing.
+ENFORCED_SURFACES = (
+    "source-writes-outside-implement",  # write tools + shell parity, AUD-005
+    "pr-create-gate",                   # FINISH/VERIFY_FINISH + passing gate
+    "human-only-files",                 # approval-policy.md + kill-switch marker
+    "merge-verbs",                      # gh pr merge; git push -> default branch
+)  # NOTE: no parentheses inside this tuple — lint check 13 parses it with a
+   # first-closing-paren regex; keep comments paren-free.
+
 # Human-only files: agent writes denied in EVERY phase (ADR-0014 self-licensing
 # prevention), each with its own deny message. The approval policy is the
 # delegated portion of Law 5 — an agent that can edit it can grant itself

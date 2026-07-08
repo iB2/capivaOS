@@ -36,6 +36,10 @@ Checks:
  12. Field parity (HARN-005): every sprint-state field a hook reads exists in
      the rules/state-management.md registry - hooks reading fields nothing
      writes degrade silently (the Loop Token/Phase Budget bug, AUD-009).
+ 13. Claims parity (AUD-011): the "mechanically enforced" surfaces declared
+     by ENFORCED_SURFACES in phase_guard.py each carry their
+     <!-- enforced: X --> marker in README.md AND SECURITY.md, and no marker
+     names an undeclared surface.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -485,6 +489,37 @@ def lint(root: Path):
                         f"field {name!r} not documented in rules/state-management.md "
                         f"(field-parity, HARN-005)")
 
+    # 13. claims parity (AUD-011): the "mechanically enforced" claims in
+    #     README.md and SECURITY.md are lint-locked to ENFORCED_SURFACES in
+    #     hooks/phase_guard.py (+ the platform-level agent allowlists).
+    #     Every surface must carry its <!-- enforced: X --> marker in BOTH
+    #     docs; every marker must name a known surface. Code and claims
+    #     cannot drift apart without failing CI.
+    guard_src_path = root / "hooks" / "phase_guard.py"
+    if guard_src_path.is_file():
+        guard_src = guard_src_path.read_text(encoding="utf-8", errors="replace")
+        m = re.search(r"ENFORCED_SURFACES\s*=\s*\(([^)]*)\)", guard_src)
+        if m:
+            surfaces = set(re.findall(r'"([^"]+)"', m.group(1)))
+            known = surfaces | {"agent-allowlists"}  # platform-level (ADR-0012)
+            MARKER_RE = re.compile(r"<!--\s*enforced:\s*([\w-]+)\s*-->")
+            for doc_rel in ("README.md", "SECURITY.md"):
+                doc = root / doc_rel
+                if not doc.is_file():
+                    continue
+                text = doc.read_text(encoding="utf-8", errors="replace")
+                found = set(MARKER_RE.findall(text))
+                for s in sorted(known - found):
+                    findings.append(
+                        f"{doc_rel}: enforced surface '{s}' has no "
+                        f"<!-- enforced: {s} --> marker — a mechanical guarantee "
+                        f"is undocumented (claims parity, AUD-011)")
+                for s in sorted(found - known):
+                    findings.append(
+                        f"{doc_rel}: unknown enforced-surface marker '{s}' — the "
+                        f"docs claim a mechanical guarantee the guard does not "
+                        f"declare (claims parity, AUD-011)")
+
     return findings
 
 
@@ -500,7 +535,8 @@ def self_test():
 
         (root / "README.md").write_text(
             "Run /discovery to generate docs. Also run /plan bare and /capiva:plan namespaced.\n"
-            "See docs/missing-file.md and blueprint alpha.\n",
+            "See docs/missing-file.md and blueprint alpha.\n"
+            "<!-- enforced: invented-surface -->\n",
             encoding="utf-8")
         (root / "rules" / "laws.md").write_text(
             "alpha beta and §ghost-section\n"
@@ -516,9 +552,10 @@ def self_test():
         (root / "agents").mkdir()
         (root / "agents" / "rogue.md").write_text("# rogue agent\n", encoding="utf-8")
         (root / "hooks").mkdir()
-        (root / "hooks" / "guard.py").write_text(
+        (root / "hooks" / "phase_guard.py").write_text(
             'MSG = "Run /plan to continue; see .board/sprint-state.md"\n'
-            'PHASE = _parse_field(content, "Ghost Field")\n', encoding="utf-8")
+            'PHASE = _parse_field(content, "Ghost Field")\n'
+            'ENFORCED_SURFACES = (\n    "ghost-surface",\n)\n', encoding="utf-8")
         (root / "rules" / "state-management.md").write_text(
             "| Field | Meaning |\n|---|---|\n| Phase | current phase |\n", encoding="utf-8")
         (root / "docs" / "adr" / "0003-unindexed.md").write_text("# ADR-0003\n", encoding="utf-8")
@@ -580,9 +617,11 @@ def self_test():
             "dependency cycle involving",
             "agent 'rogue' exists but is not mentioned",
             "personal path",
-            "hooks/guard.py: bare skill reference /plan",
+            "hooks/phase_guard.py: bare skill reference /plan",
             "write-intent into the read-only plugin cache",
             "reads sprint-state field 'Ghost Field'",
+            "enforced surface 'ghost-surface' has no",
+            "unknown enforced-surface marker 'invented-surface'",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]
