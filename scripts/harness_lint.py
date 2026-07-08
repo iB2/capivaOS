@@ -50,6 +50,8 @@ Checks:
      phase_guard.py must actually write .state/guard-heartbeat.
  17. Hook-registration parity (PRD-002): hooks.json and .claude/settings.json
      PreToolUse matchers match (a tool must not bypass the guard in one mode).
+ 18. Board-lock staleness parity (PRD-003): phase_guard LOCK_STALE_SECONDS
+     == board_lock STALE_SECONDS.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -650,6 +652,22 @@ def lint(root: Path):
                 f"!= .claude/settings.json {sm} — a tool bypasses the guard in "
                 f"one mode (PRD-002)")
 
+    # 18. board-lock staleness parity (PRD-003): the LOCK_STALE_SECONDS copy in
+    #     phase_guard.py must equal STALE_SECONDS in scripts/board_lock.py — two
+    #     numbers drifting is the exact class T5 flagged (the 60-vs-30 doc bug).
+    import re as _re18
+    pg = root / "hooks" / "phase_guard.py"
+    bl = root / "scripts" / "board_lock.py"
+    if pg.is_file() and bl.is_file():
+        def _num(fp, name):
+            m = _re18.search(rf"{name}\s*=\s*(\d+)", fp.read_text(encoding="utf-8", errors="replace"))
+            return m.group(1) if m else None
+        a, b = _num(pg, "LOCK_STALE_SECONDS"), _num(bl, "STALE_SECONDS")
+        if a is not None and b is not None and a != b:
+            findings.append(
+                f"board-lock staleness drift: phase_guard LOCK_STALE_SECONDS={a} "
+                f"!= board_lock STALE_SECONDS={b} (PRD-003)")
+
     return findings
 
 
@@ -688,7 +706,9 @@ def self_test():
         (root / "hooks" / "phase_guard.py").write_text(
             'MSG = "Run /plan to continue; see .board/sprint-state.md"\n'
             'PHASE = _parse_field(content, "Ghost Field")\n'
-            'ENFORCED_SURFACES = (\n    "ghost-surface",\n)\n', encoding="utf-8")
+            'ENFORCED_SURFACES = (\n    "ghost-surface",\n)\nLOCK_STALE_SECONDS = 99\n', encoding="utf-8")
+        (root / "scripts").mkdir(exist_ok=True)
+        (root / "scripts" / "board_lock.py").write_text('STALE_SECONDS = 120\n', encoding="utf-8")
         (root / "rules" / "state-management.md").write_text(
             "| Field | Meaning |\n|---|---|\n| Phase | current phase |\n", encoding="utf-8")
         (root / "docs" / "adr" / "0003-unindexed.md").write_text("# ADR-0003\n", encoding="utf-8")
@@ -738,6 +758,7 @@ def self_test():
         findings.extend(check_blueprint(root / "capiva-blueprints" / "custom"))
         expected_fragments = [
             "hook-registration parity",
+            "board-lock staleness drift",
             "un-namespaced skill reference /plan",
             "dead plugin-root reference rules/gone.md",
             "bare engine path skills/plan/SKILL.md",

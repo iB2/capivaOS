@@ -3,7 +3,7 @@
 ## What this plugin does on your machine — the full list
 
 capivaOS ships hooks that Claude Code executes locally. Their complete behavior
-is auditable in ~700 lines of dependency-free Python (`hooks/*.py`) plus one
+is auditable in ~900 lines of dependency-free Python (`hooks/*.py`) plus one
 ~30-line shell dispatcher (`hooks/run-hook.cmd`) — the figure is lint-checked
 against `wc -l` at ±15%, so it cannot silently go stale:
 
@@ -38,6 +38,8 @@ in `hooks/phase_guard.py`, so it cannot silently over- or under-claim:
 3. Agent writes to the human-only files (approval policy, kill-switch, dev-mode `.claude/settings.json`, root `CLAUDE.md`) <!-- enforced: human-only-files -->
 4. The merge verbs: `gh pr merge`, `git push` to the default branch <!-- enforced: merge-verbs -->
 5. Read-only agents (qa, gate-judge) via platform tool allowlists <!-- enforced: agent-allowlists -->
+6. Illegal `sprint-state.md` Phase transitions, forged `Quality Gate: PASS`, and Phase blanking <!-- enforced: sprint-state-transitions -->
+7. Board writes under a live foreign `board.lock` <!-- enforced: board-lock -->
 
 Mechanical liveness (not a denial, a proof-of-life): the phase guard writes
 `.state/guard-heartbeat` on every enforced invocation. session_context warns

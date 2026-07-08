@@ -1,7 +1,8 @@
 # ADR-0015: Sprint-State Transition Validation — the Guard Learns the State Machine
 
-**Status**: Proposed — design approved 2026-07-08; implementation is a
-scheduled future task, deliberately NOT shipped with this document.
+**Status**: Accepted — design approved 2026-07-08, **implemented 2026-07-09**
+(1.3.0): the guard now validates sprint-state Phase transitions, artifact
+preconditions on entering IMPLEMENT/FINISH, forged-PASS, and Phase-blanking.
 **Context**: a 2026-07 external code review's core-loophole finding: "the
 enforcement file is inside the agent's writable surface."
 

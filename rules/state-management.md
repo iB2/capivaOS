@@ -101,35 +101,36 @@ Format for Phase History rows:
 
 The board (`.board/tasks.md`) is a shared resource. Multiple agents (subagents, parallel workers) may attempt to write to it. The lock prevents corruption.
 
+Since 1.3.0 the lock is **mechanical**, not a prose ritual (ADR-0016,
+superseding ADR-0003). Do not hand-roll the check/create dance — call the code:
+
 ### Acquire Lock
 
-Before ANY write to `.board/tasks.md`:
+Before ANY write to `.board/tasks.md` / `sprint-state.md`:
 
-1. Check if `.board/board.lock` exists
-2. If YES:
-   a. Read the lock file for holder info
-   b. If lock is > 60 seconds old → stale lock, delete it and re-acquire
-   c. If lock is fresh → WAIT 5 seconds, retry (max 3 retries)
-   d. If still locked after 3 retries → STOP and report: "Board locked by [holder]. Cannot update."
-3. If NO:
-   a. Create `.board/board.lock` with content:
-      ```
-      holder: [agent-id or "main"]
-      acquired: [ISO timestamp]
-      operation: [brief description]
-      ```
-   b. Proceed with write
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board_lock.py acquire   # exit 1 = held by another; prints your holder token on success
+```
+
+`acquire` is atomic (`O_EXCL`) — two racers cannot both win. A stale lock
+(older than the single staleness window below) is stolen automatically. On
+success it records your holder token in `.state/lock-holder`, which
+`phase_guard.py` reads to allow YOUR board writes and deny everyone else's
+while the lock is live.
 
 ### Release Lock
 
-After completing the write to `.board/tasks.md`:
-
-1. Delete `.board/board.lock`
-2. Verify the lock is gone
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board_lock.py release   # deletes the lock iff you hold it
+```
 
 ### Lock Rules
 
-- **Main context always wins.** If main context needs the board and a subagent holds the lock, main can force-release after 30 seconds.
+- **One staleness window, defined once** in `${CLAUDE_PLUGIN_ROOT}/scripts/board_lock.py`
+  (`STALE_SECONDS`, currently 120s) — quoted here, never restated. A lock
+  older than that is stale and stealable.
+- **The guard enforces it.** `phase_guard.py` denies board writes held by
+  another live holder (PRD-003) — the lock is code now, not trust.
 - **Subagents must release.** Every subagent that acquires the lock MUST release it in the same turn. No carrying locks across tool calls.
 - **Read is lock-free.** Only writes require the lock. Multiple agents can read `.board/tasks.md` simultaneously.
 - **Lock file is gitignored.** Add `.board/board.lock` to `.gitignore`. It's runtime state, not source.

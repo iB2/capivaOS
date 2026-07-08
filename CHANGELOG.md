@@ -34,6 +34,22 @@ and the write surface stops self-licensing.
   dev-mode guard; the 1.2.0 fix reached hooks.json only). Lint check 17 keeps
   the two registrations in parity.
 
+### State-file integrity (PRD-003)
+- **Transition validation (ADR-0015, now implemented)**: the guard validates
+  Phase transitions in `sprint-state.md` against the legal full/fast-lane
+  chain. Illegal jumps (IDLE→IMPLEMENT), a forged `Quality Gate: PASS` with no
+  report on disk, and Phase-blanking are denied. Entering IMPLEMENT requires
+  PLAN.md + acs.json; entering FINISH requires the quality report (Law 3 rises
+  from prompt to hook). The state file the guard trusts is no longer freely
+  rewritable by the constrained party — closing the review's core loophole.
+- **Mechanical board lock (ADR-0016, supersedes ADR-0003)**: `board_lock.py`
+  with atomic `O_EXCL` acquire, one staleness window, and `time.time()`
+  timestamps replaces the prose ritual (which carried two contradictory
+  staleness numbers). The guard denies board writes held by another live
+  holder. Enforced only when the lock mechanism is in use — no adopter is
+  bricked mid-migration.
+- Lint checks 18 (staleness parity) keep the two constants from drifting.
+
 ## [1.2.1] — 2026-07-09
 
 Patch: consistency and claims hardening — the remainder of the 2026-07

@@ -225,9 +225,10 @@ def main():
         guard_src = GUARD.read_text(encoding="utf-8")
         m = re.search(r"ENFORCED_SURFACES\s*=\s*\(([^)]*)\)", guard_src)
         declared = set(re.findall(r'"([^"]+)"', m.group(1))) if m else set()
-        cases.append(("ENFORCED_SURFACES declares exactly the 4 deny classes",
+        cases.append(("ENFORCED_SURFACES declares exactly the 6 deny classes",
                       declared == {"source-writes-outside-implement", "pr-create-gate",
-                                   "human-only-files", "merge-verbs"}))
+                                   "human-only-files", "merge-verbs",
+                                   "sprint-state-transitions", "board-lock"}))
 
         # enforcement heartbeat (PRD-001): every enforced invocation drops
         # a proof-of-life marker session_context / auto mode can check
@@ -238,6 +239,82 @@ def main():
         run_guard(root, "Edit", {"file_path": src})
         cases.append(("heartbeat: dropped on enforced invocation",
                       hb.is_file() and "phase=IMPLEMENT" in hb.read_text(encoding="utf-8")))
+
+        # ---- PRD-003: sprint-state transition validation ----
+        ss_path = str(root / ".board" / "sprint-state.md")
+
+        def ss(phase, gate="--", task="TST-1"):
+            return (f"# Sprint State\n## Current Task\n- **Task ID**: {task}\n"
+                    f"- **Phase**: {phase}\n- **Quality Gate**: {gate}\n")
+
+        def write_state(tool="Write", **ti):
+            return run_guard(root, tool, ti)
+
+        set_state("IDLE")
+        cases.append(("transition: IDLE->IMPLEMENT illegal jump denied",
+                      write_state(file_path=ss_path, content=ss("IMPLEMENT"))[0] is True))
+        cases.append(("transition: IDLE->TRIAGE legal allowed",
+                      write_state(file_path=ss_path, content=ss("TRIAGE"))[0] is False))
+        cases.append(("transition: same-phase field update allowed",
+                      write_state(file_path=ss_path, content=ss("IDLE"))[0] is False))
+        cases.append(("transition: IDLE->BLOCKED allowed (escalate)",
+                      write_state(file_path=ss_path, content=ss("BLOCKED"))[0] is False))
+
+        # artifact precondition: PLAN->IMPLEMENT needs PLAN.md + acs.json
+        (root / ".board" / "sprint-state.md").write_text(ss("PLAN"), encoding="utf-8")
+        cases.append(("transition: PLAN->IMPLEMENT without artifacts denied",
+                      write_state(file_path=ss_path, content=ss("IMPLEMENT"))[0] is True))
+        (root / "PLAN.md").write_text("plan", encoding="utf-8")
+        (root / "docs" / "specs").mkdir(parents=True, exist_ok=True)
+        (root / "docs" / "specs" / "TST-1-acs.json").write_text("{}", encoding="utf-8")
+        cases.append(("transition: PLAN->IMPLEMENT with artifacts allowed",
+                      write_state(file_path=ss_path, content=ss("IMPLEMENT"))[0] is False))
+
+        # phase blanking during an active task -> denied
+        (root / ".board" / "sprint-state.md").write_text(ss("IMPLEMENT"), encoding="utf-8")
+        cases.append(("transition: blanking active Phase denied",
+                      write_state(file_path=ss_path, content="# Sprint State\n- **Phase**: \n")[0] is True))
+
+        # forged Quality Gate PASS without a report -> denied; with report -> allowed
+        (root / ".board" / "sprint-state.md").write_text(ss("TEST_VERIFY"), encoding="utf-8")
+        cases.append(("transition: forged Gate=PASS without report denied",
+                      write_state(file_path=ss_path, content=ss("TEST_VERIFY", "PASS"))[0] is True))
+        (root / "docs" / "reports").mkdir(parents=True, exist_ok=True)
+        (root / "docs" / "reports" / "TST-1-quality.md").write_text("q", encoding="utf-8")
+        cases.append(("transition: Gate=PASS with report on disk allowed",
+                      write_state(file_path=ss_path, content=ss("TEST_VERIFY", "PASS"))[0] is False))
+
+        # Edit-tool reconstruction: an illegal Phase edit is caught
+        (root / ".board" / "sprint-state.md").write_text(ss("IDLE"), encoding="utf-8")
+        cases.append(("transition: Edit IDLE->FINISH illegal denied",
+                      write_state(tool="Edit", file_path=ss_path,
+                                  old_string="- **Phase**: IDLE",
+                                  new_string="- **Phase**: FINISH")[0] is True))
+
+        # ---- PRD-003: mechanical board lock ----
+        lock = root / ".board" / "board.lock"
+        holder = root / ".state" / "lock-holder"
+        holder.parent.mkdir(parents=True, exist_ok=True)
+        (root / ".board" / "sprint-state.md").write_text(ss("IMPLEMENT"), encoding="utf-8")
+        import time as _t
+        fresh = f"holder=other-999\nepoch={_t.time():.3f}\n"
+        lock.write_text(fresh, encoding="utf-8")
+        holder.write_text("me-111", encoding="utf-8")
+        cases.append(("lock: foreign fresh lock denies board write",
+                      write_state(file_path=str(root / ".board" / "tasks.md"), content="x")[0] is True))
+        holder.write_text("other-999", encoding="utf-8")
+        cases.append(("lock: own lock allows board write",
+                      write_state(file_path=str(root / ".board" / "tasks.md"), content="x")[0] is False))
+        lock.write_text(f"holder=other-999\nepoch={_t.time()-9999:.3f}\n", encoding="utf-8")
+        holder.write_text("me-111", encoding="utf-8")
+        cases.append(("lock: stale foreign lock ignored",
+                      write_state(file_path=str(root / ".board" / "tasks.md"), content="x")[0] is False))
+        lock.unlink()
+        cases.append(("lock: no lock allows board write",
+                      write_state(file_path=str(root / ".board" / "tasks.md"), content="x")[0] is False))
+        holder.unlink()
+        # reset a clean IMPLEMENT state for any trailing cases
+        set_state("IMPLEMENT")
 
         # garbage stdin never blocks
         env = dict(os.environ); env["CLAUDE_PROJECT_DIR"] = str(root)

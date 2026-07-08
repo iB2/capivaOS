@@ -107,6 +107,8 @@ claims and code cannot drift apart without failing CI):
 | **Phase guard: PR gate** <!-- enforced: pr-create-gate --> | `gh pr create` outside FINISH/VERIFY_FINISH or without a passing quality-gate status |
 | **Phase guard: human-only files** <!-- enforced: human-only-files --> | Agent writes, in every phase, to `.board/approval-policy.md`, the kill-switch marker, dev-mode `.claude/settings.json` (hook registration), and root `CLAUDE.md` (auto-loaded instructions) |
 | **Phase guard: merge verbs** <!-- enforced: merge-verbs --> | `gh pr merge` and `git push` targeting the default branch, in every phase and mode (ADR-0014 never-list item 1) |
+| **Phase guard: state transitions** <!-- enforced: sprint-state-transitions --> | Illegal Phase jumps in `sprint-state.md`, a forged `Quality Gate: PASS` with no report on disk, and Phase-blanking — the state file the guard trusts is no longer freely rewritable (ADR-0015) |
+| **Phase guard: board lock** <!-- enforced: board-lock --> | Board writes held by another live holder (mechanical `board_lock.py`, atomic O_EXCL) |
 | **Tool-restricted agents** (platform, ADR-0012) <!-- enforced: agent-allowlists --> | qa and gate-judge are read-only *by construction* — they cannot modify what they review |
 
 Also mechanical (persistence, not denial): sprint state on disk + PreCompact/Stop
