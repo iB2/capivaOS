@@ -10,8 +10,9 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
   - `gh pr create`                           -> only when Phase = FINISH or
     VERIFY_FINISH (fast lane, ADR-0010) and Quality Gate is PASS /
     ACCEPTED_SOFT_FAIL
-  - .board/approval-policy.md                -> agent writes DENIED in every
-    phase (ADR-0014 self-licensing prevention; humans edit it directly)
+  - human-only files (.board/approval-policy.md, .state/phase-guard-off)
+    -> agent writes DENIED in every phase (ADR-0014 self-licensing
+    prevention; humans edit/create them directly)
 
 Pipeline artifacts (.board/, docs/, .claude/, templates/, PLAN.md, root *.md)
 are writable in every phase — the pipeline itself produces them.
@@ -23,12 +24,15 @@ sprint-state.json — a dual file would drift from the markdown (ADR-0008).
 Fail-open: if sprint-state.md is missing or unparseable, the guard allows the
 call and prints a warning to stderr. It must never brick a project.
 
-Escape hatch (both logged to stderr):
+Escape hatch (both logged to stderr, both HUMAN-only by construction):
   - env  CAPIVA_PHASE_GUARD=off  — must be set in Claude Code's own environment
     at launch (the hook is spawned by Claude Code, so per-command env vars in a
     shell tool call cannot reach it)
-  - file .state/phase-guard-off  — create to disable mid-session, delete to
-    re-enable; gitignored, explicit, auditable
+  - file .state/phase-guard-off  — a HUMAN creates it from their own terminal
+    to disable mid-session, deletes it to re-enable; gitignored, explicit,
+    auditable. Agent writes to this marker are DENIED in every phase (it is a
+    HUMAN_ONLY_FILE — a guard whose off-switch is agent-writable enforces
+    nothing; the exact self-licensing class ADR-0014 exists to prevent)
 
 Keep the field parser in sync with context-persistence.py (same format).
 """
@@ -62,10 +66,25 @@ TEST_PATH_RE = re.compile(
 PASSING_GATES = {"PASS", "ACCEPTED_SOFT_FAIL"}
 
 # Human-only files: agent writes denied in EVERY phase (ADR-0014 self-licensing
-# prevention). The approval policy is the delegated portion of Law 5 — an agent
-# that can edit it can grant itself permissions. Checked BEFORE the
-# always-allowed dirs so .board's general writability doesn't bypass it.
-HUMAN_ONLY_FILES = (".board/approval-policy.md",)
+# prevention), each with its own deny message. The approval policy is the
+# delegated portion of Law 5 — an agent that can edit it can grant itself
+# permissions. The kill-switch marker is the guard's own off-switch — an agent
+# that can write it can disable ALL enforcement for the session. Checked BEFORE
+# the always-allowed dirs so .board/.state general writability doesn't bypass.
+HUMAN_ONLY_FILES = {
+    ".board/approval-policy.md": (
+        "Phase guard: .board/approval-policy.md is human-authored law "
+        "(ADR-0014). Agents may not edit it in any phase — propose the "
+        "change as an escalation in .board/approvals.md instead."
+    ),
+    ".state/phase-guard-off": (
+        "Phase guard: .state/phase-guard-off is the guard's own kill switch. "
+        "Agents may not create or edit it in any phase (ADR-0014 "
+        "self-licensing prevention). If you believe enforcement must be "
+        "disabled, stop and ask the human — they create the marker from "
+        "their own terminal."
+    ),
+}
 # Fast lane (ADR-0010): VERIFY_FINISH combines TEST_VERIFY + FINISH.
 TEST_WRITE_PHASES = {"TEST_VERIFY", "VERIFY_FINISH"}
 PR_PHASES = {"FINISH", "VERIFY_FINISH"}
@@ -126,11 +145,7 @@ def _check_file_write(tool_input: dict, phase: str):
     try:
         rel = str(path.resolve().relative_to(PROJECT_ROOT)).replace("\\", "/")
         if rel in HUMAN_ONLY_FILES:
-            _deny(
-                "Phase guard: .board/approval-policy.md is human-authored law "
-                "(ADR-0014). Agents may not edit it in any phase — propose the "
-                "change as an escalation in .board/approvals.md instead."
-            )
+            _deny(HUMAN_ONLY_FILES[rel])
     except ValueError:
         pass
     if _is_always_allowed(path):

@@ -116,6 +116,20 @@ def main():
         cases.append(("IMPLEMENT: deny approval-policy write (self-licensing)", run_guard(root, "Edit", {"file_path": policy})[0] is True))
         cases.append(("IMPLEMENT: other board writes still allowed", run_guard(root, "Write", {"file_path": str(root / ".board" / "tasks.md")})[0] is False))
 
+        # kill-switch marker protection (AUD-003 / ADR-0014): the guard's own
+        # off-switch is agent-unwritable in EVERY phase — .state general
+        # writability must not bypass it
+        marker = str(root / ".state" / "phase-guard-off")
+        set_state("IDLE")
+        cases.append(("IDLE: deny kill-switch marker write", run_guard(root, "Write", {"file_path": marker})[0] is True))
+        set_state("GRILL_SPEC")
+        cases.append(("GRILL_SPEC: deny kill-switch marker write", run_guard(root, "Edit", {"file_path": marker})[0] is True))
+        set_state("IMPLEMENT")
+        cases.append(("IMPLEMENT: deny kill-switch marker write (self-licensing)", run_guard(root, "Write", {"file_path": marker})[0] is True))
+        cases.append(("IMPLEMENT: other .state writes still allowed", run_guard(root, "Write", {"file_path": str(root / ".state" / "session-state.md")})[0] is False))
+        set_state("FINISH", "PASS")
+        cases.append(("FINISH+PASS: deny kill-switch marker write", run_guard(root, "Write", {"file_path": marker})[0] is True))
+
         # fail-open: missing state file
         (root / ".board" / "sprint-state.md").unlink()
         denied, rc, err = run_guard(root, "Edit", {"file_path": src})
