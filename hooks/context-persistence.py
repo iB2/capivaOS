@@ -107,7 +107,7 @@ def _has_manual_handover() -> bool:
 
 
 def _snapshot_board():
-    """Copy the full board files to .state/board-snapshot/ (LOOP-004).
+    """Copy the full board files to .state/board-snapshot/.
 
     The live board is untracked single-copy state; an accidental deletion is
     unrecoverable without this. Best-effort, never blocks a save."""
@@ -123,7 +123,7 @@ def _snapshot_board():
 
 
 def _bump_compaction_count():
-    """Increment .state/compaction-count (AUD-014). The '2 auto-compactions =
+    """Increment .state/compaction-count. The '2 auto-compactions =
     mandatory handover' rule was self-observed — the model had to count events
     it cannot reliably perceive. This file is the mechanical counter;
     session_context injects it (compact) and resets it (startup/clear)."""

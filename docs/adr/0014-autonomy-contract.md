@@ -162,10 +162,10 @@ Two modes, one contract:
 
 ---
 
-## Amendment (2026-07-08 — AUD epic, external audit remediation)
+## Amendment (2026-07-08 — external code review follow-up)
 
-Three contract clarifications, each closing a gap the 2026-07-08 external
-audit surfaced (skills-pipeline audit §1.3, §1.4, §3.1; claims register #18):
+Three contract clarifications, each closing a gap a 2026-07 external code
+review surfaced:
 
 1. **The budget unit is phase executions, canonically `Loop Phase Budget`.**
    The original text said "token budget"; no token counter exists in Claude
@@ -174,8 +174,8 @@ audit surfaced (skills-pipeline audit §1.3, §1.4, §3.1; claims register #18):
    layer and `session_context.py` reading `Loop Token Budget` — a field the
    driver never writes — so the post-compaction [AUTO_LOOP_RESUME] injection
    degraded to its fallback. Field name is now `Loop Phase Budget`
-   everywhere; harness_lint's field-parity check (HARN-005, delivered with
-   this amendment) asserts hooks only read fields the registry documents.
+   everywhere; harness_lint's field-parity check (delivered with this
+   amendment) asserts hooks only read fields the registry documents.
 
 2. **The interlocutor carve-out for fast-lane specs.** Never-list item (3)
    escalates specs "produced without a human interlocutor" — and every
@@ -188,7 +188,7 @@ audit surfaced (skills-pipeline audit §1.3, §1.4, §3.1; claims register #18):
    AC escalates. The grant now means what the template says it means.
 
 3. **Never-list item (1) is hook-enforced.** "The merge decision" was
-   prompt-level at 1.1.0 (the audit's sharpest finding). The phase guard now
+   prompt-level at 1.1.0 (the review's sharpest finding). The phase guard now
    denies `gh pr merge` and `git push` targeting the default branch in every
    phase and mode; web UI / MCP routes remain covered by branch protection
    (the LOOP-002 prerequisite). The contract line moved from prose to code,

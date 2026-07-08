@@ -12,7 +12,7 @@ Checks:
   2. Repo-relative file references (docs/..., templates/..., .claude/...)
      in docs point at files that exist. Plugin-root references carrying a
      CREATION placeholder (NNNN, 000N, TASK-ID) are write-intent into the
-     read-only plugin cache and always flagged (AUD-007).
+     read-only plugin cache and always flagged.
   3. DESIGN.md's ADR index and docs/adr/*.md agree in BOTH directions.
   4. Every blueprint directory is mentioned in CLAUDE.md, README.md, SCOPE.md.
   5. The three blueprint reference.md files share an IDENTICAL §-section set,
@@ -24,31 +24,33 @@ Checks:
      identical plugin/marketplace-entry names, semver version in plugin.json
      ONLY (single version source), self-referencing "./" source.
   8. Board dependency graphs (.board/tasks.md, live or project-template):
-     every Depends ID exists on that board; the graph is acyclic (LOOP-005).
+     every Depends ID exists on that board; the graph is acyclic.
   9. Agent-roster parity: every agents/*.md is named in README.md,
-     rules/laws.md and docs/SCOPE.md (AUD-006 - 5 agents shipped while the
+     rules/laws.md and docs/SCOPE.md (- 5 agents shipped while the
      entry docs documented 3).
  10. Personal absolute paths (C:/Users/<name>, /Users/, /home/) must not
      ship; the placeholder form C:/Users/<you>/ is the convention.
  11. Bare skill references inside hooks/*.py string literals - deny messages
      said "Run /sprint" while the doc surface is /capiva:*; the .md-only scan
      could not see them.
- 12. Field parity (HARN-005): every sprint-state field a hook reads exists in
+ 12. Field parity: every sprint-state field a hook reads exists in
      the rules/state-management.md registry - hooks reading fields nothing
-     writes degrade silently (the Loop Token/Phase Budget bug, AUD-009).
- 13. Claims parity (AUD-011): the "mechanically enforced" surfaces declared
+     writes degrade silently (the Loop Token/Phase Budget bug).
+ 13. Claims parity: the "mechanically enforced" surfaces declared
      by ENFORCED_SURFACES in phase_guard.py each carry their
      <!-- enforced: X --> marker in README.md AND SECURITY.md, and no marker
      names an undeclared surface.
- 14. Quantitative-claim parity (AUD-018): SECURITY.md's "~N lines" figure
+ 14. Quantitative-claim parity: SECURITY.md's "~N lines" figure
      stays within +/-15% of the real wc -l over hooks/*.py.
- 15. Private board IDs (LOOP/CAP/AUD-n) must not appear in skills/, rules/,
-     agents/ - adopters cannot resolve this repo's own task IDs (AUD-020).
+ 15. Private board IDs (LOOP/CAP/AUD-n) must not appear in shipped content:
+     skills/, rules/, agents/, root public docs, hook and script code -
+     adopters cannot resolve this repo's own task IDs. docs/adr/ is the
+     documented exception (design history cites incidents as provenance).
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
   python3 scripts/harness_lint.py --self-test  # verify the linter catches seeded drift
-  python3 scripts/harness_lint.py --check-blueprint <dir>  # validate a custom blueprint (AUD-015)
+  python3 scripts/harness_lint.py --check-blueprint <dir>  # validate a custom blueprint
 
 Scanned files (plugin layout, ADR-0013): README.md, rules/*.md (incl.
 laws.md), skills/*/SKILL.md, agents/*.md, docs/DESIGN.md, docs/SCOPE.md,
@@ -107,14 +109,14 @@ PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your
 # Tokens that denote FILE CREATION (a numbering pattern) rather than
 # selection among shipped files (<name>, *). A plugin-root ref carrying
 # one is an instruction to create a file inside the read-only plugin
-# cache — always a defect (AUD-007: the ADR write-path bug hid exactly
+# cache — always a defect (the ADR write-path bug hid exactly
 # inside this exception; plugin update silently destroys such files).
 CREATION_TOKENS = ("NNNN", "000N", "N-slug", "DEV-NNN", "TASK-ID")
 PERSONAL_PATH_RE = re.compile(r"(?:C:\\+Users\\+|/Users/|/home/)(?!<)[A-Za-z0-9_.$-]+")
 ACS_STATUSES = {"pending", "pass", "fail"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
-# The blueprint authoring contract (AUD-015): every reference.md — shipped or
+# The blueprint authoring contract: every reference.md — shipped or
 # custom — must carry exactly this §-section set. Single source of truth for
 # check 5 (shipped parity) and --check-blueprint (custom authoring). Changing
 # it is a schema change: bump + migration row + all shipped blueprints move
@@ -146,7 +148,7 @@ DEPENDS_RE = re.compile(r"^\s*- \*\*Depends\*\*:\s*(.+)$", re.MULTILINE)
 
 
 def lint_board_dependencies(board: Path, root: Path):
-    """Check 8 (LOOP-005): Depends IDs resolve on-board; graph is acyclic."""
+    """Check 8: Depends IDs resolve on-board; graph is acyclic."""
     findings = []
     try:
         text = board.read_text(encoding="utf-8")
@@ -296,7 +298,7 @@ def lint_acs_file(path: Path, root: Path):
 
 def check_blueprint(path: Path):
     """Validate one blueprint directory against the authoring contract
-    (AUD-015). Used by --check-blueprint <dir> — the command /capiva:init
+   . Used by --check-blueprint <dir> — the command /capiva:init
     runs when the adopter configures a custom capiva-blueprints/<name>/."""
     findings = []
     ref = path / "reference.md"
@@ -421,7 +423,7 @@ def lint(root: Path):
                 findings.append(f"{doc_rel}: blueprint '{bp.name}' exists but is not mentioned")
 
     # 9. agent-roster parity: every shipped agent named in the three entry
-    #    docs (mirror of check 4) — AUD-006: 5 agents shipped, 3 documented
+    #    docs (mirror of check 4) — 5 agents shipped, 3 documented
     agents = sorted(p.stem for p in (root / "agents").glob("*.md")) if (root / "agents").is_dir() else []
     for doc_rel in ("README.md", "rules/laws.md", "docs/SCOPE.md"):
         doc = root / doc_rel
@@ -432,7 +434,7 @@ def lint(root: Path):
             if name not in text:
                 findings.append(f"{doc_rel}: agent '{name}' exists but is not mentioned")
 
-    # 10. personal absolute paths must not ship (AUD-006); the <you>
+    # 10. personal absolute paths must not ship; the <you>
     #     placeholder form is exempt via the (?!<) lookahead
     personal_scan = list(all_text.items()) + [
         (f, f.read_text(encoding="utf-8", errors="replace"))
@@ -465,7 +467,7 @@ def lint(root: Path):
             continue
         section_sets[bp.name] = set(SECTION_HEADING_RE.findall(ref.read_text(encoding="utf-8", errors="replace")))
         for s in sorted(REQUIRED_BLUEPRINT_SECTIONS - section_sets[bp.name]):
-            findings.append(f"blueprints/{bp.name}: missing contract section {s} (AUD-015)")
+            findings.append(f"blueprints/{bp.name}: missing contract section {s}")
     if len(section_sets) > 1:
         names = sorted(section_sets)
         base_name, base = names[0], section_sets[names[0]]
@@ -499,7 +501,7 @@ def lint(root: Path):
         if board.is_file():
             findings.extend(lint_board_dependencies(board, root))
 
-    # 12. field parity (HARN-005 / ADR-0008 debt, delivered by AUD-009): every
+    # 12. field parity (the parity check ADR-0008 called for): every
     #     sprint-state field a hook reads must be documented in the
     #     rules/state-management.md registry. The Loop Token/Phase Budget bug
     #     hid exactly here: session_context read a field no skill wrote, and
@@ -524,9 +526,9 @@ def lint(root: Path):
                     findings.append(
                         f"{hook_file.relative_to(root).as_posix()}: reads sprint-state "
                         f"field {name!r} not documented in rules/state-management.md "
-                        f"(field-parity, HARN-005)")
+                        f"(field-parity)")
 
-    # 13. claims parity (AUD-011): the "mechanically enforced" claims in
+    # 13. claims parity: the "mechanically enforced" claims in
     #     README.md and SECURITY.md are lint-locked to ENFORCED_SURFACES in
     #     hooks/phase_guard.py (+ the platform-level agent allowlists).
     #     Every surface must carry its <!-- enforced: X --> marker in BOTH
@@ -550,14 +552,14 @@ def lint(root: Path):
                     findings.append(
                         f"{doc_rel}: enforced surface '{s}' has no "
                         f"<!-- enforced: {s} --> marker — a mechanical guarantee "
-                        f"is undocumented (claims parity, AUD-011)")
+                        f"is undocumented (claims parity)")
                 for s in sorted(found - known):
                     findings.append(
                         f"{doc_rel}: unknown enforced-surface marker '{s}' — the "
                         f"docs claim a mechanical guarantee the guard does not "
-                        f"declare (claims parity, AUD-011)")
+                        f"declare (claims parity)")
 
-    # 14. quantitative-claim parity (AUD-018): SECURITY.md's "~N lines of
+    # 14. quantitative-claim parity: SECURITY.md's "~N lines of
     #     dependency-free Python" must stay within ±15% of wc -l over
     #     hooks/*.py. The audit caught the figure stale once (claimed ~600,
     #     actual 523); post-1.2.0 it went stale the other way (712). Numbers
@@ -575,24 +577,38 @@ def lint(root: Path):
                 findings.append(
                     f"SECURITY.md: claims ~{claimed} lines of hook Python; actual "
                     f"is {actual} (>15% off) — update the figure; stale "
-                    f"quantitative claims are audit findings (AUD-018)")
+                    f"quantitative claims are audit findings")
 
-    # 15. private board IDs in shipped engine content (AUD-020): skills/,
+    # 15. private board IDs in shipped engine content: skills/,
     #     rules/ and agents/ are read by ADOPTERS — references to this repo's
-    #     own (untracked) board tasks (LOOP-006, CAP-003, ...) resolve to
+    #     own (untracked) board tasks resolve to
     #     nothing for them. Engine content anchors to shipped documents
     #     (ADRs, rules) or plain descriptions, never to private task IDs.
     PRIVATE_ID_RE = re.compile(r"\b(?:LOOP|CAP|AUD|HARN)-\d+\b")
-    for f, text in all_text.items():
+    # Scan set: engine .md dirs + hook/script code + the root public docs.
+    # docs/adr/ is the documented exception (design-history documents cite
+    # incident IDs as provenance); harness_lint.py itself is excluded (this
+    # check's own pattern and self-test seed live here by necessity).
+    private_scan = [(f, text) for f, text in all_text.items()
+                    if f.relative_to(root).as_posix().split("/")[0]
+                    in ("skills", "rules", "agents")]
+    for extra in ("CHANGELOG.md", "README.md", "SECURITY.md",
+                  "CONTRIBUTING.md", "docs/COMPARISON.md"):
+        fp = root / extra
+        if fp.is_file():
+            private_scan.append((fp, fp.read_text(encoding="utf-8", errors="replace")))
+    for pat in ("hooks/*.py", "hooks/tests/*.py", "scripts/*.py"):
+        for fp in sorted(root.glob(pat)):
+            if fp.name == "harness_lint.py":
+                continue
+            private_scan.append((fp, fp.read_text(encoding="utf-8", errors="replace")))
+    for f, text in private_scan:
         rel_f = f.relative_to(root).as_posix()
-        if not (rel_f.startswith("skills/") or rel_f.startswith("rules/")
-                or rel_f.startswith("agents/")):
-            continue
         for m in PRIVATE_ID_RE.finditer(text):
             findings.append(
-                f"{rel_f}: private board ID {m.group(0)} in shipped engine "
+                f"{rel_f}: private board ID {m.group(0)} in shipped "
                 f"content — adopters cannot resolve it; anchor to an ADR or "
-                f"describe the behavior instead (AUD-020)")
+                f"describe the behavior instead")
 
     return findings
 

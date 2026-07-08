@@ -1,27 +1,26 @@
 # ADR-0015: Sprint-State Transition Validation — the Guard Learns the State Machine
 
-**Status**: Proposed — design approved 2026-07-08 (AUD-013); implementation is a
+**Status**: Proposed — design approved 2026-07-08; implementation is a
 scheduled future task, deliberately NOT shipped with this document.
-**Context**: 2026-07-08 external audit, enforcement-code-audit §2.1 ("the
-enforcement file is inside the agent's writable surface — the core loophole")
-and product-eval P2-11.
+**Context**: a 2026-07 external code review's core-loophole finding: "the
+enforcement file is inside the agent's writable surface."
 
 ## Context
 
 The phase guard derives every decision from `.board/sprint-state.md` — and
 `.board/` is writable in every phase (it must be: the pipeline's artifacts live
-there). The audit stated the consequence precisely: *an agent that wants to
+there). The review stated the consequence precisely: *an agent that wants to
 write source out of phase simply sets `Phase: IMPLEMENT` first. The goalposts
 are agent-writable.* The same applies to `Quality Gate: PASS` before
 `gh pr create`, and to blanking the Phase field to trigger fail-open.
 
-AUD-003/004/005 closed the *other* self-licensing routes (kill-switch, merge
+1.2.0 closed the *other* self-licensing routes (kill-switch, merge
 verbs, shell writes), which makes this the last structural gap between
 "mechanically enforced" and "mechanically enforced unless the agent edits the
-state file". Today that gap is honestly labeled (AUD-011 re-segmentation);
+state file". Today that gap is honestly labeled (the claims re-segmentation);
 this ADR designs the wall that closes most of it.
 
-The audit's suggested remedy — hash/sign the Phase field — does not survive
+The review's suggested remedy — hash/sign the Phase field — does not survive
 design analysis: **there is nowhere to keep a secret the agent cannot reach.**
 The repo is the agent's workspace; `.state/` is agent-readable; the hook's own
 source is readable. A MAC without a secret is recomputable by the party it
@@ -45,7 +44,7 @@ crypto-shaped guarantees — worse than the honest label we ship today.
 ### Option B: Dual-state JSON mirror maintained by hooks
 A hook-owned `.state/phase-mirror.json` the guard cross-checks. **Rejected**:
 ADR-0008 already rejected dual state for the exact drift reason, and the
-mirror file sits in the same writable surface (until AUD-005's shell parity,
+mirror file sits in the same writable surface (until the shell-parity work,
 `touch`-able; after it, still `Write`-able unless HUMAN_ONLY — and if it is
 HUMAN_ONLY, hooks can't maintain it via tools either... as processes they
 can, but then a conflicted mirror reintroduces the ADR-0008 problem).
@@ -54,7 +53,7 @@ Complexity without closing the hole.
 ### Option C: The guard validates transitions + artifact preconditions (CHOSEN)
 Make `sprint-state.md` writes themselves a guarded surface. On every
 Edit/Write/MultiEdit whose target is `.board/sprint-state.md` (and, via
-AUD-005 shell parity, redirects to it), the guard parses old Phase (disk) and
+shell-write parity, redirects to it), the guard parses old Phase (disk) and
 new Phase (payload) and denies when:
 
 1. **Illegal transition** — the (old → new) pair is not in the legal-transition
@@ -72,7 +71,7 @@ new Phase (payload) and denies when:
    gating-vs-validation split, unchanged).
 3. **Phase-skip via blanking** — a new state whose Phase field is empty or
    missing while the old one was valid (the fail-open exploit becomes a deny;
-   genuine corruption still fails open on READ, per AUD-005's loud
+   genuine corruption still fails open on READ, per the loud
    conflict-marker path — the asymmetry is deliberate: reads fail open,
    writes fail closed).
 
@@ -84,7 +83,7 @@ see Consequences for why, stated honestly.
 ## Decision
 
 Option C. One new deny surface — `sprint-state-transitions` — added to
-`ENFORCED_SURFACES`, which by AUD-011's lint contract forces the README and
+`ENFORCED_SURFACES`, which by the claims-parity lint contract forces the README and
 SECURITY.md rows, the scenario coverage, and this ADR to land together.
 
 ## Consequences
@@ -96,7 +95,7 @@ SECURITY.md rows, the scenario coverage, and this ADR to land together.
 - **Honest residual, stated up front**: the hook cannot distinguish "the
   orchestrator records a human approval that happened in chat" from "the
   agent invents one" — approval fields stay structurally-encouraged (L3), and
-  the AUD-011 claims tables must keep saying so. The wall is around
+  the claims tables must keep saying so. The wall is around
   *sequence and evidence*, not *consent*.
 - Human edit paths must keep working: a human fixing state from their
   terminal never passes through PreToolUse (hooks see agent tools only), so
