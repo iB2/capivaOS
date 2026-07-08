@@ -57,7 +57,7 @@ def _loop_resume_block(state: str) -> str:
     cap = field("Loop Task Cap")
     return (
         f"\n[AUTO_LOOP_RESUME] An auto-mode loop was active when this context "
-        f"compacted. Progress: {done}/{cap} tasks; budget note: {field('Loop Token Budget', 'see driver defaults')}. "
+        f"compacted. Progress: {done}/{cap} tasks; budget note: {field('Loop Phase Budget', 'see driver defaults')}. "
         f"Re-read .board/sprint-state.md and .board/approvals.md, then CONTINUE the "
         f"loop from the current phase per the auto-mode contract (never re-run "
         f"completed phases; artifacts on disk are the source of truth). "

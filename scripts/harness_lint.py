@@ -10,7 +10,9 @@ Checks:
   1. Slash-command references (`/name`) in docs resolve to a skill directory
      in .claude/skills/ or a known Claude Code built-in.
   2. Repo-relative file references (docs/..., templates/..., .claude/...)
-     in docs point at files that exist.
+     in docs point at files that exist. Plugin-root references carrying a
+     CREATION placeholder (NNNN, 000N, TASK-ID) are write-intent into the
+     read-only plugin cache and always flagged (AUD-007).
   3. DESIGN.md's ADR index and docs/adr/*.md agree in BOTH directions.
   4. Every blueprint directory is mentioned in CLAUDE.md, README.md, SCOPE.md.
   5. The three blueprint reference.md files share an IDENTICAL §-section set,
@@ -23,6 +25,21 @@ Checks:
      ONLY (single version source), self-referencing "./" source.
   8. Board dependency graphs (.board/tasks.md, live or project-template):
      every Depends ID exists on that board; the graph is acyclic (LOOP-005).
+  9. Agent-roster parity: every agents/*.md is named in README.md,
+     rules/laws.md and docs/SCOPE.md (AUD-006 - 5 agents shipped while the
+     entry docs documented 3).
+ 10. Personal absolute paths (C:/Users/<name>, /Users/, /home/) must not
+     ship; the placeholder form C:/Users/<you>/ is the convention.
+ 11. Bare skill references inside hooks/*.py string literals - deny messages
+     said "Run /sprint" while the doc surface is /capiva:*; the .md-only scan
+     could not see them.
+ 12. Field parity (HARN-005): every sprint-state field a hook reads exists in
+     the rules/state-management.md registry - hooks reading fields nothing
+     writes degrade silently (the Loop Token/Phase Budget bug, AUD-009).
+ 13. Claims parity (AUD-011): the "mechanically enforced" surfaces declared
+     by ENFORCED_SURFACES in phase_guard.py each carry their
+     <!-- enforced: X --> marker in README.md AND SECURITY.md, and no marker
+     names an undeclared surface.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -64,7 +81,7 @@ PLUGIN_ROOT_REF_RE = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([\w./ -]+?\.(?:md|py
 # Paths that exist only in adopter projects at runtime (never in this repo)
 PROJECT_ARTIFACT_PREFIXES = (
     "docs/specs/", "docs/reports/", "docs/tech-context/", "docs/handover/",
-    "docs/cab/", "docs/release/", "docs/deviations/", ".board/",
+    "docs/cab/", "docs/release/", "docs/deviations/", ".board/", "docs/adr/",
     "capiva-blueprints/",
 )
 ADR_LINK_RE = re.compile(r"adr/(\d{4}-[\w-]+\.md)")
@@ -82,6 +99,13 @@ RUNTIME_ARTIFACTS = {
     ".claude/settings.json",  # adopter's project hook registration (dev/copy mode)
 }
 PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your-", "N-slug")
+# Tokens that denote FILE CREATION (a numbering pattern) rather than
+# selection among shipped files (<name>, *). A plugin-root ref carrying
+# one is an instruction to create a file inside the read-only plugin
+# cache — always a defect (AUD-007: the ADR write-path bug hid exactly
+# inside this exception; plugin update silently destroys such files).
+CREATION_TOKENS = ("NNNN", "000N", "N-slug", "DEV-NNN", "TASK-ID")
+PERSONAL_PATH_RE = re.compile(r"(?:C:\\+Users\\+|/Users/|/home/)(?!<)[A-Za-z0-9_.$-]+")
 ACS_STATUSES = {"pending", "pass", "fail"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
@@ -302,8 +326,14 @@ def lint(root: Path):
     for f, text in all_text.items():
         for m in PLUGIN_ROOT_REF_RE.finditer(text):
             ref = m.group(1)
-            if any(tok in ref for tok in PLACEHOLDER_TOKENS) or TASK_ID_RE.search(ref):
+            if any(tok in ref for tok in CREATION_TOKENS) or TASK_ID_RE.search(ref):
+                findings.append(
+                    f"{f.relative_to(root).as_posix()}: plugin-root reference with a "
+                    f"creation placeholder ({ref}) — write-intent into the read-only "
+                    f"plugin cache; project artifacts belong in project-relative paths")
                 continue
+            if any(tok in ref for tok in PLACEHOLDER_TOKENS):
+                continue  # selection placeholder (<name>, *, [) — read-time resolution
             if not (root / ref).exists():
                 findings.append(f"{f.relative_to(root)}: dead plugin-root reference {ref}")
 
@@ -355,6 +385,42 @@ def lint(root: Path):
             if bp.name not in text:
                 findings.append(f"{doc_rel}: blueprint '{bp.name}' exists but is not mentioned")
 
+    # 9. agent-roster parity: every shipped agent named in the three entry
+    #    docs (mirror of check 4) — AUD-006: 5 agents shipped, 3 documented
+    agents = sorted(p.stem for p in (root / "agents").glob("*.md")) if (root / "agents").is_dir() else []
+    for doc_rel in ("README.md", "rules/laws.md", "docs/SCOPE.md"):
+        doc = root / doc_rel
+        if not doc.is_file():
+            continue
+        text = doc.read_text(encoding="utf-8", errors="replace")
+        for name in agents:
+            if name not in text:
+                findings.append(f"{doc_rel}: agent '{name}' exists but is not mentioned")
+
+    # 10. personal absolute paths must not ship (AUD-006); the <you>
+    #     placeholder form is exempt via the (?!<) lookahead
+    personal_scan = list(all_text.items()) + [
+        (f, f.read_text(encoding="utf-8", errors="replace"))
+        for f in sorted(root.glob("blueprints/*/*.md"))]
+    for f, text in personal_scan:
+        for m in PERSONAL_PATH_RE.finditer(text):
+            findings.append(
+                f"{f.relative_to(root).as_posix()}: personal path {m.group(0)!r} — "
+                f"use the C:\\Users\\<you>\\ placeholder form")
+
+    # 11. bare skill references inside hook string literals — the .md-only
+    #     scan let "Run /sprint" ship inside phase_guard.py deny messages.
+    #     Lookarounds: not preceded by word/dot/colon chars (path segments
+    #     like .board/sprint-state.md), not followed by word/dot/dash
+    #     (sprint-state)
+    for hook_file in sorted(root.glob("hooks/*.py")):
+        text = hook_file.read_text(encoding="utf-8", errors="replace")
+        for name in sorted(bare_skills):
+            if re.search(rf"(?<![\w./`>:])/{re.escape(name)}(?![\w.-])", text):
+                findings.append(
+                    f"{hook_file.relative_to(root).as_posix()}: bare skill reference "
+                    f"/{name} (plugin skills are /{NAMESPACE}:{name})")
+
     # 5. blueprint §-section parity + referenced sections exist everywhere
     section_sets = {}
     for bp in blueprints:
@@ -396,6 +462,64 @@ def lint(root: Path):
         if board.is_file():
             findings.extend(lint_board_dependencies(board, root))
 
+    # 12. field parity (HARN-005 / ADR-0008 debt, delivered by AUD-009): every
+    #     sprint-state field a hook reads must be documented in the
+    #     rules/state-management.md registry. The Loop Token/Phase Budget bug
+    #     hid exactly here: session_context read a field no skill wrote, and
+    #     the post-compaction resume injection silently degraded.
+    registry = root / "rules" / "state-management.md"
+    if registry.is_file() and (root / "hooks").is_dir():
+        reg_text = registry.read_text(encoding="utf-8", errors="replace")
+        FIELD_CALL_RE = re.compile(
+            r"_parse_field\([^,]+,\s*\"([^\"]+)\"\)"
+            r"|\bfield\(\s*'([^']+)'"
+            r"|\bfield\(\s*\"([^\"]+)\"")
+        for hook_file in sorted((root / "hooks").glob("*.py")):
+            src = hook_file.read_text(encoding="utf-8", errors="replace")
+            names = {a or b or c for a, b, c in FIELD_CALL_RE.findall(src)}
+            parts = src.split("\\*\\*")  # inline compiled patterns: \*\*Name\*\*
+            for i in range(1, len(parts), 2):
+                seg = parts[i]
+                if re.fullmatch(r"[A-Za-z0-9 /-]{2,40}", seg):
+                    names.add(seg)
+            for name in sorted(names):
+                if name and name not in reg_text:
+                    findings.append(
+                        f"{hook_file.relative_to(root).as_posix()}: reads sprint-state "
+                        f"field {name!r} not documented in rules/state-management.md "
+                        f"(field-parity, HARN-005)")
+
+    # 13. claims parity (AUD-011): the "mechanically enforced" claims in
+    #     README.md and SECURITY.md are lint-locked to ENFORCED_SURFACES in
+    #     hooks/phase_guard.py (+ the platform-level agent allowlists).
+    #     Every surface must carry its <!-- enforced: X --> marker in BOTH
+    #     docs; every marker must name a known surface. Code and claims
+    #     cannot drift apart without failing CI.
+    guard_src_path = root / "hooks" / "phase_guard.py"
+    if guard_src_path.is_file():
+        guard_src = guard_src_path.read_text(encoding="utf-8", errors="replace")
+        m = re.search(r"ENFORCED_SURFACES\s*=\s*\(([^)]*)\)", guard_src)
+        if m:
+            surfaces = set(re.findall(r'"([^"]+)"', m.group(1)))
+            known = surfaces | {"agent-allowlists"}  # platform-level (ADR-0012)
+            MARKER_RE = re.compile(r"<!--\s*enforced:\s*([\w-]+)\s*-->")
+            for doc_rel in ("README.md", "SECURITY.md"):
+                doc = root / doc_rel
+                if not doc.is_file():
+                    continue
+                text = doc.read_text(encoding="utf-8", errors="replace")
+                found = set(MARKER_RE.findall(text))
+                for s in sorted(known - found):
+                    findings.append(
+                        f"{doc_rel}: enforced surface '{s}' has no "
+                        f"<!-- enforced: {s} --> marker — a mechanical guarantee "
+                        f"is undocumented (claims parity, AUD-011)")
+                for s in sorted(found - known):
+                    findings.append(
+                        f"{doc_rel}: unknown enforced-surface marker '{s}' — the "
+                        f"docs claim a mechanical guarantee the guard does not "
+                        f"declare (claims parity, AUD-011)")
+
     return findings
 
 
@@ -411,10 +535,13 @@ def self_test():
 
         (root / "README.md").write_text(
             "Run /discovery to generate docs. Also run /plan bare and /capiva:plan namespaced.\n"
-            "See docs/missing-file.md and blueprint alpha.\n",
+            "See docs/missing-file.md and blueprint alpha.\n"
+            "<!-- enforced: invented-surface -->\n",
             encoding="utf-8")
         (root / "rules" / "laws.md").write_text(
             "alpha beta and §ghost-section\n"
+            "Built at C:\\Users\\johndoe\\proj (personal path seed)\n"
+            "Create ${CLAUDE_PLUGIN_ROOT}/docs/adr/NNNN-slug.md when needed.\n"
             "Read ${CLAUDE_PLUGIN_ROOT}/rules/gone.md for details.\n"
             "Also read skills/plan/SKILL.md directly.\n", encoding="utf-8")
         (root / "docs" / "DESIGN.md").write_text(
@@ -422,6 +549,15 @@ def self_test():
             encoding="utf-8")
         (root / "docs" / "SCOPE.md").write_text("alpha only\n", encoding="utf-8")  # beta missing
         (root / "docs" / "adr" / "0001-real.md").write_text("# ADR-0001\n", encoding="utf-8")
+        (root / "agents").mkdir()
+        (root / "agents" / "rogue.md").write_text("# rogue agent\n", encoding="utf-8")
+        (root / "hooks").mkdir()
+        (root / "hooks" / "phase_guard.py").write_text(
+            'MSG = "Run /plan to continue; see .board/sprint-state.md"\n'
+            'PHASE = _parse_field(content, "Ghost Field")\n'
+            'ENFORCED_SURFACES = (\n    "ghost-surface",\n)\n', encoding="utf-8")
+        (root / "rules" / "state-management.md").write_text(
+            "| Field | Meaning |\n|---|---|\n| Phase | current phase |\n", encoding="utf-8")
         (root / "docs" / "adr" / "0003-unindexed.md").write_text("# ADR-0003\n", encoding="utf-8")
         (root / "blueprints" / "alpha" / "reference.md").write_text(
             "## §stack\n## §build-commands\n", encoding="utf-8")
@@ -479,6 +615,13 @@ def self_test():
             "expected \"./\"",
             "depends on unknown task BBB-9",
             "dependency cycle involving",
+            "agent 'rogue' exists but is not mentioned",
+            "personal path",
+            "hooks/phase_guard.py: bare skill reference /plan",
+            "write-intent into the read-only plugin cache",
+            "reads sprint-state field 'Ghost Field'",
+            "enforced surface 'ghost-surface' has no",
+            "unknown enforced-surface marker 'invented-surface'",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

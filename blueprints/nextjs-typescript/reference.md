@@ -5,7 +5,7 @@
 
 ## §project — Blueprint Project
 
-- **Path**: *(set per project — e.g., `C:\Users\bruno\Documents\DevProjects\my-nextjs-app\`)*
+- **Path**: *(set per project — e.g., `C:\Users\<you>\Documents\DevProjects\my-nextjs-app\`)*
 - **Type**: Next.js full-stack application with App Router
 - **Contents**: App routes, components, lib, API routes, tests, Dockerfile, CI pipeline
 - **Status**: Production-ready scaffold

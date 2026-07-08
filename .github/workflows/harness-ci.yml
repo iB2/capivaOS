@@ -71,9 +71,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Phase guard scenario tests
-        run: python hooks/tests/test_phase_guard.py
+        run: python hooks/tests/scenario_phase_guard.py
       - name: Plugin hook layer tests (dispatcher sh/cmd, session-context, no-op guards)
-        run: python hooks/tests/test_plugin_hooks.py
+        run: python hooks/tests/scenario_plugin_hooks.py
       - name: Context-persistence entry points smoke test
         shell: bash
         run: |

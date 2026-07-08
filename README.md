@@ -49,6 +49,15 @@ Runs the safe ritual: marketplace refresh → plugin update → `/reload-plugins
 
 Optional: enable per-marketplace auto-update in `/plugin` → Marketplaces → capiva. Releases are explicit semver — you only receive updates when a version is cut, never on raw pushes ([CHANGELOG.md](CHANGELOG.md)).
 
+## Uninstall
+
+```
+claude plugin uninstall capiva@capiva
+claude plugin marketplace remove capiva
+```
+
+What stays in your repo: `.board/`, `.state/`, `docs/specs|reports|tech-context|adr|handover/`, and two `.gitignore` lines. All of it is **inert without the plugin** — no hooks run, nothing is enforced; the files are plain markdown you can keep (they are your project's decision history) or delete. The plugin never writes outside your project (see [SECURITY.md](SECURITY.md)), so uninstalling is the complete exit — no cleanup owed.
+
 ## What This Does
 
 Instead of ad-hoc prompting, the harness enforces a strict pipeline via a state machine:
@@ -76,17 +85,38 @@ Each 🧑 is a blocking human checkpoint. Silence is NOT approval. The fast lane
 
 ### Enforcement Mechanisms
 
+Two honest tiers. **Mechanically enforced** — a hook or the platform denies
+the action; model compliance is not involved (this list is generated from
+`ENFORCED_SURFACES` in `hooks/phase_guard.py` and lint-checked against it —
+claims and code cannot drift apart without failing CI):
+
+| Mechanism | What It Denies |
+|-----------|----------------|
+| **Phase guard: source writes** (PreToolUse) <!-- enforced: source-writes-outside-implement --> | Source writes outside IMPLEMENT (tests also allowed in TEST_VERIFY/VERIFY_FINISH) — via Edit/MultiEdit/Write/NotebookEdit AND shell writes (redirects, `tee`, `sed -i`, `touch`) under tool parity |
+| **Phase guard: PR gate** <!-- enforced: pr-create-gate --> | `gh pr create` outside FINISH/VERIFY_FINISH or without a passing quality-gate status |
+| **Phase guard: human-only files** <!-- enforced: human-only-files --> | Agent writes to `.board/approval-policy.md` and to the guard's own kill-switch marker, in every phase |
+| **Phase guard: merge verbs** <!-- enforced: merge-verbs --> | `gh pr merge` and `git push` targeting the default branch, in every phase and mode (ADR-0014 never-list item 1) |
+| **Tool-restricted agents** (platform, ADR-0012) <!-- enforced: agent-allowlists --> | qa and gate-judge are read-only *by construction* — they cannot modify what they review |
+
+Also mechanical (persistence, not denial): sprint state on disk + PreCompact/Stop
+snapshots + SessionStart re-injection — pipeline position survives crashes and
+compaction. Known limits of the deny surface are documented plainly in
+[SECURITY.md](SECURITY.md): shell interception is best-effort; the GitHub web
+UI and MCP merge routes are covered by branch protection, not hooks.
+
+**Structurally encouraged** — the pipeline makes the disciplined path the easy
+path; these hold a compliant model, and are honestly NOT walls against a
+drifting one:
+
 | Mechanism | What It Prevents |
 |-----------|-----------------|
 | **Init gate** | Running the pipeline without project docs or blueprint config |
-| **Phase guards** | Skills running out of sequence |
-| **Phase guard hook** (PreToolUse) | Source edits outside IMPLEMENT; PRs outside FINISH — denied at the tool layer |
+| **Phase sequencing in skills** | Skills running out of sequence |
 | **Artifact gates** | Advancing without required outputs |
-| **acs.json contract** | ACs silently dropped or marked done without a test AND an end-to-end exercise |
-| **Tool-restricted agents** | The QA reviewer is read-only by construction — it cannot modify what it reviews |
-| **Board lock** | Concurrent writes corrupting state |
-| **Sprint state + SessionStart injection** | Session crashes or compaction losing pipeline position |
-| **Quality gates** | PRs without adequate test coverage |
+| **acs.json contract** | ACs silently dropped (the diff is visible; status flips are agent-attested — ADR-0009 names this residual gap) |
+| **Board lock protocol** | Concurrent writes corrupting state (convention, ADR-0003 — no lock code exists by design) |
+| **Human checkpoints** | Silence-as-approval (prompt discipline; the hook enforces only the recorded gate status at PR time) |
+| **Quality gates** | PRs below thresholds (agent-executed checks per the blueprint) |
 
 ## Skills
 
@@ -143,13 +173,29 @@ Each arrow = artifact verification. Missing artifact = skill refuses to run.
 
 ## Quality Gates
 
-| Metric | Target | Hard Fail |
-|--------|--------|-----------|
-| Unit coverage | >= 80% | < 60% |
-| Linter warnings (new code) | 0 | Any warning |
-| Quality gate (per blueprint) | Pass | Fail |
-| Integration tests | All pass | Any failure |
-| AC statuses in acs.json | All `pass` (test + e2e evidence) | Any `pending`/`fail` |
+Coverage is scoped (normative table: `rules/quality-gates.md` — below minimum = the gate fails):
+
+| Metric | Minimum (gate) | Target |
+|--------|----------------|--------|
+| Unit coverage — business logic | 80% | 90% |
+| Unit coverage — infrastructure | 60% | 75% |
+| Unit coverage — overall | 75% | 85% |
+| Linter warnings (new code) | 0 | 0 |
+| Integration tests | all pass | all pass |
+| AC statuses in acs.json | all `pass` (test + e2e evidence) | — |
+
+## What This Costs
+
+Figures from the ADR benchmarks ([ADR-0004](docs/adr/0004-token-bounded-execution.md), [ADR-0010](docs/adr/0010-fast-lane-pipeline.md)) — estimates as of 2026-07, not guarantees:
+
+| | Full lane | Fast lane (qualifying P2/P3) |
+|---|---|---|
+| Blocking human gates | 4 (spec, plan, quality, merge) plus the grill interview (typically 6–12 questions) | 2 (combined spec+plan, combined quality+merge) |
+| Pipeline token overhead | ~165K typical | ~75K typical |
+| Heaviest phases | IMPLEMENT ~60–100K, TEST_VERIFY ~40–70K | combined verify+finish |
+| Sessions per task | 1–2 (handover on complex tasks is expected, not a failure) | usually 1 |
+
+The overhead buys the artifact chain (spec, acs.json, PLAN.md, quality report) and the mechanical enforcement. If a task doesn't merit that, it doesn't belong in the pipeline — see [docs/SCOPE.md](docs/SCOPE.md) for what the harness is deliberately NOT for.
 
 ## Requirements
 
@@ -176,7 +222,7 @@ capivaOS/
 │   ├── plugin.json           # name: capiva, semver — the release contract
 │   └── marketplace.json      # self-referencing marketplace (source: ./)
 ├── skills/                   # the capiva:* pipeline phases + update ritual
-├── agents/                   # dev / qa / arch with platform-enforced tool allowlists
+├── agents/                   # dev / qa / arch / gate-judge / phase-runner — platform-enforced tool allowlists
 ├── hooks/                    # phase guard, context persistence, session injection
 │   ├── hooks.json            # plugin hook registration
 │   └── run-hook.cmd          # Windows/POSIX polyglot dispatcher (never blocks)

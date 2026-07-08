@@ -62,7 +62,7 @@ Sprint state: [IDLE | Resuming TASK-ID at phase IMPLEMENT | BLOCKED on...]
 2. Find the next ELIGIBLE task. Eligible = Status not Done/Blocked AND every ID
    in its **Depends** field is Done ("none" = no dependencies). A dependency
    that is Blocked counts as not-Done — skip and say why. Selection order is
-   DETERMINISTIC (required for unattended runs): priority (P0 > P1 > P2) →
+   DETERMINISTIC (required for unattended runs): priority (P0 > P1 > P2 > P3 — P3 runs only when P0-P2 are exhausted, but it DOES run: the fast lane's headline case is a P3 task) →
    dependency order (a task never precedes anything it depends on) → board
    order as the tiebreak.
 3. If the Depends graph contains a cycle: that is a BOARD DEFECT — report the
@@ -296,7 +296,7 @@ After completing a task:
 ### Step 6: Sprint End
 
 Sprint ends when:
-- **Board empty**: No more P0-P2 tasks
+- **Board empty**: No more P0-P3 tasks
 - **Human stop**: "stop", "pause", "enough", "para"
 - **Context handover**: /capiva:handover was triggered (sprint continues in next session)
 

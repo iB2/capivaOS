@@ -14,7 +14,10 @@
 - **Auto-Approve Fast-Lane Spec+Plan**: no
   <!-- yes = fast-lane-qualifying P3 tasks' combined spec+plan gate may be
        cleared by the gate-judge with zero anomalies. Set to "yes, P2 and P3"
-       to include P2. -->
+       to include P2. Interlocutor note (ADR-0014 amendment): your board ACs
+       ARE the human interlocutor for these specs — the judge verifies every
+       spec AC traces to your task's ACs and escalates anything untraceable,
+       so write board ACs you would stand behind. -->
 - **Auto-Approve Quality Gate**: no
   <!-- yes = quality gates where ALL mechanical gates PASS, every acs.json
        status is pass with e2e evidence, and the gate-judge finds zero

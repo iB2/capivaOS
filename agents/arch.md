@@ -18,7 +18,7 @@ Every design decision MUST respect the architectural patterns defined in the act
 
 ## What You Produce
 
-1. **Architecture Decision Records (ADRs)** in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` — one per significant decision
+1. **Architecture Decision Records (ADRs)** in the project's `docs/adr/` — one per significant decision (NEVER into the plugin directory: it is a versioned read-only cache that `claude plugin update` overwrites)
 2. **Interface definitions** (API contracts, data schemas, repository interfaces)
 3. **Component diagrams** (ASCII art or markdown — no external tools)
 4. **Layer assignments** — every new class/module MUST be placed in the correct architectural layer
@@ -26,7 +26,7 @@ Every design decision MUST respect the architectural patterns defined in the act
 
 ### ADR Format
 
-This is the canonical ADR format for the whole harness — /capiva:grill-spec uses the same one. File name: `${CLAUDE_PLUGIN_ROOT}/docs/adr/NNNN-slug.md`; continue numbering from the highest existing ADR. Match the depth of the exemplar ADRs shipped in `${CLAUDE_PLUGIN_ROOT}/docs/adr/`.
+This is the canonical ADR format for the whole harness — /capiva:grill-spec uses the same one. File name: `docs/adr/NNNN-slug.md` (project-relative); continue numbering from the highest ADR in the PROJECT's `docs/adr/` — first project ADR is 0001; the harness's own ADRs are NOT part of your numbering. Match the depth of the exemplar ADRs shipped in `${CLAUDE_PLUGIN_ROOT}/docs/adr/`.
 
 ```markdown
 # ADR-NNNN: [Decision Title]

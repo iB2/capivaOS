@@ -5,7 +5,7 @@ context-persistence.py — Automated session state persistence for the harness.
 Entry points:
   precompact  — save current state before compaction fires
   restore     — return saved state as additionalContext after compaction
-  stop        — save final state on session end (skip if /handover exists)
+  stop        — save final state on session end (skip if a /capiva:handover doc exists)
 
 Always exits 0, never blocks the session.
 

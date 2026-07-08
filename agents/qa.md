@@ -46,7 +46,7 @@ Attack each of these. Every finding must reference a specific file and line.
 |-------|-----------------|
 | AC coverage | Every acceptance criterion in the spec has corresponding code AND test |
 | Domain terms | CONTEXT.md terms used correctly — no synonyms, no "Avoid" column terms in code |
-| ADR compliance | No decisions contradict existing ADRs in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` |
+| ADR compliance | No decisions contradict the project's existing ADRs in `docs/adr/` |
 | Scope | No features beyond what the spec defined (over-engineering is a defect) |
 | Architecture compliance | Every new class/module is in the correct architectural layer (check reference.md §architecture) |
 | Blueprint compliance | Stack-specific patterns used correctly (check reference.md §qa-checklist for the full list) |
@@ -83,12 +83,13 @@ Attack each of these. Every finding must reference a specific file and line.
 
 Know the thresholds (you don't enforce them — /capiva:test-verify does — but flag if you see obvious gaps):
 
-| Metric | Target | Hard Fail |
-|--------|--------|-----------|
-| Business logic coverage | >= 80% | < 60% |
-| Linter/analyzer warnings (new) | 0 | Any |
-| Quality gate | Pass | Fail |
-| AC coverage | All covered | Any uncovered |
+| Metric | Minimum (gate) | Target |
+|--------|----------------|--------|
+| Business-logic coverage | 80% | 90% |
+| Infrastructure coverage | 60% | 75% |
+| Overall coverage | 75% | 85% |
+| Linter/analyzer warnings (new) | 0 | 0 |
+| AC coverage | all covered | all covered |
 
 If you see that a major code path has zero test coverage, flag it even if overall numbers look OK.
 

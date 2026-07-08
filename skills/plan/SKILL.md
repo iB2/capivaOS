@@ -47,7 +47,7 @@ Agent(
 ```
 
 The arch role produces:
-- ADRs for significant decisions → `${CLAUDE_PLUGIN_ROOT}/docs/adr/`
+- ADRs for significant decisions → the project's `docs/adr/` (never the plugin cache)
 - Layer placement table (every new class → correct project per blueprint §architecture)
 - Interface definitions (precise enough for dev role implementation)
 - Deviation Records for any blueprint non-compliance → `docs/deviations/`
@@ -70,7 +70,7 @@ The arch role produces:
 
 - Read `docs/specs/TASK-ID-spec.md` (the approved spec — NOT just the board task)
 - Read `docs/CONTEXT.md` for domain terms
-- Read `${CLAUDE_PLUGIN_ROOT}/docs/adr/` for architectural constraints
+- Read the project's `docs/adr/` for architectural constraints
 - Read the active blueprint's `reference.md` for stack-specific patterns
 - Scan the codebase for existing patterns to follow
 

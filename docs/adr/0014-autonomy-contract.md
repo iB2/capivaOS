@@ -159,3 +159,37 @@ Two modes, one contract:
 - Revisit when: judge false-escalation rates are measurable in practice
   (tighten policy), or platform-native gate delegation appears in Claude Code
   (collapse LOOP-006 onto it, as ADR-0012/0013 did with agents and plugins).
+
+---
+
+## Amendment (2026-07-08 — AUD epic, external audit remediation)
+
+Three contract clarifications, each closing a gap the 2026-07-08 external
+audit surfaced (skills-pipeline audit §1.3, §1.4, §3.1; claims register #18):
+
+1. **The budget unit is phase executions, canonically `Loop Phase Budget`.**
+   The original text said "token budget"; no token counter exists in Claude
+   Code, and the driver was already counting phases as the proxy (isolation
+   bounds each phase, so phases × bound ≈ tokens). The audit found the doc
+   layer and `session_context.py` reading `Loop Token Budget` — a field the
+   driver never writes — so the post-compaction [AUTO_LOOP_RESUME] injection
+   degraded to its fallback. Field name is now `Loop Phase Budget`
+   everywhere; harness_lint's field-parity check (HARN-005, delivered with
+   this amendment) asserts hooks only read fields the registry documents.
+
+2. **The interlocutor carve-out for fast-lane specs.** Never-list item (3)
+   escalates specs "produced without a human interlocutor" — and every
+   fast-lane spec in an unattended run is produced without one, which made
+   the `Auto-Approve Fast-Lane Spec+Plan` policy grant a dead option (the
+   judge always escalated it). Resolution: human-authored board ACs count as
+   the interlocutor — the human wrote the task and its acceptance criteria.
+   Condition: every spec AC must trace to the board task's ACs; the driver
+   includes the board task text in the judge's briefing, and any untraceable
+   AC escalates. The grant now means what the template says it means.
+
+3. **Never-list item (1) is hook-enforced.** "The merge decision" was
+   prompt-level at 1.1.0 (the audit's sharpest finding). The phase guard now
+   denies `gh pr merge` and `git push` targeting the default branch in every
+   phase and mode; web UI / MCP routes remain covered by branch protection
+   (the LOOP-002 prerequisite). The contract line moved from prose to code,
+   completing the pattern this ADR set for the policy file.

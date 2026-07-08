@@ -27,6 +27,23 @@ The PreToolUse hook necessarily *receives* tool inputs (commands, file paths)
 from Claude Code to make its allow/deny decision. It inspects them in memory
 and prints a decision; it stores and transmits nothing.
 
+## What is mechanically enforced
+
+Exactly five things — this list is lint-checked against `ENFORCED_SURFACES`
+in `hooks/phase_guard.py`, so it cannot silently over- or under-claim:
+
+1. Source writes outside IMPLEMENT (write tools + best-effort shell parity) <!-- enforced: source-writes-outside-implement -->
+2. `gh pr create` outside FINISH/VERIFY_FINISH with a passing gate <!-- enforced: pr-create-gate -->
+3. Agent writes to the two human-only files (approval policy, kill-switch) <!-- enforced: human-only-files -->
+4. The merge verbs: `gh pr merge`, `git push` to the default branch <!-- enforced: merge-verbs -->
+5. Read-only agents (qa, gate-judge) via platform tool allowlists <!-- enforced: agent-allowlists -->
+
+Everything else the harness does — phase sequencing, artifact gating, the
+acs.json contract, board lock, human checkpoints, quality thresholds — is
+*structurally encouraged*: it reliably holds a compliant model and is not
+claimed as a wall against an adversarial one. Claude Code's own permission
+system remains the security boundary.
+
 ## Official distribution channels
 
 Install only from:
@@ -71,6 +88,19 @@ open public issues for exploitable problems. You can expect an acknowledgment
 within 7 days.
 
 ## Scope notes
+
+**Shell write interception is best-effort by construction.** Since 1.2.0 the
+phase guard applies *tool parity* to shell commands: a `Bash`/`PowerShell`
+write to a path is denied exactly when a `Write` to that path would be. It
+detects `>`/`>>` redirects, `tee`, `sed -i`, and `touch` targets, after
+stripping quoted strings and heredoc bodies (so prose containing `>` can never
+false-deny — the trade-off is that a quoted target is invisible). What it
+deliberately does NOT claim to catch: `cp`/`mv`/`dd`, interpreter one-liners
+(`python -c "open(...)"`), encoded commands, or anything built from shell
+expansions. Perfect shell interception is impossible; partial and honest beats
+silent. The write-tools path (`Edit`/`MultiEdit`/`Write`/`NotebookEdit`) and
+the human-only files remain the hard surface, and Claude Code's own permission
+system remains the security boundary.
 
 - The harness is a development-process tool; it grants no capability beyond
   what Claude Code already has on your machine.
