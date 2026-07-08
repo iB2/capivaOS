@@ -122,9 +122,26 @@ def _snapshot_board():
         pass
 
 
+def _bump_compaction_count():
+    """Increment .state/compaction-count (AUD-014). The '2 auto-compactions =
+    mandatory handover' rule was self-observed — the model had to count events
+    it cannot reliably perceive. This file is the mechanical counter;
+    session_context injects it (compact) and resets it (startup/clear)."""
+    try:
+        f = STATE_DIR / "compaction-count"
+        try:
+            n = int(f.read_text(encoding="utf-8").strip() or 0)
+        except (OSError, ValueError):
+            n = 0
+        f.write_text(str(n + 1), encoding="utf-8")
+    except Exception:
+        pass  # never block a save
+
+
 def precompact():
     try:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
+        _bump_compaction_count()
         content = _gather_state()
         SESSION_STATE_FILE.write_text(content, encoding="utf-8")
         _snapshot_board()

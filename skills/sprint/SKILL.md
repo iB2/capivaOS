@@ -122,10 +122,14 @@ At every phase boundary, BEFORE invoking the next skill:
 
 ```
 CHECK context pressure:
-  IF 2+ auto-compactions have occurred this session → HANDOVER (mandatory)
-  IF 1 auto-compaction AND next phase is IMPLEMENT or TEST_VERIFY → HANDOVER
-  IF 1 auto-compaction AND next phase is PLAN, GRILL_SPEC, or FINISH → /compact with focus, continue
-  IF 0 auto-compactions → continue
+  Read the hook-maintained count: the [COMPACTION COUNT] block injected
+  after every compaction, or .state/compaction-count directly (0 if absent).
+  Never estimate it yourself — the counter is mechanical (AUD-014).
+
+  IF count >= 2 → HANDOVER (mandatory)
+  IF count == 1 AND next phase is IMPLEMENT or TEST_VERIFY → HANDOVER
+  IF count == 1 AND next phase is PLAN, GRILL_SPEC, or FINISH → /compact with focus, continue
+  IF count == 0 → continue
 
 COMPACT FOCUS (when compacting between phases):
   /compact Focus: [TASK-ID] Phase [current→next].
@@ -288,7 +292,7 @@ RESET Current Task fields to (none)
 
 After completing a task:
 
-1. **`/clear`** — mandatory context reset (this resets compaction counter)
+1. **`/clear`** — mandatory context reset (the SessionStart hook resets `.state/compaction-count` to 0)
 2. Re-read `.board/sprint-state.md` (should be IDLE)
 3. Re-read `.board/tasks.md` for updated state
 4. Return to Step 2 (pick next task)

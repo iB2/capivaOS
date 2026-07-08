@@ -166,6 +166,28 @@ def main():
             no_loop_ok = "AUTO_LOOP_RESUME" not in json.loads(out)["hookSpecificOutput"]["additionalContext"]
         cases.append(("session_context: compact + no loop -> no resume block", no_loop_ok))
 
+        # compaction counter (AUD-014): precompact increments; compact injects;
+        # startup resets — the "2 compactions = handover" rule becomes readable
+        cc_project = Path(td) / "ccount"
+        make_harness_project(cc_project, phase="IMPLEMENT")
+        run_script("context-persistence.py", ["precompact"], project_dir=cc_project)
+        run_script("context-persistence.py", ["precompact"], project_dir=cc_project)
+        cc_file = cc_project / ".state" / "compaction-count"
+        cases.append(("compaction counter: two precompacts -> 2",
+                      cc_file.is_file() and cc_file.read_text(encoding="utf-8").strip() == "2"))
+        rc, out, _ = run_script("session_context.py", [], stdin='{"source":"compact"}',
+                                project_dir=cc_project)
+        inj_ok = False
+        if rc == 0 and out.strip():
+            import json as _json
+            ctxc = _json.loads(out)["hookSpecificOutput"]["additionalContext"]
+            inj_ok = "Auto-compactions this session: 2" in ctxc and "COMPACTION COUNT" in ctxc
+        cases.append(("session_context: compact injects the hook-maintained count", inj_ok))
+        rc, out, _ = run_script("session_context.py", [], stdin='{"source":"startup"}',
+                                project_dir=cc_project)
+        cases.append(("session_context: startup resets the counter to 0",
+                      rc == 0 and cc_file.read_text(encoding="utf-8").strip() == "0"))
+
         (loop_project / ".board" / "harness-config.md").write_text(
             "- **Active Blueprint**: x\n", encoding="utf-8")
         rc, _, _ = run_script("context-persistence.py", ["stop"], project_dir=loop_project)
