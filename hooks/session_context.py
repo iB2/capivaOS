@@ -26,6 +26,7 @@ PROJECT_ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
 PLUGIN_ROOT = Path(os.environ.get("CLAUDE_PLUGIN_ROOT") or Path(__file__).resolve().parent.parent)
 
 SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
+COMPACTION_COUNT = PROJECT_ROOT / ".state" / "compaction-count"
 SCHEMA_STAMP = PROJECT_ROOT / ".board" / "harness-schema-version"
 
 CREDO = (
@@ -103,11 +104,27 @@ def main():
 
     parts = []
     if source == "compact":
+        try:
+            count = int(_read(COMPACTION_COUNT).strip() or 0)
+        except ValueError:
+            count = 0
         parts.append(f"[capivaOS credo reminder after compaction] {CREDO}")
+        parts.append(
+            f"[COMPACTION COUNT] Auto-compactions this session: {count} "
+            f"(hook-maintained). Per Law 6 / sprint Step 4a: 2+ means MANDATORY "
+            f"handover at the next phase boundary; 1 before a heavy phase "
+            f"(IMPLEMENT, TEST_VERIFY) also means handover.")
         resume = _loop_resume_block(state)
         if resume:
             parts.append(resume)
     else:
+        # fresh or cleared session: the compaction counter starts over
+        # (makes "/clear resets the compaction counter" mechanically true)
+        try:
+            if COMPACTION_COUNT.is_file():
+                COMPACTION_COUNT.write_text("0", encoding="utf-8")
+        except OSError:
+            pass
         laws = _read(PLUGIN_ROOT / "rules" / "laws.md")
         if laws:
             parts.append("# capivaOS — Active Harness Rules (injected by plugin)\n\n" + laws.strip())
