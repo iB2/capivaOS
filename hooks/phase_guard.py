@@ -25,7 +25,10 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
   - sprint-state.md Phase transitions -> validated against the legal
     full/fast-lane chain (ADR-0015); illegal jumps, forged Quality Gate =
     PASS without a report, and phase blanking are DENIED. The state file
-    the guard trusts is no longer freely rewritable by the constrained party
+    the guard trusts is no longer freely rewritable by the constrained party.
+    Write-tool routes only: shell writes to sprint-state can't be
+    content-reconstructed and get best-effort parity, not transition
+    validation (documented in SECURITY.md scope notes)
   - board writes under a live foreign board.lock -> DENIED (PRD-003
     mechanical lock; enforced only when board_lock.py is in use)
 
@@ -75,6 +78,10 @@ SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
 # On POSIX a non-executable/misdispatched hook fails before the .py runs,
 # so a fresh heartbeat is the mechanical signal that enforcement is alive.
 HEARTBEAT = PROJECT_ROOT / ".state" / "guard-heartbeat"
+# Guard on/off status (PRD-008): a kill-switch flip is an auditable event.
+# The run-log records the CHANGE (enforcing <-> off-env/off-marker), not
+# every disabled invocation — this file holds the last known status.
+GUARD_STATUS = PROJECT_ROOT / ".state" / "guard-status"
 RUN_LOG = PROJECT_ROOT / ".state" / "run-log.jsonl"
 BOARD_LOCK = PROJECT_ROOT / ".board" / "board.lock"
 LOCK_HOLDER = PROJECT_ROOT / ".state" / "lock-holder"
@@ -192,7 +199,12 @@ def _shell_write_targets(command: str):
     documented limits (SECURITY.md), not silently claimed coverage.
     """
     text = HEREDOC_BODY_RE.sub("\n", command)
-    text = QUOTED_RE.sub("", text)
+    # Replace quoted strings with a placeholder instead of DELETING them:
+    # deletion made `> "quoted" 2>/dev/null` collapse to `>  2>/dev/null`,
+    # and REDIRECT_RE captured the neighboring `2` as a write target — a
+    # live false deny (PRD-009). The placeholder keeps quoted targets
+    # invisible-by-design (fail-open, documented) without shifting tokens.
+    text = QUOTED_RE.sub("\x00", text)
     targets = [m.group(1) for m in REDIRECT_RE.finditer(text)]
     for seg in re.split(r"[;&|]", text):
         toks = seg.split()
@@ -207,7 +219,7 @@ def _shell_write_targets(command: str):
             if files:
                 targets.append(files[-1])  # sed expr is quoted (stripped); file is last
     return [t for t in targets
-            if t and not any(c in t for c in ("$", "`", "%"))]
+            if t and not any(c in t for c in ("$", "`", "%", "\x00"))]
 
 
 def _push_targets_default_branch(command: str) -> bool:
@@ -547,12 +559,28 @@ def _touch_heartbeat(phase: str):
         pass
 
 
+def _guard_status(status: str):
+    """Record the guard's on/off status; run-log the CHANGE only (PRD-008).
+    A kill-switch flip must leave a mechanical trace — but logging every
+    disabled invocation would flood an append-only log. Best-effort."""
+    try:
+        prev = GUARD_STATUS.read_text(encoding="utf-8").strip() if GUARD_STATUS.is_file() else ""
+        if prev != status:
+            GUARD_STATUS.parent.mkdir(parents=True, exist_ok=True)
+            GUARD_STATUS.write_text(status + "\n", encoding="utf-8")
+            _run_log("guard-status", status=status, previous=prev or "(none)")
+    except Exception:
+        pass
+
+
 def main():
     if os.environ.get("CAPIVA_PHASE_GUARD", "").lower() in ("off", "0", "false"):
         print("phase_guard: disabled via CAPIVA_PHASE_GUARD", file=sys.stderr)
+        _guard_status("off-env")
         _allow()
     if (PROJECT_ROOT / ".state" / "phase-guard-off").is_file():
         print("phase_guard: disabled via .state/phase-guard-off marker", file=sys.stderr)
+        _guard_status("off-marker")
         _allow()
 
     try:
@@ -573,6 +601,7 @@ def main():
         _allow()
     phase, gate, _task = state
     _touch_heartbeat(phase)
+    _guard_status("enforcing")
 
     if tool_name in WRITE_TOOLS:
         _check_file_write(tool_name, tool_input, phase)
