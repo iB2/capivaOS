@@ -107,7 +107,7 @@ DO NOT restart the pipeline from scratch. The work below has been completed and 
 |----------|------|--------|
 | Spec | docs/specs/TASK-ID-spec.md | ✅ Approved |
 | CONTEXT.md | docs/CONTEXT.md | ✅ Updated (N new terms) |
-| ADRs | ${CLAUDE_PLUGIN_ROOT}/docs/adr/000N-slug.md | ✅ Written |
+| ADRs | docs/adr/000N-slug.md | ✅ Written |
 | PLAN.md | PLAN.md | ✅ Approved |
 | Feature branch | feature/TASK-ID-slug | 🔶 4/7 tasks committed |
 | Quality report | — | ⬜ Not started |

@@ -46,7 +46,7 @@ Attack each of these. Every finding must reference a specific file and line.
 |-------|-----------------|
 | AC coverage | Every acceptance criterion in the spec has corresponding code AND test |
 | Domain terms | CONTEXT.md terms used correctly — no synonyms, no "Avoid" column terms in code |
-| ADR compliance | No decisions contradict existing ADRs in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` |
+| ADR compliance | No decisions contradict the project's existing ADRs in `docs/adr/` |
 | Scope | No features beyond what the spec defined (over-engineering is a defect) |
 | Architecture compliance | Every new class/module is in the correct architectural layer (check reference.md §architecture) |
 | Blueprint compliance | Stack-specific patterns used correctly (check reference.md §qa-checklist for the full list) |

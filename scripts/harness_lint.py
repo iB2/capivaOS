@@ -10,7 +10,9 @@ Checks:
   1. Slash-command references (`/name`) in docs resolve to a skill directory
      in .claude/skills/ or a known Claude Code built-in.
   2. Repo-relative file references (docs/..., templates/..., .claude/...)
-     in docs point at files that exist.
+     in docs point at files that exist. Plugin-root references carrying a
+     CREATION placeholder (NNNN, 000N, TASK-ID) are write-intent into the
+     read-only plugin cache and always flagged (AUD-007).
   3. DESIGN.md's ADR index and docs/adr/*.md agree in BOTH directions.
   4. Every blueprint directory is mentioned in CLAUDE.md, README.md, SCOPE.md.
   5. The three blueprint reference.md files share an IDENTICAL §-section set,
@@ -72,7 +74,7 @@ PLUGIN_ROOT_REF_RE = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([\w./ -]+?\.(?:md|py
 # Paths that exist only in adopter projects at runtime (never in this repo)
 PROJECT_ARTIFACT_PREFIXES = (
     "docs/specs/", "docs/reports/", "docs/tech-context/", "docs/handover/",
-    "docs/cab/", "docs/release/", "docs/deviations/", ".board/",
+    "docs/cab/", "docs/release/", "docs/deviations/", ".board/", "docs/adr/",
     "capiva-blueprints/",
 )
 ADR_LINK_RE = re.compile(r"adr/(\d{4}-[\w-]+\.md)")
@@ -90,6 +92,12 @@ RUNTIME_ARTIFACTS = {
     ".claude/settings.json",  # adopter's project hook registration (dev/copy mode)
 }
 PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your-", "N-slug")
+# Tokens that denote FILE CREATION (a numbering pattern) rather than
+# selection among shipped files (<name>, *). A plugin-root ref carrying
+# one is an instruction to create a file inside the read-only plugin
+# cache — always a defect (AUD-007: the ADR write-path bug hid exactly
+# inside this exception; plugin update silently destroys such files).
+CREATION_TOKENS = ("NNNN", "000N", "N-slug", "DEV-NNN", "TASK-ID")
 PERSONAL_PATH_RE = re.compile(r"(?:C:\\+Users\\+|/Users/|/home/)(?!<)[A-Za-z0-9_.$-]+")
 ACS_STATUSES = {"pending", "pass", "fail"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -311,8 +319,14 @@ def lint(root: Path):
     for f, text in all_text.items():
         for m in PLUGIN_ROOT_REF_RE.finditer(text):
             ref = m.group(1)
-            if any(tok in ref for tok in PLACEHOLDER_TOKENS) or TASK_ID_RE.search(ref):
+            if any(tok in ref for tok in CREATION_TOKENS) or TASK_ID_RE.search(ref):
+                findings.append(
+                    f"{f.relative_to(root).as_posix()}: plugin-root reference with a "
+                    f"creation placeholder ({ref}) — write-intent into the read-only "
+                    f"plugin cache; project artifacts belong in project-relative paths")
                 continue
+            if any(tok in ref for tok in PLACEHOLDER_TOKENS):
+                continue  # selection placeholder (<name>, *, [) — read-time resolution
             if not (root / ref).exists():
                 findings.append(f"{f.relative_to(root)}: dead plugin-root reference {ref}")
 
@@ -461,6 +475,7 @@ def self_test():
         (root / "rules" / "laws.md").write_text(
             "alpha beta and §ghost-section\n"
             "Built at C:\\Users\\johndoe\\proj (personal path seed)\n"
+            "Create ${CLAUDE_PLUGIN_ROOT}/docs/adr/NNNN-slug.md when needed.\n"
             "Read ${CLAUDE_PLUGIN_ROOT}/rules/gone.md for details.\n"
             "Also read skills/plan/SKILL.md directly.\n", encoding="utf-8")
         (root / "docs" / "DESIGN.md").write_text(
@@ -533,6 +548,7 @@ def self_test():
             "agent 'rogue' exists but is not mentioned",
             "personal path",
             "hooks/guard.py: bare skill reference /plan",
+            "write-intent into the read-only plugin cache",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

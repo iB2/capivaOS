@@ -44,7 +44,7 @@ the INTAKE format).
 - Read the task spec from sprint-state (Task ID → find in board or linked doc)
 - **Read `docs/specs/INTAKE-summary.md`** — load project scope, stakeholders, requirements, constraints as starting context
 - Read `docs/CONTEXT.md` for existing domain terms
-- Read `${CLAUDE_PLUGIN_ROOT}/docs/adr/` for existing architectural decisions
+- Read the project's `docs/adr/` for existing architectural decisions
 - Scan relevant source files referenced in the spec
 
 ### Step 2: Adversarial Interview
@@ -87,12 +87,12 @@ As domain terms crystallize, add to `docs/CONTEXT.md`:
 
 ### Step 5: Create ADRs
 
-Create `${CLAUDE_PLUGIN_ROOT}/docs/adr/NNNN-slug.md` ONLY when ALL THREE criteria are met:
+Create `docs/adr/NNNN-slug.md` (project-relative — NEVER into the plugin cache) ONLY when ALL THREE criteria are met:
 1. Hard to reverse (changing requires significant rework)
 2. Non-obvious (reasonable engineers would disagree)
 3. Real trade-offs (not just "best practice")
 
-**Numbering**: Continue from the highest existing ADR number in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` (list the directory — the harness ships with its own exemplar ADRs).
+**Numbering**: Continue from the highest existing ADR number in the PROJECT's `docs/adr/` (first project ADR = 0001). The harness's own ADRs in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` are exemplars — never part of the project's numbering.
 
 **Exemplars**: Read any of the shipped ADRs in `${CLAUDE_PLUGIN_ROOT}/docs/adr/` as gold-standard examples. Your ADRs must match this depth.
 

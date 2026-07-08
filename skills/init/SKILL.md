@@ -19,7 +19,7 @@ Copy from `${CLAUDE_PLUGIN_ROOT}/project-template/` into the project root.
 |--------------------|--------------------------|
 | `${CLAUDE_PLUGIN_ROOT}/project-template/.board/tasks.md` | `.board/tasks.md` |
 | `${CLAUDE_PLUGIN_ROOT}/project-template/.board/sprint-state.md` | `.board/sprint-state.md` |
-| `${CLAUDE_PLUGIN_ROOT}/project-template/docs/specs/.gitkeep` | `docs/specs/.gitkeep` (and reports/, tech-context/) |
+| `${CLAUDE_PLUGIN_ROOT}/project-template/docs/specs/.gitkeep` | `docs/specs/.gitkeep` (and reports/, tech-context/, adr/, handover/) |
 | `${CLAUDE_PLUGIN_ROOT}/project-template/gitignore-additions.txt` | APPEND to `.gitignore` (skip lines already present) |
 
 Then, if `docs/CONTEXT.md` does not exist, create the stub:

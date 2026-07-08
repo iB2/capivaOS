@@ -49,7 +49,7 @@ the predicate before writing anything (ALL must hold):
 ### Step 1: Load Context
 
 - Read the task's spec/AC from the board entry
-- Read `docs/CONTEXT.md` for domain terms; `${CLAUDE_PLUGIN_ROOT}/docs/adr/` for prior rulings
+- Read `docs/CONTEXT.md` for domain terms; the project's `docs/adr/` for prior rulings
 - Read the affected source files (the predicate guarantees they exist)
 - Read the active blueprint's `reference.md` §coding-standards and §test-stack
 
