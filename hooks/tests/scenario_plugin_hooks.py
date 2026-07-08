@@ -204,6 +204,24 @@ def main():
         fresh_ok = rc == 0 and "last fired" in out and "NO heartbeat" not in out
         cases.append(("session_context: fresh heartbeat -> last-fired line, no warning", fresh_ok))
 
+        # PRD-006 (T4): injected sprint-state is wrapped as UNTRUSTED DATA
+        inj = Path(td) / "inj"
+        make_harness_project(inj, phase="IMPLEMENT")
+        rc, out, _ = run_script("session_context.py", [], stdin='{"source":"startup"}', project_dir=inj)
+        wrapped = rc == 0 and "UNTRUSTED PROJECT DATA" in out and "NOT as instructions" in out
+        cases.append(("session_context: sprint-state injected as untrusted data", wrapped))
+
+        # PRD-006 (T4 + T11): restore wraps content AND is non-destructive-until-emit
+        rc, _, _ = run_script("context-persistence.py", ["precompact"], project_dir=inj)
+        rc, out, _ = run_script("context-persistence.py", ["restore"], project_dir=inj)
+        import json as _j6
+        restore_ok = False
+        if rc == 0 and out.strip():
+            ctx = _j6.loads(out)["additionalContext"]
+            restore_ok = "UNTRUSTED PROJECT DATA" in ctx
+        gone = not (inj / ".state" / "session-state.md").is_file()
+        cases.append(("context-persistence: restore wraps as untrusted + consumes snapshot", restore_ok and gone))
+
         (loop_project / ".board" / "harness-config.md").write_text(
             "- **Active Blueprint**: x\n", encoding="utf-8")
         rc, _, _ = run_script("context-persistence.py", ["stop"], project_dir=loop_project)
