@@ -87,7 +87,7 @@ gate + re-entry rule; recommended together with the notification recipe
 plugin itself never notifies over the network).
 
 ## Rules
-- **Never grill. Never merge. Never touch the policy file.** (Guard enforces the last two.)
+- **Never grill. Never merge. Never touch the policy file.** (The guard mechanically denies the last two in every phase: merge verbs — `gh pr merge`, `git push` to the default branch — and policy-file writes. Grilling is contract-level: auto mode skips un-specced full-lane tasks.)
 - **One stuck task never stalls the run** — park and continue.
 - **Every delegated decision is auditable** in Phase History with its basis.
 - **Attended mode is not affected by this skill's existence in any way.**

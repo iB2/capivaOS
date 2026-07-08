@@ -13,6 +13,9 @@ Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
   - human-only files (.board/approval-policy.md, .state/phase-guard-off)
     -> agent writes DENIED in every phase (ADR-0014 self-licensing
     prevention; humans edit/create them directly)
+  - merge verbs (`gh pr merge`; `git push` targeting the default branch)
+    -> DENIED in every phase and mode (ADR-0014 never-list item 1 — the
+    merge decision is never delegated to any agent)
 
 Pipeline artifacts (.board/, docs/, .claude/, templates/, PLAN.md, root *.md)
 are writable in every phase — the pipeline itself produces them.
@@ -89,6 +92,44 @@ HUMAN_ONLY_FILES = {
 TEST_WRITE_PHASES = {"TEST_VERIFY", "VERIFY_FINISH"}
 PR_PHASES = {"FINISH", "VERIFY_FINISH"}
 
+# Merge verbs (ADR-0014 never-list item 1): denied in EVERY phase and mode.
+# `gh pr merge` in any form; `git push` whose target resolves to the default
+# branch. Bare `git merge` is deliberately NOT matched — merging the default
+# branch INTO a feature branch is legitimate mid-IMPLEMENT work, and knowing
+# the direction would require running git inside the hook. Known limits
+# (documented in SECURITY.md): a bare `git push` on a checked-out default
+# branch, the GitHub web UI, and GitHub MCP tools are not interceptable here —
+# branch protection is the backstop for those routes.
+GH_PR_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b")
+GIT_PUSH_RE = re.compile(r"\bgit\s+push\b")
+DEFAULT_BRANCHES = {"main", "master"}
+
+
+def _push_targets_default_branch(command: str) -> bool:
+    """True if any `git push` segment of the command targets main/master.
+
+    Tokenizes each push segment (up to the next shell separator). A token
+    denies when it is the default branch itself, a refspec whose DESTINATION
+    is the default branch (HEAD:main, refs/heads/main), or --all/--mirror
+    (which push the default branch among everything else). A refspec whose
+    destination is elsewhere (main:backup) and branch names that merely
+    contain 'main' (feature/main-menu) do not match.
+    """
+    for m in GIT_PUSH_RE.finditer(command):
+        segment = re.split(r"[;&|]", command[m.end():])[0]
+        for tok in segment.split():
+            tok = tok.strip("'\"")
+            if tok.startswith("-"):
+                if tok in ("--all", "--mirror"):
+                    return True
+                continue
+            dst = tok.split(":", 1)[1] if ":" in tok else tok
+            if dst.startswith("refs/heads/"):
+                dst = dst[len("refs/heads/"):]
+            if dst in DEFAULT_BRANCHES:
+                return True
+    return False
+
 
 def _parse_field(content: str, field: str) -> str:
     m = re.search(rf"^- \*\*{re.escape(field)}\*\*:\s*(.+)$", content, re.MULTILINE)
@@ -164,6 +205,19 @@ def _check_file_write(tool_input: dict, phase: str):
 
 def _check_shell(tool_input: dict, phase: str, gate: str):
     command = tool_input.get("command", "")
+    if GH_PR_MERGE_RE.search(command):
+        _deny(
+            "Phase guard: `gh pr merge` is the merge decision — item 1 of the "
+            "ADR-0014 never-list. No agent may merge in any phase or mode. "
+            "The human merges from their own terminal or the GitHub UI."
+        )
+    if _push_targets_default_branch(command):
+        _deny(
+            "Phase guard: `git push` targeting the default branch "
+            "(main/master) is denied in every phase — changes land only via "
+            "reviewed pull requests (ADR-0014 never-list). Push a feature "
+            "branch and open the PR at FINISH instead."
+        )
     if re.search(r"\bgh\s+pr\s+create\b", command):
         if phase not in PR_PHASES:
             _deny(
