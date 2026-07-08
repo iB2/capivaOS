@@ -71,6 +71,11 @@ section (or with unexplained gaps) cannot be verdict PASS. See ADR-0009.
 | P2 | Automated review (Claude subagent) acceptable | Subagent |
 | P3-P4 | Self-review sufficient | Self |
 
+> Scope note: this table governs review BETWEEN micro-tasks during
+> IMPLEMENT. The end-of-task quality gate (after /capiva:test-verify) is a
+> human checkpoint in attended mode for EVERY priority; in auto mode it
+> routes per the approval policy (ADR-0014).
+
 **Review checklist**:
 - [ ] Tests cover the acceptance criteria
 - [ ] No business logic without corresponding test

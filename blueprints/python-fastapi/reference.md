@@ -609,7 +609,42 @@ disallow_untyped_defs = false
 
 ## §ci-cd — Pipeline Configuration
 
-### Azure Pipelines
+### GitHub Actions (default)
+
+`.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install (exact pins)
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Lint
+        run: ruff check .
+      - name: Types
+        run: mypy app/
+      - name: Tests + coverage
+        run: pytest --cov=app --cov-report=xml --cov-fail-under=75
+      - name: Build image
+        run: docker build -t app .
+```
+
+Same stages as the enterprise pipeline below; coverage floor matches the
+harness overall minimum (rules/quality-gates.md). Deploy jobs are
+environment-specific — add them per the Environment Progression table.
+
+### Azure Pipelines (enterprise)
 
 See blueprint project `azure-pipelines.yml`.
 
@@ -633,13 +668,13 @@ DEV (local) → UAT (staging) → Prod
 
 ### SDLC Compliance Mapping
 
-| Harness Phase | SDLC Phase | Artifact | Gate |
+| Harness Phase | SDLC Stage | Artifact | Gate |
 |--------------|-----------|----------|------|
-| `/grill-spec` | Requirements & Design | Spec document, CONTEXT.md, ADRs | Human approval |
-| `/plan` | Technical Design | PLAN.md, tech-context | Human approval |
-| `/implement` | Development | Feature branch, unit tests | Tests green |
-| `/test-verify` | QA & Verification | Quality report | Coverage + lint + type check |
-| `/finish` | Release | PR, board update | Human merge decision |
+| `/capiva:grill-spec` | Requirements & Design | Spec document, CONTEXT.md, ADRs | Human approval |
+| `/capiva:plan` | Technical Design | PLAN.md, tech-context | Human approval |
+| `/capiva:implement` | Development | Feature branch, unit tests | Tests green |
+| `/capiva:test-verify` | QA & Verification | Quality report | Coverage + lint + static analysis |
+| `/capiva:finish` | Release | PR, board update | Human merge decision |
 
 ### SDLC Code Review Standards (CI Gate)
 

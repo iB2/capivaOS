@@ -62,7 +62,7 @@ The arch role produces:
 4. Verify `docs/specs/TASK-ID-spec.md` exists (check Artifacts Registry)
 5. Verify `docs/specs/TASK-ID-acs.json` exists and parses (the verification contract — see ADR-0009)
 6. If ANY check fails → **STOP**: "⛔ Phase guard failed. [specific failure]. Complete /capiva:grill-spec first."
-6. If ALL checks pass → proceed
+7. If ALL checks pass → proceed
 
 ## Process
 

@@ -37,8 +37,8 @@ blueprint's reference.md §architecture. Example shape:]
 
 | Library | Location | Purpose |
 |---------|----------|---------|
-| Mapping (`IBuilder<TInput, TOutput>`) | `Application/Mapping/` | DTO ↔ Entity transformations |
-| Logging | Native `ILogger<T>` | Structured logging |
+| Mapping | [mapping layer per blueprint §architecture] | DTO ↔ Entity transformations |
+| Logging | [stack-native structured logger per blueprint §enterprise-patterns] | Structured logging |
 
 ### External Packages
 
