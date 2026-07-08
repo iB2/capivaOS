@@ -60,6 +60,17 @@ and the write surface stops self-licensing.
   the same agent's markdown narrative is checked against, not vice-versa.
   The morning report now reconciles against it.
 
+### Behavioral evals (PRD-005)
+- **Deterministic state-machine eval** in CI (`scenario_state_machine.py`,
+  no LLM): the legal/illegal transition matrix + doc-parity between the
+  documented Valid Transitions and the guard's encoded edges. The pipeline
+  logic — 13 skills, 5 agents — had ZERO behavioral tests; the core state
+  machine now has real rules-based coverage.
+- **gate-judge adversarial set** (`evals/gate-judge/`): fixture reports with
+  known verdicts (clean → CLEAR; seeded anomalies → ESCALATE). Release-time
+  LLM eval (needs auth, not in no-auth CI) for the component whose failure
+  silently approves bad work. Owner: Bruno.
+
 ## [1.2.1] — 2026-07-09
 
 Patch: consistency and claims hardening — the remainder of the 2026-07
