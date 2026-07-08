@@ -120,7 +120,7 @@ The harness is stack-agnostic. Technology-specific patterns, commands, and stand
 
 ### Adding a New Blueprint
 
-1. Create `blueprints/<stack-name>/reference.md` following the section format (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands)
+1. Create `blueprints/<stack-name>/reference.md` with the full contract section set (§project, §stack, §architecture, §coding-standards, §enterprise-patterns, §test-stack, §static-analysis, §ci-cd, §qa-checklist, §build-commands, §deviation-rules) — validate with `python3 scripts/harness_lint.py --check-blueprint <dir>` (the same check /capiva:init runs on custom `capiva-blueprints/` entries)
 2. Create a real, buildable reference project locally (blueprint projects stay local, never committed)
 3. Set as active in CLAUDE.md
 4. The harness will automatically use the new blueprint's patterns

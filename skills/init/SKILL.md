@@ -124,6 +124,10 @@ Shipped blueprints: dotnet-hexagonal, python-fastapi, nextjs-typescript
 
 Options:
 1. Create a custom blueprint in YOUR project: capiva-blueprints/<name>/reference.md
+   Then VALIDATE it before accepting the configuration (AUD-015):
+   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/harness_lint.py --check-blueprint capiva-blueprints/<name>`
+   — a blueprint missing contract sections fails init here, not mid-pipeline
+   when a skill reads a contract section that does not exist.
    (project blueprints override shipped ones; copy a shipped reference.md as the
    starting structure — every § section is required)
 2. Proceed without a blueprint (not recommended — skills lose stack context)
