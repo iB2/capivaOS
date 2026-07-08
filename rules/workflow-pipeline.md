@@ -41,7 +41,7 @@ Each transition has a trigger (what causes it), a gate (what must be true), and 
 
 ### IDLE → TRIAGE
 - **Trigger**: /capiva:sprint picks a task from the board
-- **Gate**: Board has uncompleted tasks in P0-P2
+- **Gate**: Board has uncompleted tasks in P0-P3
 - **Action**: Update sprint-state (task ID, title, priority, phase = TRIAGE)
 - **Board**: Move task to "In Progress"
 
