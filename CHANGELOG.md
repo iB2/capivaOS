@@ -5,6 +5,28 @@ receive updates only when the version in `.claude-plugin/plugin.json` is bumped.
 Schema-affecting changes MUST land with a matching migration row in
 `skills/update-project/SKILL.md`.
 
+## [1.2.1] — 2026-07-09
+
+Patch: the grilled remainder of the 2026-07-08 audit (AUD-018/020) — every
+Low/Cosmetic finding interrogated before acceptance; 2 auditor remedies
+rejected with rationale, 1 audit finding refuted, the rest shipped.
+
+- **Lint check 14** — quantitative-claim parity: SECURITY.md's "~N lines"
+  figure is recomputed against `wc -l` at ±15% (the figure went stale in both
+  directions across two releases; now it cannot rot silently)
+- **Lint check 15** — private board IDs (LOOP/CAP/AUD-n) may not appear in
+  skills/, rules/, agents/: adopters cannot resolve this repo's own task IDs.
+  The check caught 3 refs introduced by the remediation epic itself, pre-commit
+- SDLC mapping unified across all three blueprints (named stages, namespaced
+  commands — the numeric scheme collided with enterprise-blueprint gate
+  numbers); python-fastapi §ci-cd now ships the GitHub Actions workflow its
+  summary card promises
+- Universal doc templates de-.NET/de-Azure'd; README gains headless-auth
+  requirement + "Schema migrations" section; state-management artifact chain
+  includes tech-context (briefs isolated phase-runners); assorted numbering
+  nits
+- 8 shipped LOOP-nnn references re-anchored to ADR-0014 / plain descriptions
+
 ## [1.2.0] — 2026-07-08
 
 The honesty release: the 2026-07-08 external audit (6 evidence reports) found
