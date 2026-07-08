@@ -23,7 +23,7 @@
 ### During
 - [ ] Maintenance page activated (if required)
 - [ ] Database scripts executed in order
-- [ ] Application deployed via Azure Pipelines
+- [ ] Application deployed via the CI/CD pipeline (blueprint §ci-cd)
 - [ ] Deployment logs reviewed — no errors
 - [ ] Maintenance page deactivated
 

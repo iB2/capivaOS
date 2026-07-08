@@ -179,7 +179,7 @@ Each phase produces artifacts. The next phase MUST verify these artifacts exist 
 ```
 Phase 0 (TRIAGE)    → selects task, loads spec into context
 Phase 1 (GRILL)     → produces: docs/specs/TASK-ID-spec.md, docs/specs/TASK-ID-acs.json, CONTEXT.md entries, ADRs
-Phase 2 (PLAN)      → produces: PLAN.md (references spec), ordered micro-tasks
+Phase 2 (PLAN)      → produces: PLAN.md (references spec), ordered micro-tasks, docs/tech-context/TASK-ID-tech.md (when external libraries are involved)
 Phase 3 (IMPLEMENT) → produces: code + tests on feature branch (follows PLAN.md)
 Phase 4 (VERIFY)    → produces: docs/reports/TASK-ID-quality.md (references code), AC statuses written back to TASK-ID-acs.json
 Phase 5 (FINISH)    → produces: PR (references spec + report), board update

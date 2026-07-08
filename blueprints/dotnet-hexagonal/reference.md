@@ -428,11 +428,13 @@ Merge to `main` happens AFTER production validation.
 
 ### SDLC Compliance Mapping
 
-- Phase 1 (GRILL_SPEC) → SDLC Phase 3 (Requirement Analysis)
-- Phase 2 (PLAN) → SDLC Phase 4 (Solution Design)
-- Phase 3 (IMPLEMENT) → SDLC Phase 6 (Refinement & Development)
-- Phase 4 (TEST_VERIFY) → SDLC Phase 7 (Testing & QA)
-- Phase 5 (FINISH) → SDLC Phases 6-8 (Code Review → CAB → Deploy)
+| Harness Phase | SDLC Stage | Artifact | Gate |
+|--------------|-----------|----------|------|
+| `/capiva:grill-spec` | Requirements & Design | Spec document, CONTEXT.md, ADRs | Human approval |
+| `/capiva:plan` | Technical Design | PLAN.md, tech-context | Human approval |
+| `/capiva:implement` | Development | Feature branch, unit tests | Tests green |
+| `/capiva:test-verify` | QA & Verification | Quality report | Coverage + lint + static analysis |
+| `/capiva:finish` | Release | PR, board update | Human merge decision |
 
 ---
 

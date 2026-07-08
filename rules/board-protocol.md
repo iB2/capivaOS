@@ -154,8 +154,8 @@ must show who decided what, human or machine, and on what grounds.
 ## Board Integrity Rules
 
 1. **One task in progress.** If "In Progress" has a task, do NOT start another.
-3. **Depends is mechanical.** Triage only selects tasks whose dependencies are all Done; a dependency cycle is a board defect that stops selection (lint check 8). Depends IDs must exist on the board.
-2. **Status = Phase consistency.** In Progress → Phase must be TRIAGE..FINISH. Done → Phase must be IDLE.
+2. **Depends is mechanical.** Triage only selects tasks whose dependencies are all Done; a dependency cycle is a board defect that stops selection (lint check 8). Depends IDs must exist on the board.
+3. **Status = Phase consistency.** In Progress → Phase must be TRIAGE..FINISH. Done → Phase must be IDLE.
 4. **Done is immutable.** Once in Done, never edit. Only append.
 5. **Blocked needs a reason.** No silent blocks. Always include `Blocker:` with description and date.
 6. **Timestamps mandatory.** Started and Completed must have ISO dates.

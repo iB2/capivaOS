@@ -28,7 +28,7 @@
 - [ ] Rollback scripts prepared: Yes / No / N/A
 
 ### Infrastructure Changes
-- [ ] New Azure resources: [list or "None"]
+- [ ] New cloud resources: [list or "None"]
 - [ ] Configuration changes: [list or "None"]
 - [ ] Networking changes: [list or "None"]
 

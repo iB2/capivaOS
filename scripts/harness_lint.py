@@ -40,6 +40,8 @@ Checks:
      by ENFORCED_SURFACES in phase_guard.py each carry their
      <!-- enforced: X --> marker in README.md AND SECURITY.md, and no marker
      names an undeclared surface.
+ 14. Quantitative-claim parity (AUD-018): SECURITY.md's "~N lines" figure
+     stays within +/-15% of the real wc -l over hooks/*.py.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -553,6 +555,26 @@ def lint(root: Path):
                         f"docs claim a mechanical guarantee the guard does not "
                         f"declare (claims parity, AUD-011)")
 
+    # 14. quantitative-claim parity (AUD-018): SECURITY.md's "~N lines of
+    #     dependency-free Python" must stay within ±15% of wc -l over
+    #     hooks/*.py. The audit caught the figure stale once (claimed ~600,
+    #     actual 523); post-1.2.0 it went stale the other way (712). Numbers
+    #     in trust documents rot unless something recomputes them.
+    sec = root / "SECURITY.md"
+    if sec.is_file() and (root / "hooks").is_dir():
+        m = re.search(r"~(\d+) lines of dependency-free Python",
+                      sec.read_text(encoding="utf-8", errors="replace"))
+        if m:
+            claimed = int(m.group(1))
+            actual = sum(
+                len(f.read_text(encoding="utf-8", errors="replace").splitlines())
+                for f in (root / "hooks").glob("*.py"))
+            if actual and abs(actual - claimed) / actual > 0.15:
+                findings.append(
+                    f"SECURITY.md: claims ~{claimed} lines of hook Python; actual "
+                    f"is {actual} (>15% off) — update the figure; stale "
+                    f"quantitative claims are audit findings (AUD-018)")
+
     return findings
 
 
@@ -581,6 +603,8 @@ def self_test():
             "| [0001](adr/0001-real.md) | x |\n| [0002](adr/0002-stale.md) | y |\nalpha beta\n",
             encoding="utf-8")
         (root / "docs" / "SCOPE.md").write_text("alpha only\n", encoding="utf-8")  # beta missing
+        (root / "SECURITY.md").write_text(
+            "auditable in ~700 lines of dependency-free Python\n", encoding="utf-8")
         (root / "docs" / "adr" / "0001-real.md").write_text("# ADR-0001\n", encoding="utf-8")
         (root / "agents").mkdir()
         (root / "agents" / "rogue.md").write_text("# rogue agent\n", encoding="utf-8")
@@ -662,6 +686,7 @@ def self_test():
             "unknown enforced-surface marker 'invented-surface'",
             "missing required section §build-commands",
             "unknown section §made-up-section",
+            "claims ~700 lines of hook Python",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

@@ -3,8 +3,9 @@
 ## What this plugin does on your machine — the full list
 
 capivaOS ships hooks that Claude Code executes locally. Their complete behavior
-is auditable in ~600 lines of dependency-free Python (`hooks/*.py`) plus one
-~40-line shell dispatcher (`hooks/run-hook.cmd`):
+is auditable in ~700 lines of dependency-free Python (`hooks/*.py`) plus one
+~30-line shell dispatcher (`hooks/run-hook.cmd`) — the figure is lint-checked
+against `wc -l` at ±15%, so it cannot silently go stale:
 
 - **`phase_guard.py`** (PreToolUse) — reads `.board/sprint-state.md`, prints an
   allow/deny decision as JSON to stdout. Nothing else.

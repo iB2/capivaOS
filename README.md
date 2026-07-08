@@ -49,6 +49,17 @@ Runs the safe ritual: marketplace refresh → plugin update → `/reload-plugins
 
 Optional: enable per-marketplace auto-update in `/plugin` → Marketplaces → capiva. Releases are explicit semver — you only receive updates when a version is cut, never on raw pushes ([CHANGELOG.md](CHANGELOG.md)).
 
+### Schema migrations (what happens when you update)
+
+Engine updates are transparent. When a release changes *project-side* files
+(the `.board/` formats, scaffolded docs), the SessionStart hook detects the
+schema skew and tells you to run `/capiva:update-project`, which applies the
+migration table in order — every step is idempotent (safe to re-run),
+forward-only, additive (never destroys your content), and logged. Being 2–3
+versions behind is fine: steps apply sequentially. If a step fails partway,
+re-running is safe; your board files are also snapshotted to
+`.state/board-snapshot/` on every compaction/stop as a recovery copy.
+
 ## Uninstall
 
 ```
@@ -205,6 +216,7 @@ The overhead buys the artifact chain (spec, acs.json, PLAN.md, quality report) a
 
 - **Claude Code** with plugin support
 - **Python 3** available as `py`, `python`, or `python3` (hooks; they disable themselves gracefully if absent)
+- **Authenticated session for headless use** — `claude -p` invocations (CI, cron, auto mode schedules) need credentials in the environment; an unauthenticated config dir fails with a billing error before any harness code runs
 - **Context7 MCP** recommended (current library docs during /capiva:plan):
 
 ```json
