@@ -5,8 +5,14 @@ phase_guard.py — Mechanical phase-guard enforcement (PreToolUse hook).
 Enforces Laws 1-2 of the harness at the tool layer instead of trusting prompts
 (see ADR-0008):
 
-  - Edit/Write/NotebookEdit to source paths  -> only when Phase = IMPLEMENT
-    (test paths also allowed when Phase = TEST_VERIFY or VERIFY_FINISH)
+  - Edit/MultiEdit/Write/NotebookEdit to source paths -> only when Phase =
+    IMPLEMENT (test paths also allowed when Phase = TEST_VERIFY/VERIFY_FINISH)
+  - shell writes (redirects, tee, sed -i, touch) -> TOOL PARITY (AUD-005): a
+    Bash/PowerShell write to path X is denied exactly when Write to X would
+    be. Best-effort by construction: quoted strings and heredoc bodies are
+    stripped before scanning (prose containing '>' can't false-deny), so a
+    quoted target is invisible — fail-open prefers false negatives. cp/mv/dd
+    and encoded writes (python -c, base64) are out of scope; see SECURITY.md
   - `gh pr create`                           -> only when Phase = FINISH or
     VERIFY_FINISH (fast lane, ADR-0010) and Quality Gate is PASS /
     ACCEPTED_SOFT_FAIL
@@ -24,8 +30,10 @@ State source: parses `.board/sprint-state.md` directly (the `- **Field**:`
 format defined in state-management.md). There is deliberately NO separate
 sprint-state.json — a dual file would drift from the markdown (ADR-0008).
 
-Fail-open: if sprint-state.md is missing or unparseable, the guard allows the
-call and prints a warning to stderr. It must never brick a project.
+Fail-open: if sprint-state.md is missing, unparseable, or contains merge
+conflict markers (a conflicted Phase field must never be trusted to whichever
+side sorts first), the guard allows the call and prints a LOUD warning to
+stderr. It must never brick a project.
 
 Escape hatch (both logged to stderr, both HUMAN-only by construction):
   - env  CAPIVA_PHASE_GUARD=off  — must be set in Claude Code's own environment
@@ -49,7 +57,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
 
-WRITE_TOOLS = {"Edit", "Write", "NotebookEdit"}
+WRITE_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
 # Paths writable in ANY phase — pipeline artifacts plus harness/CI tooling.
@@ -104,6 +112,42 @@ GH_PR_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b")
 GIT_PUSH_RE = re.compile(r"\bgit\s+push\b")
 DEFAULT_BRANCHES = {"main", "master"}
 
+# Shell write parity (AUD-005). Strip heredoc BODIES and quoted strings first
+# so prose containing '>' (commit messages, echo'd text) can never false-deny;
+# the cost is that quoted targets are invisible — fail-open prefers false
+# negatives over blocking legitimate work. Then extract targets of: > and >>
+# redirects (also catches heredoc-fed `cat > file <<EOF`), tee, sed -i, touch.
+HEREDOC_BODY_RE = re.compile(r"<<-?\s*'?(\w+)'?[^\n]*\n.*?\n\s*\1\s*(?=\n|$|\))", re.DOTALL)
+QUOTED_RE = re.compile(r"'[^']*'|\"[^\"]*\"")
+REDIRECT_RE = re.compile(r"(?<![<>=\-\w])>{1,2}\s*([^\s;&|<>()]+)")
+
+
+def _shell_write_targets(command: str):
+    """Best-effort extraction of paths a shell command writes to.
+
+    Conservative by design (grill decision 2026-07-08): redirects, tee,
+    sed -i, touch. Tokens containing shell expansions ($, `, %) are skipped —
+    unresolvable means fail-open. cp/mv/dd and interpreter one-liners are
+    documented limits (SECURITY.md), not silently claimed coverage.
+    """
+    text = HEREDOC_BODY_RE.sub("\n", command)
+    text = QUOTED_RE.sub("", text)
+    targets = [m.group(1) for m in REDIRECT_RE.finditer(text)]
+    for seg in re.split(r"[;&|]", text):
+        toks = seg.split()
+        for cmd_name in ("tee", "touch"):
+            if cmd_name in toks:
+                targets.extend(
+                    t for t in toks[toks.index(cmd_name) + 1:]
+                    if not t.startswith("-"))
+        if "sed" in toks and any(t.startswith("-i") for t in toks):
+            files = [t for t in toks[toks.index("sed") + 1:]
+                     if not t.startswith("-")]
+            if files:
+                targets.append(files[-1])  # sed expr is quoted (stripped); file is last
+    return [t for t in targets
+            if t and not any(c in t for c in ("$", "`", "%"))]
+
 
 def _push_targets_default_branch(command: str) -> bool:
     """True if any `git push` segment of the command targets main/master.
@@ -142,6 +186,18 @@ def _read_state():
         content = SPRINT_STATE.read_text(encoding="utf-8")
     except OSError:
         return None
+    if "<<<<<<<" in content:
+        # A conflicted state file is neither missing nor unparseable — the
+        # first `Phase:` regex match would silently win, enforcing whichever
+        # side sorts first (AUD-005; enforcement-code audit §6). Never trust
+        # it: fail open LOUDLY instead.
+        print(
+            "phase_guard: .board/sprint-state.md contains merge-conflict "
+            "markers — no parsed field can be trusted; failing open (no "
+            "enforcement). RESOLVE THE CONFLICT before any pipeline work.",
+            file=sys.stderr,
+        )
+        return None
     phase = _parse_field(content, "Phase").upper()
     if not phase:
         return None
@@ -178,29 +234,39 @@ def _is_always_allowed(path: Path) -> bool:
     return False
 
 
-def _check_file_write(tool_input: dict, phase: str):
-    raw = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
-    if not raw:
-        _allow()
-    path = Path(raw) if os.path.isabs(raw) else PROJECT_ROOT / raw
+def _write_denial(path: Path, phase: str):
+    """The single write decision, shared by every route (AUD-005 tool parity):
+    Edit/MultiEdit/Write/NotebookEdit and shell-extracted write targets all
+    resolve here. Returns a deny reason, or None to allow."""
     try:
         rel = str(path.resolve().relative_to(PROJECT_ROOT)).replace("\\", "/")
         if rel in HUMAN_ONLY_FILES:
-            _deny(HUMAN_ONLY_FILES[rel])
+            return HUMAN_ONLY_FILES[rel]
     except ValueError:
         pass
     if _is_always_allowed(path):
-        _allow()
+        return None
     if phase == "IMPLEMENT":
-        _allow()
+        return None
     if phase in TEST_WRITE_PHASES and TEST_PATH_RE.search(str(path)):
-        _allow()
-    _deny(
+        return None
+    return (
         f"Phase guard: source file writes require Phase = IMPLEMENT "
         f"(tests also allowed in TEST_VERIFY / VERIFY_FINISH). Current phase: {phase or 'UNKNOWN'}. "
         f"Run /sprint to advance the pipeline, or edit pipeline artifacts "
         f"(docs/, .board/, PLAN.md) instead. File: {path}"
     )
+
+
+def _check_file_write(tool_input: dict, phase: str):
+    raw = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+    if not raw:
+        _allow()
+    path = Path(raw) if os.path.isabs(raw) else PROJECT_ROOT / raw
+    reason = _write_denial(path, phase)
+    if reason:
+        _deny(reason)
+    _allow()
 
 
 def _check_shell(tool_input: dict, phase: str, gate: str):
@@ -218,6 +284,11 @@ def _check_shell(tool_input: dict, phase: str, gate: str):
             "reviewed pull requests (ADR-0014 never-list). Push a feature "
             "branch and open the PR at FINISH instead."
         )
+    for raw in _shell_write_targets(command):
+        p = Path(raw) if os.path.isabs(raw) else PROJECT_ROOT / raw
+        reason = _write_denial(p, phase)
+        if reason:
+            _deny(reason + f" (detected as a shell write target: {raw})")
     if re.search(r"\bgh\s+pr\s+create\b", command):
         if phase not in PR_PHASES:
             _deny(

@@ -72,6 +72,19 @@ within 7 days.
 
 ## Scope notes
 
+**Shell write interception is best-effort by construction.** Since 1.2.0 the
+phase guard applies *tool parity* to shell commands: a `Bash`/`PowerShell`
+write to a path is denied exactly when a `Write` to that path would be. It
+detects `>`/`>>` redirects, `tee`, `sed -i`, and `touch` targets, after
+stripping quoted strings and heredoc bodies (so prose containing `>` can never
+false-deny — the trade-off is that a quoted target is invisible). What it
+deliberately does NOT claim to catch: `cp`/`mv`/`dd`, interpreter one-liners
+(`python -c "open(...)"`), encoded commands, or anything built from shell
+expansions. Perfect shell interception is impossible; partial and honest beats
+silent. The write-tools path (`Edit`/`MultiEdit`/`Write`/`NotebookEdit`) and
+the human-only files remain the hard surface, and Claude Code's own permission
+system remains the security boundary.
+
 - The harness is a development-process tool; it grants no capability beyond
   what Claude Code already has on your machine.
 - Quality gates and phase guards are safety rails for code quality, not a

@@ -150,6 +150,38 @@ def main():
         set_state("FINISH", "PASS")
         cases.append(("FINISH+PASS: deny kill-switch marker write", run_guard(root, "Write", {"file_path": marker})[0] is True))
 
+        # shell write parity (AUD-005): a Bash write to X is denied iff Write
+        # to X would be — same decision function, both routes
+        set_state("GRILL_SPEC")
+        cases.append(("GRILL_SPEC: deny redirect into src", run_guard(root, "Bash", {"command": "cat > src/service.py <<EOF\nx = 1\nEOF"})[0] is True))
+        cases.append(("GRILL_SPEC: deny append redirect into src", run_guard(root, "Bash", {"command": "echo x >> src/service.py"})[0] is True))
+        cases.append(("GRILL_SPEC: deny tee into src", run_guard(root, "Bash", {"command": "echo y | tee src/service.py"})[0] is True))
+        cases.append(("GRILL_SPEC: deny sed -i on src", run_guard(root, "Bash", {"command": "sed -i 's/a/b/' src/service.py"})[0] is True))
+        cases.append(("GRILL_SPEC: deny MultiEdit on src", run_guard(root, "MultiEdit", {"file_path": src})[0] is True))
+        cases.append(("GRILL_SPEC: allow redirect into .board (parity)", run_guard(root, "Bash", {"command": "echo note >> .board/notes.md"})[0] is False))
+        cases.append(("GRILL_SPEC: allow quoted '>' prose (no false deny)", run_guard(root, "Bash", {"command": "git commit -m \"bump 1.1.0 -> 1.1.1 and a > b\""})[0] is False))
+        cases.append(("GRILL_SPEC: allow heredoc body with '>' prose", run_guard(root, "Bash", {"command": "git commit -m \"$(cat <<'EOF'\nfix: 1.1.0 -> 1.1.1\nEOF\n)\""})[0] is False))
+        cases.append(("GRILL_SPEC: allow redirect to /dev/null (outside project)", run_guard(root, "Bash", {"command": "pytest -q > /dev/null"})[0] is False))
+        cases.append(("GRILL_SPEC: allow $VAR target (unresolvable = fail-open)", run_guard(root, "Bash", {"command": "pytest > $LOGFILE"})[0] is False))
+        set_state("IMPLEMENT")
+        cases.append(("IMPLEMENT: allow redirect into src (parity)", run_guard(root, "Bash", {"command": "cat > src/service.py <<EOF\nx = 1\nEOF"})[0] is False))
+        cases.append(("IMPLEMENT: allow MultiEdit on src (parity)", run_guard(root, "MultiEdit", {"file_path": src})[0] is False))
+        cases.append(("IMPLEMENT: deny touch kill-switch via shell", run_guard(root, "Bash", {"command": "touch .state/phase-guard-off"})[0] is True))
+        cases.append(("IMPLEMENT: deny append to approval-policy via shell", run_guard(root, "Bash", {"command": "echo '- **Auto-Approve Quality Gate**: yes' >> .board/approval-policy.md"})[0] is True))
+        cases.append(("IMPLEMENT: deny sed -i on approval-policy via shell", run_guard(root, "Bash", {"command": "sed -i 's/no/yes/' .board/approval-policy.md"})[0] is True))
+        set_state("TEST_VERIFY")
+        cases.append(("TEST_VERIFY: allow redirect into tests (parity)", run_guard(root, "Bash", {"command": "echo t > tests/test_new.py"})[0] is False))
+        cases.append(("TEST_VERIFY: deny redirect into src (parity)", run_guard(root, "Bash", {"command": "echo s > src/service.py"})[0] is True))
+
+        # conflict markers in sprint-state: LOUD fail-open, never first-match
+        (root / ".board" / "sprint-state.md").write_text(
+            "# Sprint State\n<<<<<<< HEAD\n- **Phase**: IMPLEMENT\n=======\n"
+            "- **Phase**: GRILL_SPEC\n>>>>>>> theirs\n- **Quality Gate**: --\n",
+            encoding="utf-8")
+        denied, rc, err = run_guard(root, "Edit", {"file_path": src})
+        cases.append(("conflicted state: fail-open allow", denied is False and rc == 0))
+        cases.append(("conflicted state: loud conflict warning", "merge-conflict" in err and "RESOLVE" in err))
+
         # fail-open: missing state file
         (root / ".board" / "sprint-state.md").unlink()
         denied, rc, err = run_guard(root, "Edit", {"file_path": src})
