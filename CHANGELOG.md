@@ -71,6 +71,32 @@ and the write surface stops self-licensing.
   LLM eval (needs auth, not in no-auth CI) for the component whose failure
   silently approves bad work. Owner: Bruno.
 
+### Post-epic audit follow-ups (PRD-007/008/009)
+
+An independent audit of this release's PR stack against the review handover
+found the gaps below; all closed in the same release.
+
+- **Deterministic eval completed (PRD-007)**: the state-machine eval now also
+  covers the ADR-0010 fast-lane predicate as a full 64-row truth table and the
+  Law 5 / ADR-0014 gate-routing matrix with never-list precedence (merge and
+  P0/P1 gates are never machine-cleared — verified exhaustively), each with
+  doc-parity assertions so the encoded tables cannot drift from the prose.
+  PRD-005's AC had promised this; the cut was silent — now flagged and closed.
+- **Run-log completeness (PRD-008)**: kill-switch flips are logged as
+  `guard-status` events (on change, via `.state/guard-status`); SessionStart
+  logs `heartbeat-missing` when a task is active with no heartbeat — the guard
+  cannot log its own death, so the session hook does.
+- **Quoted-redirect false deny fixed (PRD-009)**: quote-stripping used to
+  DELETE quoted strings, so `cmd > "path" 2>/dev/null` collapsed and the
+  neighboring `2` was captured as a write target (found live, denying a
+  read-only command). Quoted strings are now replaced with a placeholder —
+  quoted targets stay invisible-by-design, without token shifting.
+- **Loop-resume fields sanitized (PRD-009, T4 residual)**: sprint-state values
+  interpolated into the `[AUTO_LOOP_RESUME]` block are capped and
+  markup-stripped.
+- SECURITY.md: run-log event list documented; the shell-route carve-out on
+  transition validation stated explicitly (write-tool routes only).
+
 ### Injection containment + hardening (PRD-006)
 - **Injected repo content is untrusted data (T4)**: a cloned repo is an
   untrusted channel — `sprint-state.md`, handover docs, and session-state

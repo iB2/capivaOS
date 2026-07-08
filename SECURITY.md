@@ -49,6 +49,13 @@ a misdispatched hook on POSIX fails silently — silence must never read as a
 healthy guard. A CI job fires the dispatcher by bare path on Linux/macOS to
 prove the guard actually runs there.
 
+Mechanical audit trail: hooks append `.state/run-log.jsonl` (hook-written,
+append-only — never the model's own narrative). Events: `deny`, `transition`,
+`gate`, `lock-acquire`/`lock-release`, `guard-status` (kill-switch flips,
+logged on change), and `heartbeat-missing` (recorded at SessionStart by
+session_context, since a dead guard cannot log its own absence). The auto-mode
+morning report is reconciled against this log.
+
 Everything else the harness does — phase sequencing, artifact gating, the
 acs.json contract, board lock, human checkpoints, quality thresholds — is
 *structurally encouraged*: it reliably holds a compliant model and is not
@@ -131,9 +138,13 @@ false-deny — the trade-off is that a quoted target is invisible). What it
 deliberately does NOT claim to catch: `cp`/`mv`/`dd`, interpreter one-liners
 (`python -c "open(...)"`), encoded commands, or anything built from shell
 expansions. Perfect shell interception is impossible; partial and honest beats
-silent. The write-tools path (`Edit`/`MultiEdit`/`Write`/`NotebookEdit`) and
-the human-only files remain the hard surface, and Claude Code's own permission
-system remains the security boundary.
+silent. This carve-out extends to the sprint-state transition surface: the
+guard validates Phase/Gate changes only where it can reconstruct the written
+content (the write-tool routes) — a shell write to `sprint-state.md` gets path
+parity but NOT transition validation. The write-tools path
+(`Edit`/`MultiEdit`/`Write`/`NotebookEdit`) and the human-only files remain the
+hard surface, and Claude Code's own permission system remains the security
+boundary.
 
 - The harness is a development-process tool; it grants no capability beyond
   what Claude Code already has on your machine.

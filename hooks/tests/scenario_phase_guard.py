@@ -327,6 +327,45 @@ def main():
         cases.append(("run-log: deny event recorded", '"event": "deny"' in logged))
         cases.append(("run-log: transition event recorded", '"event": "transition"' in logged and '"to": "TRIAGE"' in logged))
 
+        # ---- PRD-008: guard-status transitions are run-logged (on CHANGE only) ----
+        set_state("IDLE")
+        status_file = root / ".state" / "guard-status"
+        if status_file.exists():
+            status_file.unlink()
+        if rl.exists():
+            rl.unlink()
+        run_guard(root, "Edit", {"file_path": src})
+        logged = rl.read_text(encoding="utf-8") if rl.is_file() else ""
+        cases.append(("guard-status: first enforced call logs status change to enforcing",
+                      '"event": "guard-status"' in logged and '"status": "enforcing"' in logged))
+        run_guard(root, "Edit", {"file_path": src})
+        logged = rl.read_text(encoding="utf-8") if rl.is_file() else ""
+        cases.append(("guard-status: repeat call does NOT re-log (change-only)",
+                      logged.count('"event": "guard-status"') == 1))
+        marker = root / ".state" / "phase-guard-off"
+        marker.write_text("", encoding="utf-8")
+        denied_off, _, _ = run_guard(root, "Edit", {"file_path": src})
+        logged = rl.read_text(encoding="utf-8") if rl.is_file() else ""
+        cases.append(("guard-status: kill-switch marker flip logged as off-marker (and allows)",
+                      denied_off is False and '"status": "off-marker"' in logged))
+        marker.unlink()
+        run_guard(root, "Edit", {"file_path": src})
+        logged = rl.read_text(encoding="utf-8") if rl.is_file() else ""
+        cases.append(("guard-status: marker removal logged as re-enforcing",
+                      logged.count('"status": "enforcing"') == 2))
+        denied_env, _, _ = run_guard(root, "Edit", {"file_path": src},
+                                     extra_env={"CAPIVA_PHASE_GUARD": "off"})
+        logged = rl.read_text(encoding="utf-8") if rl.is_file() else ""
+        cases.append(("guard-status: env kill-switch logged as off-env (and allows)",
+                      denied_env is False and '"status": "off-env"' in logged))
+
+        # ---- PRD-009: quoted redirect target + fd redirect must not false-deny ----
+        set_state("IDLE")
+        cases.append(("shell: quoted redirect + 2>/dev/null does NOT capture neighbor token (live bug)",
+                      run_guard(root, "Bash", {"command": 'git show x:f.py > "out dir/f.py" 2>/dev/null'})[0] is False))
+        cases.append(("shell: unquoted redirect to source still denied with fd-dup present",
+                      run_guard(root, "Bash", {"command": "echo hi > src/x.py 2>/dev/null"})[0] is True))
+
         # garbage stdin never blocks
         env = dict(os.environ); env["CLAUDE_PROJECT_DIR"] = str(root)
         r = subprocess.run([sys.executable, str(GUARD)], input="not json", capture_output=True, text=True, env=env)
