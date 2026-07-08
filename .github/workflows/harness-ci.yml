@@ -25,6 +25,39 @@ jobs:
       - name: Release contract check (changelog + migration rows)
         run: python scripts/bump_version.py --check
 
+  plugin-install:
+    # Installs the plugin with the REAL Claude Code CLI — the class of failure
+    # harness_lint cannot catch (the 1.1.0 release shipped a manifest the CLI
+    # 2.1.50 validator rejected; every adopter's first command failed. 2.1.160
+    # accepts the same manifest — the validator changed upstream, which is why
+    # a schema-shaped lint can never substitute for a real install).
+    #
+    # Pin policy: two deterministic pins, bumped at every capiva release —
+    # the FLOOR (strictest known validator; oldest CLI install is promised on)
+    # and a RECENT version. A failure on a pin bump means the CLI's manifest
+    # validator drifted upstream — the early-warning signal this job exists
+    # to give, not noise. stdin is closed on every invocation: the CLI waits
+    # on stdin when it inherits an interactive-looking terminal.
+    name: Real plugin install (CLI ${{ matrix.cli }})
+    strategy:
+      fail-fast: false
+      matrix:
+        cli: ["2.1.50", "2.1.160"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install pinned Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code@${{ matrix.cli }}
+      - name: Install the plugin exactly as the README documents
+        run: |
+          export CLAUDE_CONFIG_DIR="$RUNNER_TEMP/claude-config"
+          claude plugin marketplace add "$GITHUB_WORKSPACE" < /dev/null
+          claude plugin install capiva@capiva < /dev/null
+          claude plugin list < /dev/null
+          claude plugin list < /dev/null | grep -qi capiva
+          echo "plugin-install: real CLI accepted the manifest and cached the plugin"
+
   hook-tests:
     name: Hook tests (${{ matrix.os }})
     strategy:

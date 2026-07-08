@@ -85,6 +85,21 @@ PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your
 ACS_STATUSES = {"pending", "pass", "fail"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
+# Manifest key allowlists — mirror the Claude Code CLI validator (strict mode).
+# CLI 2.1.50 rejected `$schema` and `displayName` at install; unknown keys are
+# a deterministic install failure for every adopter. Extend deliberately, and
+# only after the pinned-CLI install job in harness-ci.yml proves the key safe.
+PLUGIN_MANIFEST_KEYS = {
+    "name", "version", "description", "author", "homepage", "repository",
+    "license", "keywords",
+}
+MARKETPLACE_KEYS = {"name", "owner", "description", "plugins"}
+# "version" is allowlisted here because the single-version-source check below
+# already flags it with a more specific message.
+MARKETPLACE_ENTRY_KEYS = {
+    "name", "source", "description", "category", "license", "strict", "version",
+}
+
 
 TASK_HEAD_RE = re.compile(r"^- \[[ x]\] \*\*([A-Z]+-\d+)\*\*", re.MULTILINE)
 DEPENDS_RE = re.compile(r"^\s*- \*\*Depends\*\*:\s*(.+)$", re.MULTILINE)
@@ -149,7 +164,14 @@ def lint_board_dependencies(board: Path, root: Path):
 
 
 def lint_manifests(root: Path):
-    """Check 7: plugin + marketplace manifest validity and parity (ADR-0013)."""
+    """Check 7: plugin + marketplace manifest validity and parity (ADR-0013).
+
+    Key allowlists mirror the Claude Code CLI's manifest validator (strict
+    marketplaces reject unrecognized plugin.json keys — the 1.1.0 install
+    failure class: `$schema` and `displayName` were rejected by CLI 2.1.50).
+    Extending these lists is a deliberate act: verify the pinned-CLI install
+    job in harness-ci.yml still passes before allowing a new key.
+    """
     findings = []
     pj_path = root / ".claude-plugin" / "plugin.json"
     mk_path = root / ".claude-plugin" / "marketplace.json"
@@ -164,6 +186,15 @@ def lint_manifests(root: Path):
     except (OSError, json.JSONDecodeError) as e:
         return [f".claude-plugin/marketplace.json: unreadable or invalid ({e})"]
 
+    for key in sorted(set(pj) - PLUGIN_MANIFEST_KEYS):
+        findings.append(
+            f"plugin.json: unrecognized key {key!r} — the CLI manifest validator "
+            f"rejects unknown keys on install (allowlist in harness_lint.py)")
+    for key in sorted(set(mk) - MARKETPLACE_KEYS):
+        findings.append(
+            f"marketplace.json: unrecognized top-level key {key!r} "
+            f"(allowlist in harness_lint.py)")
+
     if not SEMVER_RE.match(str(pj.get("version", ""))):
         findings.append(f"plugin.json: version {pj.get('version')!r} is not X.Y.Z semver")
     entries = mk.get("plugins") or []
@@ -171,6 +202,10 @@ def lint_manifests(root: Path):
         findings.append(f"marketplace.json: expected exactly 1 plugin entry, found {len(entries)}")
         return findings
     entry = entries[0]
+    for key in sorted(set(entry) - MARKETPLACE_ENTRY_KEYS):
+        findings.append(
+            f"marketplace.json: unrecognized plugin-entry key {key!r} "
+            f"(allowlist in harness_lint.py)")
     if pj.get("name") != entry.get("name") or pj.get("name") != mk.get("name"):
         findings.append(
             f"manifest name parity: plugin.json={pj.get('name')!r} "
@@ -411,7 +446,9 @@ def self_test():
             "- [ ] **AAA-4** ok (P2)\n  - **Depends**: none\n", encoding="utf-8")
         (root / ".claude-plugin").mkdir()
         (root / ".claude-plugin" / "plugin.json").write_text(
-            '{"name": "alpha-plug", "version": "1.0"}', encoding="utf-8")
+            '{"name": "alpha-plug", "version": "1.0", '
+            '"$schema": "https://example.com/x.json", "displayName": "Alpha"}',
+            encoding="utf-8")
         (root / ".claude-plugin" / "marketplace.json").write_text(
             '{"name": "alpha-plug", "plugins": [{"name": "other-name", '
             '"source": "./plug", "version": "2.0.0"}]}', encoding="utf-8")
@@ -435,6 +472,8 @@ def self_test():
             "status 'maybe' not in",
             "BROKEN-1-acs.json: unreadable or invalid JSON",
             "is not X.Y.Z semver",
+            "unrecognized key '$schema'",
+            "unrecognized key 'displayName'",
             "manifest name parity",
             "marketplace entry declares a version",
             "expected \"./\"",
