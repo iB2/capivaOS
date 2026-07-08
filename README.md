@@ -218,6 +218,10 @@ The overhead buys the artifact chain (spec, acs.json, PLAN.md, quality report) a
 - **Git** and your stack's toolchain (per blueprint)
 - **Protected default branch** (require PRs) before enabling auto mode — `/capiva:init` checks and offers to configure it
 
+## Contributing
+
+Single-maintainer project, external PRs welcome with honest expectations — see [CONTRIBUTING.md](CONTRIBUTING.md) (includes the local quality-gate commands and the house rules CI holds you to).
+
 ## Repository Layout (this repo = the plugin = its own marketplace)
 
 ```
