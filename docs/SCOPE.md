@@ -95,7 +95,7 @@ The harness is stack-agnostic. Technology-specific patterns, commands, and stand
 - Pipeline phases, state machine, phase guards
 - Artifact gating and quality gate thresholds
 - Board protocol and lock mechanism
-- Agent roles (dev, qa, arch) — reference the active blueprint for stack-specific patterns
+- Agent roles (dev, qa, arch, gate-judge, phase-runner) — dev/qa/arch reference the active blueprint for stack-specific patterns; gate-judge and phase-runner serve the ADR-0014 autonomy layer
 - Skills (/capiva:grill-spec, /capiva:plan, /capiva:implement, /capiva:test-verify, /capiva:finish) — use blueprint commands
 - Templates (CAB tickets, deviation records, release checklists)
 - Context management and handover protocol

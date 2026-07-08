@@ -253,7 +253,7 @@ def _write_denial(path: Path, phase: str):
     return (
         f"Phase guard: source file writes require Phase = IMPLEMENT "
         f"(tests also allowed in TEST_VERIFY / VERIFY_FINISH). Current phase: {phase or 'UNKNOWN'}. "
-        f"Run /sprint to advance the pipeline, or edit pipeline artifacts "
+        f"Run /capiva:sprint to advance the pipeline, or edit pipeline artifacts "
         f"(docs/, .board/, PLAN.md) instead. File: {path}"
     )
 
@@ -294,13 +294,13 @@ def _check_shell(tool_input: dict, phase: str, gate: str):
             _deny(
                 f"Phase guard: `gh pr create` requires Phase = FINISH "
                 f"(or VERIFY_FINISH in the fast lane). "
-                f"Current phase: {phase or 'UNKNOWN'}. Complete /test-verify and "
-                f"quality review first, then /finish creates the PR."
+                f"Current phase: {phase or 'UNKNOWN'}. Complete /capiva:test-verify and "
+                f"quality review first, then /capiva:finish creates the PR."
             )
         if gate not in PASSING_GATES:
             _deny(
                 f"Phase guard: `gh pr create` requires Quality Gate = PASS or "
-                f"ACCEPTED_SOFT_FAIL. Current: {gate or '--'}. Run /test-verify "
+                f"ACCEPTED_SOFT_FAIL. Current: {gate or '--'}. Run /capiva:test-verify "
                 f"and pass the quality gates first."
             )
     _allow()

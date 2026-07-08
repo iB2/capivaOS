@@ -176,7 +176,7 @@ capivaOS/
 │   ├── plugin.json           # name: capiva, semver — the release contract
 │   └── marketplace.json      # self-referencing marketplace (source: ./)
 ├── skills/                   # the capiva:* pipeline phases + update ritual
-├── agents/                   # dev / qa / arch with platform-enforced tool allowlists
+├── agents/                   # dev / qa / arch / gate-judge / phase-runner — platform-enforced tool allowlists
 ├── hooks/                    # phase guard, context persistence, session injection
 │   ├── hooks.json            # plugin hook registration
 │   └── run-hook.cmd          # Windows/POSIX polyglot dispatcher (never blocks)

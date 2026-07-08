@@ -5,10 +5,10 @@
 
 ## §project — Blueprint Project
 
-- **Path**: `C:\Users\bruno\Documents\DevProjects\blueprint-backend\`
+- **Path**: *(maintainer's reference build — set per machine, e.g. `C:\Users\<you>\Documents\DevProjects\blueprint-backend\`)*
 - **Type**: .NET 10 solution with Hexagonal Architecture
 - **Contents**: ~80 files — solution, csproj, controllers, use cases, builders, validators, repositories, migrations, tests, CI pipeline
-- **Origin**: Enterprise blueprint (Lumon project, descharacterized)
+- **Origin**: Enterprise blueprint (Lumon project, de-identified)
 - **Status**: Functional, buildable
 
 ---

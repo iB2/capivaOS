@@ -23,6 +23,14 @@ Checks:
      ONLY (single version source), self-referencing "./" source.
   8. Board dependency graphs (.board/tasks.md, live or project-template):
      every Depends ID exists on that board; the graph is acyclic (LOOP-005).
+  9. Agent-roster parity: every agents/*.md is named in README.md,
+     rules/laws.md and docs/SCOPE.md (AUD-006 - 5 agents shipped while the
+     entry docs documented 3).
+ 10. Personal absolute paths (C:/Users/<name>, /Users/, /home/) must not
+     ship; the placeholder form C:/Users/<you>/ is the convention.
+ 11. Bare skill references inside hooks/*.py string literals - deny messages
+     said "Run /sprint" while the doc surface is /capiva:*; the .md-only scan
+     could not see them.
 
 Usage:
   python3 scripts/harness_lint.py              # lint the repo; exit 1 on findings
@@ -82,6 +90,7 @@ RUNTIME_ARTIFACTS = {
     ".claude/settings.json",  # adopter's project hook registration (dev/copy mode)
 }
 PLACEHOLDER_TOKENS = ("*", "TASK-ID", "NNNN", "000N", "DEV-NNN", "<", "[", "your-", "N-slug")
+PERSONAL_PATH_RE = re.compile(r"(?:C:\\+Users\\+|/Users/|/home/)(?!<)[A-Za-z0-9_.$-]+")
 ACS_STATUSES = {"pending", "pass", "fail"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
@@ -355,6 +364,42 @@ def lint(root: Path):
             if bp.name not in text:
                 findings.append(f"{doc_rel}: blueprint '{bp.name}' exists but is not mentioned")
 
+    # 9. agent-roster parity: every shipped agent named in the three entry
+    #    docs (mirror of check 4) — AUD-006: 5 agents shipped, 3 documented
+    agents = sorted(p.stem for p in (root / "agents").glob("*.md")) if (root / "agents").is_dir() else []
+    for doc_rel in ("README.md", "rules/laws.md", "docs/SCOPE.md"):
+        doc = root / doc_rel
+        if not doc.is_file():
+            continue
+        text = doc.read_text(encoding="utf-8", errors="replace")
+        for name in agents:
+            if name not in text:
+                findings.append(f"{doc_rel}: agent '{name}' exists but is not mentioned")
+
+    # 10. personal absolute paths must not ship (AUD-006); the <you>
+    #     placeholder form is exempt via the (?!<) lookahead
+    personal_scan = list(all_text.items()) + [
+        (f, f.read_text(encoding="utf-8", errors="replace"))
+        for f in sorted(root.glob("blueprints/*/*.md"))]
+    for f, text in personal_scan:
+        for m in PERSONAL_PATH_RE.finditer(text):
+            findings.append(
+                f"{f.relative_to(root).as_posix()}: personal path {m.group(0)!r} — "
+                f"use the C:\\Users\\<you>\\ placeholder form")
+
+    # 11. bare skill references inside hook string literals — the .md-only
+    #     scan let "Run /sprint" ship inside phase_guard.py deny messages.
+    #     Lookarounds: not preceded by word/dot/colon chars (path segments
+    #     like .board/sprint-state.md), not followed by word/dot/dash
+    #     (sprint-state)
+    for hook_file in sorted(root.glob("hooks/*.py")):
+        text = hook_file.read_text(encoding="utf-8", errors="replace")
+        for name in sorted(bare_skills):
+            if re.search(rf"(?<![\w./`>:])/{re.escape(name)}(?![\w.-])", text):
+                findings.append(
+                    f"{hook_file.relative_to(root).as_posix()}: bare skill reference "
+                    f"/{name} (plugin skills are /{NAMESPACE}:{name})")
+
     # 5. blueprint §-section parity + referenced sections exist everywhere
     section_sets = {}
     for bp in blueprints:
@@ -415,6 +460,7 @@ def self_test():
             encoding="utf-8")
         (root / "rules" / "laws.md").write_text(
             "alpha beta and §ghost-section\n"
+            "Built at C:\\Users\\johndoe\\proj (personal path seed)\n"
             "Read ${CLAUDE_PLUGIN_ROOT}/rules/gone.md for details.\n"
             "Also read skills/plan/SKILL.md directly.\n", encoding="utf-8")
         (root / "docs" / "DESIGN.md").write_text(
@@ -422,6 +468,11 @@ def self_test():
             encoding="utf-8")
         (root / "docs" / "SCOPE.md").write_text("alpha only\n", encoding="utf-8")  # beta missing
         (root / "docs" / "adr" / "0001-real.md").write_text("# ADR-0001\n", encoding="utf-8")
+        (root / "agents").mkdir()
+        (root / "agents" / "rogue.md").write_text("# rogue agent\n", encoding="utf-8")
+        (root / "hooks").mkdir()
+        (root / "hooks" / "guard.py").write_text(
+            'MSG = "Run /plan to continue; see .board/sprint-state.md"\n', encoding="utf-8")
         (root / "docs" / "adr" / "0003-unindexed.md").write_text("# ADR-0003\n", encoding="utf-8")
         (root / "blueprints" / "alpha" / "reference.md").write_text(
             "## §stack\n## §build-commands\n", encoding="utf-8")
@@ -479,6 +530,9 @@ def self_test():
             "expected \"./\"",
             "depends on unknown task BBB-9",
             "dependency cycle involving",
+            "agent 'rogue' exists but is not mentioned",
+            "personal path",
+            "hooks/guard.py: bare skill reference /plan",
         ]
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]

@@ -1,5 +1,11 @@
 # Blueprint Migration Map — File Classification & Destination
 
+> **HISTORICAL RECORD — pre-plugin layout.** The paths below reflect the
+> pre-ADR-0013 copy-mode layout (`.claude/skills/...`, `.claude/rules/...`)
+> and do not resolve in the current repo (top-level `skills/`, `rules/`,
+> `agents/`). Deliberately excluded from `harness_lint` scans; kept as the
+> audit trail of the ADR-0007 blueprint separation.
+
 This document maps every file in the harness to its classification (universal, stack-specific, or mixed) and its destination after the blueprint separation.
 
 ## Classification Legend

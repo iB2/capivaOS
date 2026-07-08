@@ -5,7 +5,7 @@
 
 ## §project — Blueprint Project
 
-- **Path**: `C:\Users\bruno\Documents\DevProjects\blueprint-python-fastapi\`
+- **Path**: *(maintainer's reference build — set per machine, e.g. `C:\Users\<you>\Documents\DevProjects\blueprint-python-fastapi\`)*
 - **Type**: Python FastAPI project with layered architecture
 - **Contents**: ~30 files — app (routes, services, repositories, schemas), tests, Dockerfile, CI pipeline
 - **Status**: Functional, scaffoldable
