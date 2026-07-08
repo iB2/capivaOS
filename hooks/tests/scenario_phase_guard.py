@@ -316,6 +316,17 @@ def main():
         # reset a clean IMPLEMENT state for any trailing cases
         set_state("IMPLEMENT")
 
+        # PRD-004: mechanical run-log (hook-written, append-only)
+        set_state("IDLE")
+        rl = root / ".state" / "run-log.jsonl"
+        if rl.exists():
+            rl.unlink()
+        run_guard(root, "Edit", {"file_path": src})  # a deny
+        run_guard(root, "Write", {"file_path": ss_path, "content": ss("TRIAGE")})  # a transition
+        logged = rl.read_text(encoding="utf-8") if rl.is_file() else ""
+        cases.append(("run-log: deny event recorded", '"event": "deny"' in logged))
+        cases.append(("run-log: transition event recorded", '"event": "transition"' in logged and '"to": "TRIAGE"' in logged))
+
         # garbage stdin never blocks
         env = dict(os.environ); env["CLAUDE_PROJECT_DIR"] = str(root)
         r = subprocess.run([sys.executable, str(GUARD)], input="not json", capture_output=True, text=True, env=env)

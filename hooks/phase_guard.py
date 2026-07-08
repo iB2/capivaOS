@@ -75,6 +75,7 @@ SPRINT_STATE = PROJECT_ROOT / ".board" / "sprint-state.md"
 # On POSIX a non-executable/misdispatched hook fails before the .py runs,
 # so a fresh heartbeat is the mechanical signal that enforcement is alive.
 HEARTBEAT = PROJECT_ROOT / ".state" / "guard-heartbeat"
+RUN_LOG = PROJECT_ROOT / ".state" / "run-log.jsonl"
 BOARD_LOCK = PROJECT_ROOT / ".board" / "board.lock"
 LOCK_HOLDER = PROJECT_ROOT / ".state" / "lock-holder"
 SPRINT_STATE_REL = ".board/sprint-state.md"
@@ -265,6 +266,7 @@ def _read_state():
 
 
 def _deny(reason: str):
+    _run_log("deny", reason=reason[:200])
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -421,6 +423,10 @@ def _transition_denial(tool_name: str, tool_input: dict):
             return ("Phase guard: cannot set Quality Gate = %s without a quality "
                     "report (docs/reports/%s-quality.md) on disk — a gate is not "
                     "PASS just because the field says so (ADR-0015)." % (new_gate, task_id))
+    if new_phase and new_phase != old_phase:
+        _run_log("transition", task=task_id, frm=old_phase or "(none)", to=new_phase)
+    if new_gate in PASSING_GATES and old_gate not in PASSING_GATES:
+        _run_log("gate", task=task_id, gate=new_gate)
     return None
 
 
@@ -513,6 +519,21 @@ def _check_shell(tool_input: dict, phase: str, gate: str):
                 f"and pass the quality gates first."
             )
     _allow()
+
+
+def _run_log(event: str, **fields):
+    """Append one JSONL line to the mechanical run-log (PRD-004). Hook-written,
+    append-only — the audit trail is NOT the same agent's markdown narrative.
+    Best-effort: a logging failure must never block a tool call."""
+    try:
+        RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        rec = {"ts": stamp, "event": event}
+        rec.update(fields)
+        with RUN_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 
 def _touch_heartbeat(phase: str):

@@ -28,5 +28,5 @@
 
 ## Notes
 
-- Changes to this file are detected by hash and logged in Phase History.
+- Agent writes to this file are denied by phase_guard.py in every phase (hook-enforced). Human edits are recorded by the run-log's deny/allow events like any other board activity.
 - Absent, unparseable, or partially filled = the missing parts escalate.

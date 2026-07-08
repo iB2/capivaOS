@@ -50,6 +50,16 @@ and the write surface stops self-licensing.
   bricked mid-migration.
 - Lint checks 18 (staleness parity) keep the two constants from drifting.
 
+### Real audit trail (PRD-004)
+- **False hash claim removed**: the approval-policy template and ADR-0014
+  claimed "changes detected by hash and logged" — no code ever computed a
+  hash. Deleted (not faked); lint check 19 blocks any doc from re-claiming a
+  hash-audit mechanism no code implements.
+- **Mechanical run-log**: hooks append `.state/run-log.jsonl` (deny,
+  transition, gate, and lock events) — an append-only, hook-written record
+  the same agent's markdown narrative is checked against, not vice-versa.
+  The morning report now reconciles against it.
+
 ## [1.2.1] — 2026-07-09
 
 Patch: consistency and claims hardening — the remainder of the 2026-07
