@@ -1,6 +1,14 @@
+<p align="center"><img src="docs/assets/capiva-orchestrator.png" alt="capivaOS mascot orchestrating multiple projects" width="420"></p>
+
 # capivaOS — Spec-Driven Development Harness for Claude Code
 
 A state-machine enforced, spec-first, test-enforced development pipeline for Claude Code, installed as a **plugin**. Board-driven, artifact-gated, human-checkpointed. **Stack-agnostic** via pluggable blueprints. Free, by [Capiva](https://github.com/iB2).
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/iB2/capivaOS)](https://github.com/iB2/capivaOS/releases)
+[![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin%20marketplace-5A45FF)](#install)
+
+Built and dogfooded by [Capiva](https://capiva.tech/en/capivaos) — read [What is an AI Harness?](https://capiva.tech/en/blog/o-que-e-ai-harness)
 
 Synthesizes ideas from [Matt Pocock's skills](https://github.com/mattpocock/skills) (the adversarial spec interview), [Superpowers](https://github.com/obra/superpowers) (SDD+TDD pipeline, by obra), and Claudio (Bruno Americo's board-driven agent orchestration framework, not publicly released). Full design philosophy and rationale: [docs/DESIGN.md](docs/DESIGN.md). What it is and isn't: [docs/SCOPE.md](docs/SCOPE.md). Security properties: [SECURITY.md](SECURITY.md).
 
@@ -256,6 +264,12 @@ capivaOS/
 ```
 
 For harness development itself (this repo), see [docs/DESIGN.md](docs/DESIGN.md) and the CI suite (`scripts/harness_lint.py`, `hooks/tests/`).
+
+## Learn more
+
+- [capivaOS page](https://capiva.tech/en/capivaos) — what it is, install, FAQ ([em português](https://capiva.tech/pt/capivaos))
+- [What is an AI Harness?](https://capiva.tech/en/blog/o-que-e-ai-harness) — the concept behind the tool
+- [AI Harness in Practice](https://capiva.tech/en/blog/ai-harness-na-pratica) — how Capiva runs its own operation on this pattern
 
 ---
 
