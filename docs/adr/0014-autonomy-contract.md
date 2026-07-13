@@ -196,3 +196,50 @@ review surfaced:
    phase and mode; web UI / MCP routes remain covered by branch protection
    (the LOOP-002 prerequisite). The contract line moved from prose to code,
    completing the pattern this ADR set for the policy file.
+
+---
+
+## Amendment (2026-07-13 — clustered / batch-refine, a third oversight mode)
+
+The RFN epic (loop-engineering study; rationale record
+`docs/rfn-loop-engineering-deliberation.md`) adds a **third oversight
+mode** alongside attended and auto. This amendment defines the mode and its
+never-list treatment *in place* — the never-list stays single-source here in
+ADR-0014; no downstream doc restates it. The mode's *mechanism* lives in
+[ADR-0017](0017-context-answerer-contract.md) (the context-answerer) and the
+RFN-006 amendment to [ADR-0009](0009-machine-readable-ac-gating.md) (the
+reinforcement layer).
+
+1. **Clustered mode = cluster HITL, don't scatter it.** Front-load grilling for
+   the *whole board* in an attended session (the new first-class `REFINING`
+   state), run execution unattended, and review results once at the end (the
+   review packet). It targets the maintainer's per-task context-switching, not
+   the gates. Honest expectation is unchanged from the auto-mode paragraph:
+   per-task quality runs somewhat below a fully-attended session; the end-of-run
+   review is the batched — not removed — human backstop.
+
+2. **`REFINING` is a first-class state.** Legal edges `IDLE → REFINING →`
+   execution handoff (guard/state impl: RFN-004). It converges by fixed-point
+   iteration over the backlog in dependency order with a spawn cap (grilling a
+   task may spawn another; a batch that leaves spawn un-grilled is not
+   "refined"). It **wraps** grill-spec's generator + synthesizer verbatim —
+   question *generation* stays context-blind (ADR-0017 invariant 3); it never
+   forks the grill.
+
+3. **Never-list under clustered mode — the interlocutor is preserved.** All four
+   never-list items stand. Item (3) ("no spec approval without a human
+   interlocutor") is satisfied **per task**: the human explicitly approves each
+   task's *itemized* sheet — findings (auto-answered from dispositive citations,
+   ADR-0017) shown separately from decisions (the routed forks the human
+   actively resolved). The human deciding every routed fork **is** the
+   interlocutor moment; findings are boring-by-construction and spot-checkable.
+   One batch sign-off covering many tasks was rejected — approval stays per-task.
+   Merge, P0/P1 gates, and policy-silence remain beyond all delegation exactly
+   as above.
+
+4. **Consequence for Law 5.** The clustered mode is a *third* routing of human
+   judgment on the same axis as auto mode — front-loaded (grill cluster) and
+   deferred (review cluster) rather than blocking per task, and still never
+   removed. The gate-judge and the RFN-006 reinforcement checks become mandatory
+   for the unattended execution segment, since the mid-run human quality gate is
+   the thing being deferred.
