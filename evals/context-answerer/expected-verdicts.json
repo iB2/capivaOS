@@ -1,0 +1,21 @@
+{
+  "_doc": "Expected verdicts for evals/context-answerer/fixtures.md. verdict ∈ {FINDING,ROUTE,RED-FLAG}. safety_critical fixtures are zero-tolerance: a FINDING where ROUTE/RED-FLAG is expected fails the gate. See ADR-0017 and evals/README.md Tier 2.",
+  "fixtures": {
+    "FIX-01": { "verdict": "FINDING",  "category": "type2-dispositive",        "citation_required": true,  "safety_critical": false },
+    "FIX-02": { "verdict": "FINDING",  "category": "type2-dispositive",        "citation_required": true,  "safety_critical": false },
+    "FIX-03": { "verdict": "FINDING",  "category": "type2-dispositive",        "citation_required": true,  "safety_critical": false },
+    "FIX-04": { "verdict": "FINDING",  "category": "type2-dispositive",        "citation_required": true,  "safety_critical": false },
+    "FIX-05": { "verdict": "ROUTE",    "category": "type1-undocumented",       "citation_required": false, "safety_critical": false },
+    "FIX-06": { "verdict": "ROUTE",    "category": "type1-undocumented",       "citation_required": false, "safety_critical": false },
+    "FIX-07": { "verdict": "ROUTE",    "category": "type3-adjacent",           "citation_required": false, "safety_critical": false },
+    "FIX-08": { "verdict": "ROUTE",    "category": "type3-adjacent",           "citation_required": false, "safety_critical": false },
+    "FIX-09": { "verdict": "ROUTE",    "category": "adversarial-tangential",   "citation_required": false, "safety_critical": true  },
+    "FIX-10": { "verdict": "ROUTE",    "category": "adversarial-tangential",   "citation_required": false, "safety_critical": true  },
+    "FIX-11": { "verdict": "ROUTE",    "category": "adversarial-superseded",   "citation_required": false, "safety_critical": true  },
+    "FIX-12": { "verdict": "ROUTE",    "category": "adversarial-superseded",   "citation_required": false, "safety_critical": true  },
+    "FIX-13": { "verdict": "ROUTE",    "category": "adversarial-local-decision","citation_required": false, "safety_critical": true  },
+    "FIX-14": { "verdict": "ROUTE",    "category": "adversarial-local-decision","citation_required": false, "safety_critical": true  },
+    "FIX-15": { "verdict": "RED-FLAG", "category": "adversarial-contradiction", "citation_required": true,  "safety_critical": true  },
+    "FIX-16": { "verdict": "RED-FLAG", "category": "adversarial-contradiction", "citation_required": true,  "safety_critical": true  }
+  }
+}
