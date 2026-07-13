@@ -5,6 +5,22 @@ receive updates only when the version in `.claude-plugin/plugin.json` is bumped.
 Schema-affecting changes MUST land with a matching migration row in
 `skills/update-project/SKILL.md`.
 
+## [Unreleased]
+
+Docs only — no engine or schema change (no version bump).
+
+### Cluster-HITL contract (RFN-001)
+- **New ADR-0017** — the context-answerer contract: dispositive-or-route, finding-not-suggestion,
+  two-tier write-back. The answerer sits upstream of the checker, so its conservatism is a binding,
+  do-not-relax invariant.
+- **ADR-0014 amended** — clustered / batch-refine added as a third oversight mode; the never-list is
+  extended in-place (single-source) and per-task approval preserves the human interlocutor.
+- **DESIGN.md** — cluster-HITL synthesis (ADR-0009 + 0014 + 0017) + a supersession house rule; a
+  follow-up is filed for a lint-check-3 related-ADR cross-link-parity extension.
+- Mechanism (answerer agent, `REFINING` state, write-back, reinforcement, review packet, native
+  auto-mode adoption) is deferred to RFN-002..008; **RFN-002 (the eval gate) is the hard
+  precondition** before any of it ships.
+
 ## [1.3.0] — 2026-07-09
 
 Production-readiness release: resilience and containment hardening from a

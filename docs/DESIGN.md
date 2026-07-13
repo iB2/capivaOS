@@ -192,11 +192,34 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0011](adr/0011-slim-always-loaded-layer.md) | Gold-standard examples moved into skills; always-loaded layer slimmed |
 | [0012](adr/0012-native-agent-primitives.md) | Native agent definitions with tool allowlists; structured subagent reports |
 | [0013](adr/0013-plugin-distribution.md) | Plugin distribution: engine/state split, self-marketplace, session injection |
-| [0014](adr/0014-autonomy-contract.md) | Autonomy contract: policy+judge gate routing, never-list, isolation-first context |
+| [0014](adr/0014-autonomy-contract.md) | Autonomy contract: policy+judge gate routing, never-list, isolation-first context (2026-07-13 amendment: clustered / batch-refine, a third oversight mode) |
 | [0015](adr/0015-transition-validation.md) | Sprint-state transition validation: the guard learns the state machine (implemented 1.3.0) |
 | [0016](adr/0016-mechanical-board-lock.md) | Mechanical board lock: code + guard enforcement, supersedes ADR-0003's prose ritual |
+| [0017](adr/0017-context-answerer-contract.md) | Context-answerer contract: dispositive-or-route, never suggest; two-tier write-back (RFN epic) |
+
+---
+
+## The cluster-HITL capability (ADR-0009 + ADR-0014 + ADR-0017)
+
+Batch-refine / clustered mode spans three single-responsibility ADRs — this section is the synthesis
+so the capability reads as one thing, not three fragments:
+
+- **[ADR-0014](adr/0014-autonomy-contract.md)** owns the *oversight* half: the clustered mode itself
+  (front-load grilling → run unattended → review once) and the never-list (single-source; per-task
+  approval preserves the interlocutor).
+- **[ADR-0017](adr/0017-context-answerer-contract.md)** owns the *new mechanism*: the context-answerer
+  (dispositive-or-route, finding-not-suggestion, two-tier write-back) that auto-answers documented
+  grill questions and routes the rest.
+- **[ADR-0009](adr/0009-machine-readable-ac-gating.md)** (RFN-006 amendment) owns the *reinforcement*
+  half: the checks that must hold when the mid-run human quality gate is deferred.
+
+**House rule (governance):** prefer **supersession** (a new ADR that supersedes an old one, à la
+ADR-0016→0003) over in-place amendment when a *shipped* guarantee changes; reserve dated amendment
+blocks for clarifications and additive extensions. In-place amendment silently changes the contract an
+adopter on an older version read. *Follow-up filed:* extend lint check 3 to assert related ADRs
+cross-link each other, so a multi-ADR capability cannot fragment silently.
 
 ---
 
 *Design philosophy document for the Spec-Driven Development Harness*
-*Last updated: June 2026*
+*Last updated: July 2026*
