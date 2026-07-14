@@ -7,7 +7,24 @@ Schema-affecting changes MUST land with a matching migration row in
 
 ## [Unreleased]
 
-Docs only — no engine or schema change (no version bump).
+**RFN epic — batch-refine / cluster-HITL.** Accumulating across RFN-001..008; the version bump lands
+at epic completion. Each piece is opt-in and default-off, so nothing changes for adopters until the
+`Context Answerer` / `REFINING` features are enabled.
+
+### Context-answerer agent + opt-in grill-spec wiring (RFN-003)
+- **New read-only agent** `agents/context-answerer.md` — body is the RFN-002 gate-certified prompt
+  verbatim (dispositive-or-route; FINDING/ROUTE/RED-FLAG). Mirror of gate-judge (context-fresh);
+  this is context-full, same evidence discipline.
+- **`/capiva:grill-spec` gains an opt-in triage step** gated by `- **Context Answerer**: off` in
+  harness-config (default off): when on, it triages the generated questions — dispositive citations
+  become cited findings, everything else routes to the human, contradictions red-flag. Question
+  generation is unchanged; the default attended grill is byte-for-byte unchanged.
+
+### Dispositive-bar eval gate (RFN-002)
+- **`evals/context-answerer/`** — the prompt-under-test, 16 fixtures (all categories + zero-tolerance
+  safety-critical adversarials), `expected-verdicts.json`, a deterministic `validate_fixtures.py`
+  (`--self-test`, wired into no-auth CI), and a negative control. The hard gate that proves the
+  answerer's bar before the mechanism ships. Epic-gate declared PASS.
 
 ### Cluster-HITL contract (RFN-001)
 - **New ADR-0017** — the context-answerer contract: dispositive-or-route, finding-not-suggestion,
