@@ -11,6 +11,15 @@ Schema-affecting changes MUST land with a matching migration row in
 at epic completion. Each piece is opt-in and default-off, so nothing changes for adopters until the
 `Context Answerer` / `REFINING` features are enabled.
 
+### Reinforcement layer for unattended execution (RFN-006)
+- **ADR-0009 amended** — in auto/clustered mode (where the mid-run human gate is deferred) the
+  gate-judge is mandatory and extended to **test-meaningfulness** (catch tautological/green-but-empty
+  tests) and **spec-conformance** (catch scope-shaving), and dual-review is promoted to mandatory.
+  Attended mode unchanged. `agents/gate-judge.md` + `skills/test-verify` updated; two new
+  `evals/gate-judge/` fixtures (tautological-test, scope-shave) expect ESCALATE.
+- Honest scope: this protects a half-assed impl of a *good* spec; a faithful impl of a *bad* spec is
+  the upstream answerer's job (RFN-002/003), not this.
+
 ### Two-tier decision write-back + read-back metric (RFN-005)
 - **`.board/decisions.md`** (per-project) — batch-refine logs each human-resolved routed question as
   task-scoped, NON-dispositive prior art (rationale+constraints, never a bare verdict). Only a human
