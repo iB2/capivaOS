@@ -345,6 +345,9 @@ _LEGAL_EDGES = {
     ("TRIAGE", "SPEC_PLAN"), ("SPEC_PLAN", "IMPLEMENT"),
     ("IMPLEMENT", "VERIFY_FINISH"), ("VERIFY_FINISH", "IDLE"),
     ("SPEC_PLAN", "GRILL_SPEC"), ("VERIFY_FINISH", "TEST_VERIFY"),
+    ("IDLE", "REFINING"),  # RFN-004: clustered/batch-refine entry (ADR-0014
+    # clustered-mode amendment). REFINING->IDLE (batch done) and ->BLOCKED are
+    # already auto-legal; only the entry edge is added. Minimal, additive.
 }
 
 

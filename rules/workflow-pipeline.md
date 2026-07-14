@@ -32,6 +32,7 @@ Required phase: [PHASE_NAME]
 | /capiva:finish | FINISH | IDLE (task complete) |
 | /capiva:spec-plan | SPEC_PLAN (fast lane) | IMPLEMENT on approval; GRILL_SPEC on abort |
 | /capiva:verify-finish | VERIFY_FINISH (fast lane) | IDLE on completion; TEST_VERIFY on escalation |
+| /capiva:refine | REFINING (clustered lane) | IDLE when the backlog is refined (specs approved per task) |
 
 ---
 

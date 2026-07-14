@@ -11,6 +11,16 @@ Schema-affecting changes MUST land with a matching migration row in
 at epic completion. Each piece is opt-in and default-off, so nothing changes for adopters until the
 `Context Answerer` / `REFINING` features are enabled.
 
+### REFINING state + /capiva:refine clustered lane (RFN-004)
+- **New board-level state `REFINING`** + one additive guard edge (`IDLE→REFINING`); `REFINING→IDLE`
+  and `→BLOCKED` are already auto-legal. State-machine sim + doc-parity + the transition docs updated
+  in lockstep.
+- **New `/capiva:refine` skill** — front-loads grilling for the whole backlog (opt-in clustered lane,
+  ADR-0014 amendment): iterate tasks in dependency order, run grill-spec + the context-answerer,
+  approve spec+acs per task with an itemized findings-vs-decisions sheet, then exit to IDLE so
+  `/capiva:sprint` or `/capiva:auto` executes the pre-approved backlog. Fixed-point convergence with a
+  spawn cap. The attended and fast lanes are unchanged.
+
 ### Context-answerer agent + opt-in grill-spec wiring (RFN-003)
 - **New read-only agent** `agents/context-answerer.md` — body is the RFN-002 gate-certified prompt
   verbatim (dispositive-or-route; FINDING/ROUTE/RED-FLAG). Mirror of gate-judge (context-fresh);

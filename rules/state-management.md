@@ -17,7 +17,7 @@ The file uses Markdown field syntax: `- **Field Name**: Value`. All phase guards
 | Lane | full, fast | /capiva:sprint (TRIAGE, per ADR-0010 predicate) |
 | Task Title | Task name or `(none)` | /capiva:sprint |
 | Priority | P0-P4 or `--` | /capiva:sprint |
-| Phase | IDLE, TRIAGE, GRILL_SPEC, PLAN, IMPLEMENT, TEST_VERIFY, FINISH, SPEC_PLAN, VERIFY_FINISH, BLOCKED | Every skill |
+| Phase | IDLE, TRIAGE, GRILL_SPEC, PLAN, IMPLEMENT, TEST_VERIFY, FINISH, SPEC_PLAN, VERIFY_FINISH, BLOCKED, REFINING | Every skill |
 | Phase Started | ISO timestamp or `--` | Every skill |
 | Spec Approved | Yes / No | /capiva:sprint (after human approval) |
 | Plan Approved | Yes / No | /capiva:sprint (after human approval) |
@@ -39,6 +39,9 @@ IDLE ──→ TRIAGE ──→ GRILL_SPEC ──→ PLAN ──→ IMPLEMENT �
 
 Fast lane (Lane = fast, ADR-0010):
 IDLE ──→ TRIAGE ──→ SPEC_PLAN ──→ IMPLEMENT ──→ VERIFY_FINISH ──→ IDLE
+
+Clustered lane (batch-refine, RFN-004 — /capiva:refine):
+IDLE ──→ REFINING ──→ IDLE   (front-load grilling for the whole backlog; then normal execution)
 
 Special transitions:
   ANY ──→ BLOCKED (human escalation or three-strike)

@@ -21,6 +21,7 @@
 ```
 Full lane: IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
 Fast lane: IDLE → TRIAGE → SPEC_PLAN → IMPLEMENT → VERIFY_FINISH → IDLE   (ADR-0010)
+Clustered lane (batch-refine): IDLE → REFINING → IDLE   (RFN-004; /capiva:refine, then normal execution picks up pre-approved tasks)
 ANY  → BLOCKED (escalation) → resume previous phase
 ANY  → IDLE (abort)
 SPEC_PLAN → GRILL_SPEC / VERIFY_FINISH → TEST_VERIFY (fast-lane abort/escalation, Lane resets to full)

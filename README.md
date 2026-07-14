@@ -145,6 +145,7 @@ drifting one:
 |-------|-------|----------|
 | `/capiva:init` | 0 — Bootstrap | Scaffolded board/docs, blueprint config, schema stamp |
 | `/capiva:sprint` | Orchestrator | State transitions, lane selection, the loop |
+| `/capiva:refine` | Clustered lane (REFINING) | Batch-grill the whole backlog (opt-in); approved specs per task, then normal execution |
 | `/capiva:grill-spec` | 1 — GRILL_SPEC | `docs/specs/TASK-ID-spec.md` + `TASK-ID-acs.json`, CONTEXT.md terms, ADRs |
 | `/capiva:plan` | 2 — PLAN | `PLAN.md`, `docs/tech-context/TASK-ID-tech.md` |
 | `/capiva:implement` | 3 — IMPLEMENT | Code + tests on a feature branch, validated JSON reports |
