@@ -52,8 +52,10 @@ prove the guard actually runs there.
 Mechanical audit trail: hooks append `.state/run-log.jsonl` (hook-written,
 append-only — never the model's own narrative). Events: `deny`, `transition`,
 `gate`, `lock-acquire`/`lock-release`, `guard-status` (kill-switch flips,
-logged on change), and `heartbeat-missing` (recorded at SessionStart by
-session_context, since a dead guard cannot log its own absence). The auto-mode
+logged on change), `heartbeat-missing` (recorded at SessionStart by
+session_context, since a dead guard cannot log its own absence), and
+`answerer-consulted` (batch-refine: the context-answerer cited a decision-log
+entry — RFN-005, feeds the read-back metric). The auto-mode
 morning report is reconciled against this log.
 
 Everything else the harness does — phase sequencing, artifact gating, the

@@ -151,6 +151,33 @@ logged in Phase History (`gate-escalation-resolved`). Every delegated CLEAR is
 logged too (`gate-delegated`, with the policy/judge basis) — the audit trail
 must show who decided what, human or machine, and on what grounds.
 
+## Decision Log (`.board/decisions.md`, batch-refine — RFN-005 / ADR-0017)
+
+When the context-answerer routes a grill question and the human decides it (in `/capiva:refine` or
+grill-spec Step 3.5), that decision is appended here as **task-scoped, NON-dispositive prior art**.
+One entry per decision:
+
+```markdown
+## DEC-[N] — [TASK-ID] [topic] — status: open
+- **Question**: [the routed question]
+- **Decision**: [the human's answer]
+- **Constraints**: [rationale + the conditions it holds under — NEVER a bare verdict]
+- **Promoted-to**: -- | ADR-#### | CONTEXT:term
+```
+
+**Two tiers (the amplification guard).** A decision-log entry is prior art the answerer may *surface*
+next time ("a prior task decided similarly") but must still **ROUTE** — it is never dispositive on its
+own. The ONLY path to dispositive authority is a **human** promoting it: author the ADR/CONTEXT term,
+set `status: promoted` with the `Promoted-to` target. A promoted decision whose ADR is later
+superseded is marked `status: retired`. This is exactly what stops a one-off local decision from
+silently becoming a false global rule.
+
+Rules: agents APPEND entries (status `open`, with rationale+constraints); only a human promotes or
+retires. `${CLAUDE_PLUGIN_ROOT}/scripts/validate_decisions.py` enforces no orphans (valid status; promoted ⇒ Promoted-to
+present; no bare verdicts) and computes the **read-back rate** from `.state/run-log.jsonl`
+(`answerer-consulted` events ÷ entries). Read-back is a *surfaced metric*: if it stays ~0 across
+sprints the log is dead text and the write-back should be removed — a **human** call, never automatic.
+
 ## Board Integrity Rules
 
 1. **One task in progress.** If "In Progress" has a task, do NOT start another.

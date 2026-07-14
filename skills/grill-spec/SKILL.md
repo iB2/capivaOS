@@ -89,8 +89,10 @@ once per question. It returns a structured verdict; consume each per ADR-0017:
 - **RED-FLAG | \<cite\>** — the task intent contradicts a live decision. Surface it prominently to
   the human before proceeding.
 
-The answerer only filters *presentation* (which questions reach the human); it never generates
-questions and never decides a routed one. It is read-only by construction, so it cannot write the
+When the human resolves a routed question, append a `DEC-[N]` entry to `.board/decisions.md` (RFN-005;
+see board-protocol Decision Log) — non-dispositive prior art, promotable to an ADR/CONTEXT term only
+by a human. The answerer only filters *presentation* (which questions reach the human); it never
+generates questions and never decides a routed one. It is read-only by construction, so it cannot write the
 spec. Findings and routed decisions are itemized separately in the spec so "approved" stays
 auditable (findings = auto+cited; decisions = human). Batch-scale orchestration of this across the
 whole board is the `REFINING` flow (RFN-004), not this step.
