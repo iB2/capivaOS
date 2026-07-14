@@ -75,6 +75,14 @@ Parking is always clean: mid-phase budget death abandons that phase's runner
 
 ## Morning Report (always written: `docs/reports/auto-run-[date].md`)
 
+On board-clear, ALSO emit a **review packet** (`docs/reports/review-packet-[date].md`, from
+`${CLAUDE_PLUGIN_ROOT}/project-template/templates/review-packet.md`, RFN-007) — the per-task
+backstop the human reviews once: PR / spec / ACs+evidence / quality / gate-judge verdict /
+deviations / parks. `${CLAUDE_PLUGIN_ROOT}/scripts/validate_review_packet.py <path>` checks it is
+complete (required sections; every Done row carries a PR). It is a review AID, not a gate — the merge
+decision stays the human's. `/capiva:refine` references the same packet on its exit.
+
+
 **Reconcile against the mechanical run-log.** Read `.state/run-log.jsonl`
 (hook-written: deny / transition / gate / lock / guard-status /
 heartbeat-missing events) and cross-check your

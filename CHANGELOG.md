@@ -11,6 +11,13 @@ Schema-affecting changes MUST land with a matching migration row in
 at epic completion. Each piece is opt-in and default-off, so nothing changes for adopters until the
 `Context Answerer` / `REFINING` features are enabled.
 
+### Review-packet end-of-run report (RFN-007)
+- **`/capiva:auto` (and `/capiva:refine` exit) emit a per-task review packet** on board-clear
+  (template `project-template/templates/review-packet.md`): PR / spec / ACs+evidence / quality /
+  gate-judge verdict / deviations / parks, reconciled against `.state/run-log.jsonl`. The batched-HITL
+  backstop — review everything once. `scripts/validate_review_packet.py` (`--self-test` in CI) checks
+  completeness + that every Done row has a PR. It is a review aid, not a gate.
+
 ### Reinforcement layer for unattended execution (RFN-006)
 - **ADR-0009 amended** — in auto/clustered mode (where the mid-run human gate is deferred) the
   gate-judge is mandatory and extended to **test-meaningfulness** (catch tautological/green-but-empty
