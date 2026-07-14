@@ -56,6 +56,31 @@ logged on change), and `heartbeat-missing` (recorded at SessionStart by
 session_context, since a dead guard cannot log its own absence). The auto-mode
 morning report is reconciled against this log.
 
+## Composing with Claude Code's native auto mode (RFN-008)
+
+Claude Code's native **auto mode** removes routine per-tool permission prompts by routing tool calls
+through a classifier. It is safe to run capivaOS under auto mode because **auto mode is a *second*
+gate, not a replacement for the first**: the classifier runs *after* the permissions system, and both
+`permissions.deny` (managed settings) and the harness's **PreToolUse phase guard fire before it and in
+every permission mode**. The never-list (`gh pr merge`, `git push` to the default branch, human-only
+files) is a PreToolUse deny — so **auto mode cannot bypass it**. Auto mode removes the friction of
+clicking through safe file writes and test runs; it removes none of the enforcement above.
+
+Recommended adopter configuration (you own your `settings.json`; the plugin ships no `autoMode` block):
+
+```json
+{
+  "autoMode": {
+    "environment": ["$defaults", "Source control: <your GitHub org and repos>"],
+    "classifyAllShell": true
+  }
+}
+```
+
+`classifyAllShell: true` is defense-in-depth: without it a narrow `Bash(...)` allow rule can carry a
+destructive argument past the classifier. This is a *recommendation*, not enforcement — the guard's
+never-list is the hard floor regardless of how auto mode is configured.
+
 Everything else the harness does — phase sequencing, artifact gating, the
 acs.json contract, board lock, human checkpoints, quality thresholds — is
 *structurally encouraged*: it reliably holds a compliant model and is not

@@ -9,6 +9,13 @@ Schema-affecting changes MUST land with a matching migration row in
 
 Docs only — no engine or schema change (no version bump).
 
+### Native auto-mode adoption under the never-list (RFN-008)
+- **SECURITY.md + ADR-0014 amendment**: document that Claude Code's native auto mode is a *second*
+  gate — the PreToolUse never-list fires before the classifier and in every permission mode, so auto
+  mode **cannot** bypass merge/push/human-only-file protection. Recommended adopter `autoMode`
+  config (trusted environment + `classifyAllShell: true`); `/capiva:auto`'s entry gate nudges toward
+  it. Removes routine per-tool friction with zero concession. Adds no enforced surface (docs + nudge).
+
 ### Cluster-HITL contract (RFN-001)
 - **New ADR-0017** — the context-answerer contract: dispositive-or-route, finding-not-suggestion,
   two-tier write-back. The answerer sits upstream of the checker, so its conservatism is a binding,
