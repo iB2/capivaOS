@@ -1,6 +1,6 @@
 ---
 name: refine
-description: Clustered / batch-refine mode (ADR-0014 clustered-mode amendment + ADR-0017). Front-loads grilling for the WHOLE backlog in one attended session — iterate tasks in dependency order, run the grill-spec process + the context-answerer, produce approved spec+acs per task, then exit so /capiva:sprint or /capiva:auto executes the pre-approved backlog. Use when the user says "refine the backlog", "grill everything first", or "cluster the grilling".
+description: Clustered / batch-refine mode (ADR-0014 clustered-mode amendment + ADR-0017). Front-loads grilling for the WHOLE backlog in one attended session — iterate tasks in dependency order, run the grill-spec process + the context-answerer, produce approved spec+acs per task, then exit so /sprint or /auto executes the pre-approved backlog. Use when the user says "refine the backlog", "grill everything first", or "cluster the grilling".
 ---
 
 # Refine — Clustered Batch-Grill (REFINING)
