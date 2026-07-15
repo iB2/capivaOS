@@ -18,6 +18,7 @@ run recently.
 | Handover doc missing on resume | Previous session crashed before `/capiva:handover` | Read sprint-state for current phase, reconstruct context from artifacts on disk |
 | acs.json fails lint | Hand-edited `id`/`text`, bad status value, or duplicate ids | Regenerate through /capiva:grill-spec (scope change) or fix status to `pending`/`pass`/`fail` |
 | Fast-lane task grows scope | New file/schema/arch need discovered mid-lane | Mandatory abort to full lane (SPEC_PLAN → GRILL_SPEC or VERIFY_FINISH → TEST_VERIFY), logged in Phase History |
+| `/capiva:sprint` → "no matching command" (esp. in the VS Code extension) | Claude Code surfaces plugin skills under their **unqualified** name; the `capiva:` prefix only appears when a name collides with a built-in | Type **`/sprint`** (unqualified). Only `init` needs the prefix — `/capiva:init` — because it collides with the built-in `/init`. If NO capiva commands appear at all, the plugin isn't loaded: check `claude plugin list` (enabled + right scope) and reload the window |
 
 ## Sprint Anti-Patterns
 

@@ -157,6 +157,13 @@ drifting one:
 | `/capiva:update` | any | Safe engine update ritual |
 | `/capiva:update-project` | any | Scaffolded-file migration after engine updates |
 
+> **How to invoke skills.** The names above are the canonical namespaced form, but Claude Code
+> surfaces a plugin skill under its **unqualified** name — type **`/sprint`**, not `/capiva:sprint`.
+> The `capiva:` prefix only appears when a skill's name collides with a built-in command: `init`
+> collides with the built-in `/init`, so it (and only it) shows as **`/capiva:init`**. In the **VS Code
+> extension** the command menu lists the unqualified names, so `/capiva:sprint` returns "no matching
+> command" — type `/sprint`. (In the terminal, the `capiva:` prefix also resolves.)
+
 ## Running the two-sprint cycle
 
 For a whole backlog, capivaOS composes two skills into one flow — a **grill-sprint** that front-loads
