@@ -170,6 +170,8 @@ all your judgment, then an **execution-sprint** that runs unattended:
 3. **`/capiva:auto`** (execution-sprint) — shows a one-time **pre-flight confirm** (the tasks it will
    run in dependency order, the budgets, and that PRs are created but never merged), waits for your
    "begin", then works the pre-approved backlog unattended with fresh-context phases and opens PRs.
+   After each task lands it also auto-generates a project-facing **feature doc**
+   (`docs/features/<TASK-ID>.md` — what was built + how to use it; non-blocking, RFN-012).
 
 The handoff is just board state — `/capiva:auto` picks up every eligible `Spec Approved: Yes` task; no
 extra file. **The merge decision always stays yours** (the never-list — see

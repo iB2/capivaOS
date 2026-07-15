@@ -91,6 +91,7 @@ WHILE tasks-done < cap AND phases-used < budget:
   three-strike on any phase -> BLOCKED per protocol, park task, continue loop
   task reaches FINISH -> create PR (guard allows: Phase=FINISH+PASS),
     board -> Done with PR number; MERGE IS NEVER TOUCHED
+  docs-generation step (RFN-012, non-blocking) -> see below
   tasks-done += 1
 PARK at the phase boundary when any cap/limit hits (standard /capiva:handover doc)
 ```
@@ -112,6 +113,25 @@ every quality gate (attended runs do not — the human is the check):
 
 Reinforcement protects a half-assed implementation of a *good* spec; a faithful implementation of a
 *bad* spec is upstream (the grill / context-answerer), not here.
+
+## Docs generation (this workflow's step, not a base skill's — ADR-0018, RFN-012)
+
+After a task reaches FINISH (PR created) and BEFORE advancing to the next task, generate the
+task's **project-facing feature doc** — "what was built + how to use it", distinct from the SDLC
+artifacts `finish` emits and from the end-of-run review packet:
+
+1. Write/update `docs/features/<TASK-ID>.md` from
+   `${CLAUDE_PLUGIN_ROOT}/project-template/templates/feature-doc.md`, sourced from the task's
+   `docs/specs/<TASK-ID>-spec.md` + `-acs.json` and the branch diff / PR. `docs/features/` is tracked
+   (it ships), unlike the gitignored `docs/specs/` and `docs/reports/`.
+2. Add or update the task's row in `docs/features/INDEX.md`.
+3. Optionally run `${CLAUDE_PLUGIN_ROOT}/scripts/validate_feature_doc.py docs/features/<TASK-ID>.md`
+   (and `--index docs/features/INDEX.md`) and surface any findings in the morning report.
+
+**Non-blocking, always.** This step is an aid, exactly like the review packet — a doc that fails to
+generate or fails validation is logged/surfaced and the loop CONTINUES. It NEVER blocks the PR, the
+merge, or task selection. It runs in auto/clustered execution ONLY; attended `/capiva:sprint` is
+unaffected (its docs remain the `finish` SDLC artifacts).
 
 ## Circuit breakers
 - `Max Auto-Approvals Per Run` from the policy file: after N delegated CLEARs,
@@ -161,6 +181,7 @@ never notifies over the network).
 ## Rules
 - **Never grill. Never merge. Never touch the policy file.** (The guard mechanically denies the last two in every phase: merge verbs — `gh pr merge`, `git push` to the default branch — and policy-file writes. Grilling is contract-level: auto mode skips un-specced full-lane tasks.)
 - **Interactive runs get one pre-flight approval; scheduled runs skip it via the `unattended` signal.** Absent the signal, the gate is shown (fail-safe) — a run never silently auto-starts when a human might be present.
+- **Each finished task gets a feature doc (`docs/features/<TASK-ID>.md`), non-blocking.** A doc that fails to generate or validate is surfaced, never a blocker (RFN-012; ADR-0018 — this step is auto's, not a base skill's).
 - **One stuck task never stalls the run** — park and continue.
 - **Every delegated decision is auditable** in Phase History with its basis.
 - **Attended mode is not affected by this skill's existence in any way.**

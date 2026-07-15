@@ -30,6 +30,8 @@ jobs:
         run: python scripts/validate_decisions.py --self-test
       - name: Review-packet validator self-test (RFN-007)
         run: python scripts/validate_review_packet.py --self-test
+      - name: Feature-doc validator self-test (RFN-012)
+        run: python scripts/validate_feature_doc.py --self-test
       - name: Release contract check (changelog + migration rows)
         run: python scripts/bump_version.py --check
 
