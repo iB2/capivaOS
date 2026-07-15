@@ -37,6 +37,14 @@ Attack, don't confirm (same discipline as the QA refuter):
   All statuses `pass` with e2e evidence? Any refuted-then-refixed claim, any
   flagged-but-unresolved item, any coverage arithmetic that doesn't add →
   ESCALATE.
+- **Reinforcement (auto/clustered execution only — RFN-006/ADR-0009 amendment)**:
+  when the mid-run human gate is deferred, additionally check (a)
+  **test-meaningfulness** — per AC, does the test exercise the AC's behavior or
+  is it a tautology / green-but-empty? and (b) **spec-conformance** — does the
+  delivered work match the approved spec's *intent*, not just the AC letter
+  (scope-shaving)? Either failure → ESCALATE. (Attended runs skip this — the
+  human is the check.) You still catch a bad *implementation*; a bad *spec* is
+  the upstream answerer's job, not yours.
 - **Dual-review disagreement** (when the quality report carries two reviewers): any unresolved disagreement = ESCALATE, always.
 - **CLEAR requires zero anomalies.** You are not weighing trade-offs — where
   judgment is required, judgment belongs to the human. You clear arithmetic,

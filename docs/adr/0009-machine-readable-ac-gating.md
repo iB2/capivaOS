@@ -104,3 +104,26 @@ tooling for a template; the JSON contract leaves the door open.
   GRILL_SPEC).
 - Revisit when: a blueprint gains a machine-parsable test-report format in CI —
   then Option C's auto-population becomes worth its tooling cost.
+
+---
+
+## Amendment (2026-07-13 — reinforcement layer for unattended execution, RFN-006)
+
+The RFN clustered/auto modes defer the mid-run human quality gate, so the automated checker must
+catch what the human would. In **auto and clustered execution only** (attended is unchanged — the
+human *is* the check), the quality gate is reinforced:
+
+1. **The gate-judge is MANDATORY at every quality gate** (not only policy-uncovered ones).
+2. **Test-meaningfulness** — the gate-judge additionally asks, per AC: *does this test exercise the
+   AC's behavior, or is it a tautology / green-but-empty?* A passing-but-vacuous test is an anomaly →
+   ESCALATE. (The `scenario_*` rename already killed one green-but-empty class; this generalizes it.)
+3. **Spec-conformance** — does the delivered work match the approved spec's **intent**, not just the
+   letter of its ACs? Scope-shaving (AC technically met, spirit missed) → ESCALATE.
+4. **Dual-review is MANDATORY** in these modes (promoted from the LOOP-008 optional second reviewer);
+   any unresolved disagreement → ESCALATE.
+
+**Honest scope (the boundary that keeps this from overclaiming):** this reinforcement protects against
+a *half-assed implementation of a good spec*. It does **not** catch a *faithful implementation of a
+bad spec* — that failure is upstream, and is the context-answerer's job ([ADR-0017](0017-context-answerer-contract.md),
+proven by the RFN-002 gate). Neither substitutes for the other. The never-list is unchanged; these are
+checks *within* the delegable remainder, not new delegations.
