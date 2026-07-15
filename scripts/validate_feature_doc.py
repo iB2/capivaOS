@@ -31,6 +31,10 @@ REQUIRED_SECTIONS = ["Summary", "How to use", "Behavior", "Related", "Last updat
 _LINK_RE = re.compile(r"\]\(([^)]+\.md)\)")
 # HTML comments hold template/example rows — strip them before scanning links.
 _COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# Section presence is checked in HEADINGS, not arbitrary prose — otherwise a
+# sentence that happens to contain a section name ("...and how to use it")
+# would mask a genuinely missing section (AC9).
+_HEADING_RE = re.compile(r"^#{1,6}\s+(.*)$", re.MULTILINE)
 
 
 def _strip_comments(text):
@@ -39,9 +43,17 @@ def _strip_comments(text):
 
 def validate(text):
     """Return a list of findings for a single feature doc (empty = valid)."""
-    low = _strip_comments(text).lower()
-    return [f"missing required section: {sec!r}"
-            for sec in REQUIRED_SECTIONS if sec.lower() not in low]
+    stripped = _strip_comments(text)
+    low = stripped.lower()
+    headings = "\n".join(h.lower() for h in _HEADING_RE.findall(stripped))
+    findings = []
+    for sec in REQUIRED_SECTIONS:
+        # "Last updated" is a trailing italic footer (_Last updated: ..._), not a
+        # heading; every other required section must appear as a heading.
+        present = ("last updated" in low) if sec == "Last updated" else (sec.lower() in headings)
+        if not present:
+            findings.append(f"missing required section: {sec!r}")
+    return findings
 
 
 def validate_index(path):
@@ -93,6 +105,16 @@ def _self_test():
         if not any(sec in x for x in f):
             failures.append(f"self-test 'missing-{sec}': expected ~{sec!r}, got {f}")
 
+    # prose-echo (AC9): the "How to use" HEADING is removed but the phrase appears
+    # in the Summary prose — a substring check would false-PASS; heading-anchoring
+    # must still catch it.
+    prose_echo = (good.replace("## How to use\nRun `/capiva:refine` then `/capiva:auto`.\n\n", "")
+                      .replace("What was built and why.",
+                               "What was built and why, and how to use it."))
+    f = validate(prose_echo)
+    if not any("How to use" in x for x in f):
+        failures.append(f"self-test 'prose-echo': expected ~'How to use', got {f}")
+
     # index: a link to a missing file must be caught
     here = os.path.dirname(os.path.abspath(__file__))
     seed = os.path.join(here, "_ft_selftest_index.md")
@@ -115,7 +137,7 @@ def _self_test():
             print("  -", f)
         return 1
     print("validate_feature_doc --self-test: clean "
-          f"({len(REQUIRED_SECTIONS)} missing-section cases + index missing-file caught, baseline OK)")
+          f"({len(REQUIRED_SECTIONS)} missing-section + prose-echo + index missing-file caught, baseline OK)")
     return 0
 
 
