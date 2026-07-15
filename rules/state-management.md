@@ -29,6 +29,18 @@ The file uses Markdown field syntax: `- **Field Name**: Value`. All phase guards
 Phase guards check: `Phase`, `Spec Approved`, `Plan Approved`, `Quality Gate`.
 Template: `.board/sprint-state.md` (initialized with IDLE state, empty history, and artifacts registry).
 
+### Harness-config Fields (`.board/harness-config.md`)
+
+Separate from the sprint-state fields above; these are project settings, read by skills (not by hooks),
+documented at their point of use:
+
+| Field | Values | Read By |
+|-------|--------|---------|
+| Active Blueprint | blueprint name | /capiva:init, every phase (stack patterns) |
+| Phase Isolation | on / (absent = off) | /capiva:sprint (attended opt-in), /capiva:auto (always on) |
+| Auto Task Cap | integer (default 3) | /capiva:auto (per-run task budget) |
+| Auto Preflight | on / off (absent = on) | /capiva:auto — `off` skips the interactive pre-flight confirm for scheduled/unattended runs (ADR-0014 grill→execute-cycle amendment); absent/on = show the gate (fail-safe) |
+
 ### Valid Phase Transitions
 
 ```

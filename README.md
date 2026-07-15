@@ -157,6 +157,28 @@ drifting one:
 | `/capiva:update` | any | Safe engine update ritual |
 | `/capiva:update-project` | any | Scaffolded-file migration after engine updates |
 
+## Running the two-sprint cycle
+
+For a whole backlog, capivaOS composes two skills into one flow — a **grill-sprint** that front-loads
+all your judgment, then an **execution-sprint** that runs unattended:
+
+1. **`/capiva:refine`** (grill-sprint) — batch-grills every eligible task on the board and asks you to
+   approve each task's itemized sheet (findings the docs already decided, shown separately from the
+   forks you decide). It writes `Spec Approved: Yes` per task and exits **without executing**. Its exit
+   report lists the approved tasks and points you to the next step.
+2. **Review** that exit report — the approved set is exactly what will run.
+3. **`/capiva:auto`** (execution-sprint) — shows a one-time **pre-flight confirm** (the tasks it will
+   run in dependency order, the budgets, and that PRs are created but never merged), waits for your
+   "begin", then works the pre-approved backlog unattended with fresh-context phases and opens PRs.
+
+The handoff is just board state — `/capiva:auto` picks up every eligible `Spec Approved: Yes` task; no
+extra file. **The merge decision always stays yours** (the never-list — see
+[ADR-0014](docs/adr/0014-autonomy-contract.md)). Scheduling it? Pass the `unattended` token (or set
+`- **Auto Preflight**: off` in `.board/harness-config.md`) so cron runs skip the interactive confirm;
+absent that signal the gate is always shown. Full contract: [ADR-0014](docs/adr/0014-autonomy-contract.md)
+(the grill→execute-cycle amendment); the skills are `/capiva:refine` and `/capiva:auto`. Attended
+`/capiva:sprint` remains the per-task alternative and is unchanged.
+
 ## Blueprints — Stack-Agnostic Design
 
 The universal pipeline (phases, state machine, gating, board protocol) is separated from stack-specific patterns (coding standards, test frameworks, build commands), which live in blueprint reference files.
