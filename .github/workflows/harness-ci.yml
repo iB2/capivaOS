@@ -26,6 +26,8 @@ jobs:
         run: python evals/context-answerer/validate_fixtures.py --self-test
       - name: Context-answerer fixtures well-formed + in parity (RFN-002 schema, no LLM)
         run: python evals/context-answerer/validate_fixtures.py
+      - name: Decision-log validator self-test (no-orphan + read-back, RFN-005)
+        run: python scripts/validate_decisions.py --self-test
       - name: Release contract check (changelog + migration rows)
         run: python scripts/bump_version.py --check
 

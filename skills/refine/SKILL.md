@@ -52,6 +52,14 @@ Never batch-approve across tasks — approval is per task.
 Never-list holds unchanged: no P0/P1 auto-clear, no spec approval without the human deciding its
 routed forks, no merge. A spec with an unresolved RED-FLAG or an untraceable AC does not get approved.
 
+**Write-back (RFN-005 / ADR-0017 inv. 2).** When the human decides a routed question, append a
+`DEC-[N]` entry to `.board/decisions.md` (status `open`, with rationale+constraints — never a bare
+verdict; see board-protocol Decision Log). It is *non-dispositive prior art*: next time the answerer
+may surface it but must still ROUTE — only a human promotes it to an ADR/CONTEXT term. When the
+answerer cites a prior DEC entry, emit a `answerer-consulted` run-log event so `validate_decisions.py`
+can compute the read-back rate. Read-back is surfaced, not acted on automatically — if it stays ~0 the
+write-back is dead text and *you* remove it.
+
 ### Step 4 — Converge (fixed-point, bounded)
 Grilling a task may **spawn** new tasks (write them to the backlog, locked). After a pass, re-scan:
 if new eligible tasks appeared, refine them too. Repeat until no new tasks — bounded by a **spawn cap

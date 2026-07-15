@@ -11,6 +11,16 @@ Schema-affecting changes MUST land with a matching migration row in
 at epic completion. Each piece is opt-in and default-off, so nothing changes for adopters until the
 `Context Answerer` / `REFINING` features are enabled.
 
+### Two-tier decision write-back + read-back metric (RFN-005)
+- **`.board/decisions.md`** (per-project) — batch-refine logs each human-resolved routed question as
+  task-scoped, NON-dispositive prior art (rationale+constraints, never a bare verdict). Only a human
+  promoting it to an ADR/CONTEXT term makes it dispositive — the amplification guard from ADR-0017
+  (a one-off never silently becomes a global rule).
+- **`scripts/validate_decisions.py`** — no-orphan validator (`--self-test` in no-auth CI) + a
+  **read-back metric** (`answerer-consulted` run-log events ÷ entries). Read-back is surfaced; the
+  decision to remove a dead write-back is the human's, never automatic (R2-Q8). Closes ADR-0017
+  invariant 2 (the loop must close or not be built).
+
 ### REFINING state + /capiva:refine clustered lane (RFN-004)
 - **New board-level state `REFINING`** + one additive guard edge (`IDLE→REFINING`); `REFINING→IDLE`
   and `→BLOCKED` are already auto-legal. State-machine sim + doc-parity + the transition docs updated
