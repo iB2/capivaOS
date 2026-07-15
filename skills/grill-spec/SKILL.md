@@ -72,6 +72,29 @@ Before asking a question, check if the answer exists:
 - Check ADRs for prior rulings
 - If the codebase answers definitively → state the finding, don't ask
 
+### Step 3.5: Context-Answerer Triage (ADR-0017 — opt-in, default off)
+
+Read `- **Context Answerer**:` from `.board/harness-config.md`. **If absent or `off` (the default),
+skip this step entirely — Steps 2–4 run exactly as above (the attended default is unchanged).**
+
+**If `on`:** after the full question set is generated in Step 2 (generation stays context-blind — do
+NOT let answer-availability shrink the questions), spawn the read-only `context-answerer` subagent
+once per question. It returns a structured verdict; consume each per ADR-0017:
+
+- **FINDING | \<cite\>** — the docs already decided this. Record it as a stated finding with its
+  citation; do NOT re-ask the human (they spot-check findings at the approval gate). This replaces
+  the informal "recommended answer" of Step 2.2 with a *dispositive-citation-only* discipline.
+- **ROUTE** — undocumented or merely adjacent. Ask the human (the normal Step 2 flow). This is where
+  the interlocutor's judgment is spent. Never present the answerer's extrapolation as a pick.
+- **RED-FLAG | \<cite\>** — the task intent contradicts a live decision. Surface it prominently to
+  the human before proceeding.
+
+The answerer only filters *presentation* (which questions reach the human); it never generates
+questions and never decides a routed one. It is read-only by construction, so it cannot write the
+spec. Findings and routed decisions are itemized separately in the spec so "approved" stays
+auditable (findings = auto+cited; decisions = human). Batch-scale orchestration of this across the
+whole board is the `REFINING` flow (RFN-004), not this step.
+
 ### Step 4: Update CONTEXT.md
 
 As domain terms crystallize, add to `docs/CONTEXT.md`:

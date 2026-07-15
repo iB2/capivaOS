@@ -144,6 +144,7 @@ Roles are native Claude Code agent definitions with platform-enforced tool allow
 | arch | `${CLAUDE_PLUGIN_ROOT}/agents/arch.md` | read + Write | /capiva:plan | Validates layers/patterns; writes ADRs, deviation records |
 | gate-judge | `${CLAUDE_PLUGIN_ROOT}/agents/gate-judge.md` | read-only | /capiva:auto (gate triage) | Judges delegated gates in auto mode: CLEAR only at zero anomalies, else ESCALATE; never-list hard-coded (ADR-0014) |
 | phase-runner | `${CLAUDE_PLUGIN_ROOT}/agents/phase-runner.md` | read + Edit/Write/Bash | /capiva:sprint (Phase Isolation), /capiva:auto | Runs ONE phase in fresh context, then stops; the orchestrator remains the single sprint-state writer |
+| context-answerer | `${CLAUDE_PLUGIN_ROOT}/agents/context-answerer.md` | read-only | /capiva:grill-spec (opt-in triage, default off) | Triages grill questions against the docs: cited FINDING only if the docs already decided, else ROUTE to the human, RED-FLAG on contradiction; dispositive-or-route (ADR-0017) |
 
 Each agent receives task-specific context (spec, CONTEXT.md, blueprint reference.md) in its prompt. Max 4 concurrent; one micro-task each; three failures → BLOCKED. Spawn mechanics: `${CLAUDE_PLUGIN_ROOT}/skills/implement/SKILL.md`.
 
