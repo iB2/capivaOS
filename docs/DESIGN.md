@@ -196,6 +196,7 @@ Formal Architecture Decision Records for the harness's own design choices are in
 | [0015](adr/0015-transition-validation.md) | Sprint-state transition validation: the guard learns the state machine (implemented 1.3.0) |
 | [0016](adr/0016-mechanical-board-lock.md) | Mechanical board lock: code + guard enforcement, supersedes ADR-0003's prose ritual |
 | [0017](adr/0017-context-answerer-contract.md) | Context-answerer contract: dispositive-or-route, never suggest; two-tier write-back (RFN epic) |
+| [0018](adr/0018-workflow-agnostic-base-skills.md) | Workflow-agnostic base skills: workflows compose base skills, never inline workflow-specific rules into them (RFN-009) |
 
 ---
 

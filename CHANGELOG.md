@@ -7,9 +7,18 @@ Schema-affecting changes MUST land with a matching migration row in
 
 ## [Unreleased]
 
-**RFN epic — batch-refine / cluster-HITL.** Accumulating across RFN-001..008; the version bump lands
+**RFN epic — batch-refine / cluster-HITL.** Accumulating across RFN-001..009; the version bump lands
 at epic completion. Each piece is opt-in and default-off, so nothing changes for adopters until the
 `Context Answerer` / `REFINING` features are enabled.
+
+### Workflow-agnostic base skills (RFN-009, ADR-0018)
+- **Base skills restored to workflow-neutral.** The context-answerer interposition (was inlined in
+  `grill-spec` as opt-in Step 3.5) and the "reinforcement mandatory when unattended" rule (was inlined
+  in `test-verify`) move OUT of the base skills into the workflows that own them (`/capiva:refine` and
+  `/capiva:auto` respectively). **No behavior change** — the workflows deliver the same behavior,
+  sourced from the workflow layer. **ADR-0018** records the principle: workflows compose base skills;
+  a rule used by one workflow lives in that workflow, never inlined into a base skill. This keeps the
+  base reusable as the workflow ecosystem grows.
 
 ### Review-packet end-of-run report (RFN-007)
 - **`/capiva:auto` (and `/capiva:refine` exit) emit a per-task review packet** on board-clear

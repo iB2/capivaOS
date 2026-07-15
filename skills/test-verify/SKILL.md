@@ -71,11 +71,9 @@ If any claim is REFUTED: iterate once (fix code/tests, re-review). If claims rem
 
 #### Agent 3: Second Independent Reviewer (optional — Dual Review)
 
-Required when `- **Dual Review**: on` in `.board/harness-config.md`, **and MANDATORY in auto/clustered
-execution regardless of the config** (RFN-006 / ADR-0009 amendment — when the mid-run human gate is
-deferred, the second reviewer is not optional). In attended mode with the config off, skip this agent
-(attended behavior unchanged). A second qa-role agent reviews the same claims INDEPENDENTLY (no sight
-of Agent 2's findings). Then:
+Only when `- **Dual Review**: on` in `.board/harness-config.md` (absent/off =
+skip this agent entirely; attended behavior unchanged). A second qa-role agent
+reviews the same claims INDEPENDENTLY (no sight of Agent 2's findings). Then:
 - **Deduplicate** findings by file + issue key (same issue within ±5 lines = one
   finding), preserving both reviewers' attribution
 - **Normalize severity** to P0/P1/P2/Nit before the quality report
@@ -83,13 +81,6 @@ of Agent 2's findings). Then:
   validity, or on any severity ≥ P1 — in auto mode this forces ESCALATE at the
   quality gate regardless of policy grants; in attended mode, present the
   disagreement explicitly to the human.
-
-**Reinforcement in auto/clustered mode (RFN-006 / ADR-0009 amendment).** When the mid-run human gate
-is deferred, the quality report must let the gate-judge assess **test-meaningfulness** (per AC: does
-the test exercise the behavior, or is it a tautology?) and **spec-conformance** (does the work match
-the approved spec's intent, not just the AC letter?). Surface per-AC behavior evidence, not just a
-`pass`. The gate-judge is mandatory at the gate in these modes and ESCALATEs on either failure.
-Attended mode is unchanged — the human is the check.
 
 ### Step 3: Test Infrastructure
 
