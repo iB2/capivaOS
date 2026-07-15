@@ -7,9 +7,17 @@ Schema-affecting changes MUST land with a matching migration row in
 
 ## [Unreleased]
 
-**RFN epic — batch-refine / cluster-HITL.** Accumulating across RFN-001..009; the version bump lands
-at epic completion. Each piece is opt-in and default-off, so nothing changes for adopters until the
-`Context Answerer` / `REFINING` features are enabled.
+## [1.4.0] — 2026-07-14
+
+**RFN epic — batch-refine / cluster-HITL.** Cluster grilling up front, run execution unattended,
+review once (RFN-001..009). Everything is **opt-in and default-off** — attended `/capiva:sprint` is
+unchanged and adopters see no behavior change until a feature is enabled.
+
+> ⚠️ **The batch-refine workflow (`/capiva:refine` + the `REFINING` state + the `context-answerer`)
+> is EXPERIMENTAL in 1.4.0** — validated by the RFN-002 eval gate and a same-session tabletop dry-run,
+> but **not yet exercised in a live end-to-end run**. Enable it deliberately. The foundational,
+> non-workflow pieces (the ADRs, the reinforcement checks, the validators, the review packet,
+> native-auto-mode guidance) are production-ready.
 
 ### Workflow-agnostic base skills (RFN-009, ADR-0018)
 - **Base skills restored to workflow-neutral.** The context-answerer interposition (was inlined in
