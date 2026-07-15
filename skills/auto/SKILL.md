@@ -46,9 +46,32 @@ default; this mode is opt-in **per run** — never a standing repo state.
 5. **Re-entry safety**: if sprint-state already has `Loop Active: yes`, RESUME
    that run's counters (never reset, never double-start).
 
-Write the loop fields to sprint-state: `Loop Active: yes`, caps, `Loop Tasks
-Done: 0`, `Loop Stop Reason: --`. (These power the AUTO_LOOP_RESUME injection
-after any compaction.)
+6. **Pre-flight confirmation (interactive runs — RFN-013)**: after the checks
+   above pass and BEFORE writing any loop field, present a pre-flight summary and
+   WAIT for an explicit human "begin":
+
+   ```
+   Execution-sprint pre-flight:
+     Will execute (dependency order): [TASK-IDs eligible + pre-approved]
+     Budgets: [Loop Task Cap] tasks / [Loop Phase Budget] phases
+     PRs are created for your review — the merge is NEVER touched.
+
+   🧑 Begin unattended execution? (begin / cancel)
+   ```
+
+   - **begin** → proceed to write the loop fields and enter the loop.
+   - **cancel / anything not an explicit begin** → EXIT cleanly. Write NOTHING:
+     no loop fields, no board or sprint-state mutation. The run simply did not start.
+   - **Skip the gate ONLY on an explicit unattended signal**: the invocation token
+     `unattended` (e.g. `/capiva:auto unattended`, used by the scheduling recipe) OR
+     `- **Auto Preflight**: off` in `.board/harness-config.md`. **Fail-safe: if no
+     unattended signal is present, SHOW the gate** — silence never auto-proceeds.
+     This is what keeps scheduled/cron runs unattended while interactive runs get
+     the single execution-entry approval (ADR-0014 grill→execute-cycle amendment).
+
+Only after the gate is passed (or explicitly bypassed) write the loop fields to
+sprint-state: `Loop Active: yes`, caps, `Loop Tasks Done: 0`, `Loop Stop Reason:
+--`. (These power the AUTO_LOOP_RESUME injection after any compaction.)
 
 ## The Loop
 
@@ -128,12 +151,16 @@ run summary in Phase History.
 ## Scheduling
 
 Works under a scheduled routine or cron invocation. Safe because of the entry
-gate + re-entry rule; recommended together with the notification recipe
-(point a watcher at `.board/approvals.md` — see SECURITY.md posture: the
-plugin itself never notifies over the network).
+gate + re-entry rule. **Scheduled runs pass the `unattended` token** (or set
+`- **Auto Preflight**: off` in harness-config) so the interactive pre-flight gate
+(entry-gate step 6) is skipped — a schedule is its own authorization; there is no
+human to confirm. Recommended together with the notification recipe (point a
+watcher at `.board/approvals.md` — see SECURITY.md posture: the plugin itself
+never notifies over the network).
 
 ## Rules
 - **Never grill. Never merge. Never touch the policy file.** (The guard mechanically denies the last two in every phase: merge verbs — `gh pr merge`, `git push` to the default branch — and policy-file writes. Grilling is contract-level: auto mode skips un-specced full-lane tasks.)
+- **Interactive runs get one pre-flight approval; scheduled runs skip it via the `unattended` signal.** Absent the signal, the gate is shown (fail-safe) — a run never silently auto-starts when a human might be present.
 - **One stuck task never stalls the run** — park and continue.
 - **Every delegated decision is auditable** in Phase History with its basis.
 - **Attended mode is not affected by this skill's existence in any way.**

@@ -79,10 +79,19 @@ if new eligible tasks appeared, refine them too. Repeat until no new tasks — b
 (default 2 rounds)** so it cannot run away. If the cap is hit with tasks still un-refined, report them
 as "awaiting a further refine pass" and stop.
 
-### Step 5 — Exit
-When the refine set is exhausted (or the cap is hit), transition **REFINING → IDLE**. Report: tasks
-refined + approved, tasks spawned, anything left awaiting. Execution is a separate step — the human
-runs `/capiva:sprint` (attended) or `/capiva:auto` (unattended) to clear the pre-approved backlog.
+### Step 5 — Exit (the grill→execute handoff)
+When the refine set is exhausted (or the cap is hit), transition **REFINING → IDLE**. The exit report
+is the handoff to the execution-sprint (ADR-0014 grill→execute-cycle amendment), so make it explicit:
+
+- **Approved (the pre-approved backlog)**: list the task IDs now carrying `Spec Approved: Yes` — this
+  is exactly what the execution-sprint will pick up.
+- **Spawned** this run, and **anything left awaiting** a further refine pass.
+- **Next step**: run **`/capiva:auto`** to execute the pre-approved backlog unattended — it will show a
+  one-time pre-flight confirm, then create PRs for your review and **never merge**. (Attended
+  `/capiva:sprint` remains the alternative if you'd rather drive each task yourself.)
+
+The handoff is board state, not a separate artifact: `/capiva:auto` consumes every eligible
+`Spec Approved: Yes` task in dependency order.
 
 ## What this skill does NOT do
 - It does not implement, test, or merge — it produces approved specs and stops.

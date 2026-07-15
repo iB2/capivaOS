@@ -7,6 +7,15 @@ Schema-affecting changes MUST land with a matching migration row in
 
 ## [Unreleased]
 
+### Added
+- **Two-sprint cycle (RFN-013).** The grill-sprint (`/capiva:refine`) and execution-sprint
+  (`/capiva:auto`) are now documented as one flow, with an explicit board-state handoff and a single
+  interactive **pre-flight confirmation** at the top of `/capiva:auto` (the "begin execution?" gate).
+  Scheduled/cron runs skip it via the `unattended` token or `- **Auto Preflight**: off` in
+  harness-config; absent any signal the gate is shown (fail-safe). New README "Running the two-sprint
+  cycle" section; ADR-0014 4th amendment. Workflow-layer + docs only — base skills unchanged (ADR-0018),
+  no new phase/transition/guard rule, attended `/capiva:sprint` unaffected.
+
 ## [1.4.0] — 2026-07-14
 
 **RFN epic — batch-refine / cluster-HITL.** Cluster grilling up front, run execution unattended,

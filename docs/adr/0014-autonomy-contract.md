@@ -258,3 +258,49 @@ the never-list. `/capiva:auto`'s entry gate detects auto mode and surfaces this 
 alongside its branch-protection and guard-liveness checks. Details + the config snippet live in
 SECURITY.md ("Composing with Claude Code's native auto mode"). This is documentation + a nudge — it
 adds no enforced surface.
+
+---
+
+## Amendment (2026-07-15 — the grill→execute cycle, RFN-013)
+
+The two oversight modes that carry Bruno's autonomy vision already exist as separate skills:
+`/capiva:refine` (the **grill-sprint** — clustered `REFINING`, per-task itemized approval, produces
+approved specs and exits) and `/capiva:auto` (the **execution-sprint** — unattended fresh-context
+execution, PRs, review packet). This amendment packages them as one documented **two-sprint cycle**
+without fusing them. It changes no contract line above; the never-list stays single-source here and is
+referenced, not restated.
+
+1. **Topology — two commands, not one.** The cycle is `/capiva:refine → review → /capiva:auto`, kept as
+   two commands and a documented flow. A single `/capiva:cycle` orchestrator was considered and
+   rejected: it would couple attended judgment and unattended execution into one invocation and blur
+   the boundary this contract depends on (Option Axis 1 / the founding tension). The two skills remain
+   independently useful and ADR-0018-clean (base skills composed, not modified).
+
+2. **Handoff — board state.** `Spec Approved: Yes` on `.board/tasks.md` (written by refine, read by
+   auto's eligibility check) IS the handoff; there is no separate manifest. The execution-sprint
+   consumes ALL eligible pre-approved tasks in dependency order — a pre-approved task is pre-approved
+   regardless of which grill-sprint approved it. refine's exit report names the approved set and points
+   to `/capiva:auto`.
+
+3. **The single execution-entry gate.** Bruno's "auto after ONE entry approval" is an **interactive
+   pre-flight confirmation** at the top of `/capiva:auto`, after the mechanical entry-gate checks and
+   before the loop: it summarizes the tasks it will execute (dependency order), the task/phase budgets,
+   and that PRs are created but the merge is never touched, then waits for an explicit "begin". It is
+   the ONLY human gate in the execution-sprint — every per-task gate is delegated/deferred exactly as
+   the auto-mode paragraph above already specifies. Declining exits cleanly with zero board/state
+   mutation.
+
+4. **Unattended runs are unbroken (fail-safe).** The pre-flight gate is skipped ONLY on an explicit
+   unattended signal — the invocation token `unattended` or `- **Auto Preflight**: off` in
+   `.board/harness-config.md` (the scheduling recipe sets one). Absent any signal, the gate is SHOWN:
+   silence shows the gate, it never auto-proceeds. Scheduled/cron runs therefore behave exactly as
+   before; the interactive checkpoint is additive.
+
+5. **Docs generation is a named future step, not part of this.** RFN-012 (documentation generated
+   automatically after development) is an execution-phase step the cycle doc names but does not yet
+   implement — it lands in the auto/execution workflow (ADR-0018), specced separately.
+
+Consequence for Law 5: unchanged in substance. The cycle is presentation + a single interactive
+checkpoint over the same routing of human judgment auto mode already defines; it removes no gate and
+adds no delegation. The never-list (merge, P0/P1 gates, interlocutor-less spec approval, policy
+silence) stands verbatim as above.
