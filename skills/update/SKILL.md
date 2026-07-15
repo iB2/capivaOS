@@ -43,8 +43,12 @@ run `claude plugin marketplace add iB2/capivaOS` and retry.
 ### Step 3: Update the plugin
 
 ```bash
-claude plugin update capiva
+claude plugin update capiva@capiva
 ```
+
+`plugin update` takes the marketplace-qualified plugin id (`<name>@<marketplace>`) — bare
+`claude plugin update capiva` fails with `Plugin "capiva" not found`. Defaults to `--scope user`; pass
+`--scope <user|project|local>` if the plugin is installed elsewhere.
 
 If the `claude` CLI is unavailable in this environment, give the user the
 interactive fallback: `/plugin` → Marketplaces → capiva → update, then continue
