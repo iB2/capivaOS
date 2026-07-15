@@ -35,7 +35,18 @@ For each task in dependency order, run the base **grill-spec** adversarial inter
 (`/capiva:grill-spec`) — but **this workflow interposes the `context-answerer` between grill-spec's
 question-generation and human-answering.** The answerer is intrinsic to the grill-sprint (it is the
 whole point of clustered mode); grill-spec itself stays workflow-agnostic and knows nothing about it
-(ADR-0018 — the base skill is composed, not modified). The composed flow per task:
+(ADR-0018 — the base skill is composed, not modified).
+
+**Cadence — refine drives grill-spec in BATCH.** This composition overrides grill-spec's
+one-question-at-a-time cadence (grill-spec Step 2): refine generates the *full* adversarial question
+set first, then batch-triages it through the answerer, and only *then* presents the surviving
+questions to the human — so "generate all, then triage, then ask" is the refine cadence, not a
+contradiction of grill-spec's per-question flow. **The answerer subsumes grill-spec's "Explore Before
+Asking" (Step 3):** the `context-answerer` IS refine's explore-before-asking mechanism (rigorously,
+via cited FINDINGs), so skip grill-spec Step 3 when refine drives the interview — do not run both;
+Step 3 stays in force for the attended per-task lane where no answerer runs.
+
+The composed flow per task:
 
 1. **Generate** grill-spec's full adversarial question set (unchanged, context-blind — never let
    answer-availability shrink the questions; [ADR-0017](../../docs/adr/0017-context-answerer-contract.md)
