@@ -8,6 +8,14 @@ Schema-affecting changes MUST land with a matching migration row in
 ## [Unreleased]
 
 ### Added
+- **Docs-generation step (RFN-012).** The execution workflow (`/capiva:auto`, and the clustered cycle
+  that runs via it) now generates a project-facing **feature doc** after each task reaches FINISH —
+  `docs/features/<TASK-ID>.md` ("what was built + how to use it") from a new
+  `project-template/templates/feature-doc.md`, plus a maintained `docs/features/INDEX.md`. It is a
+  **non-blocking aid** (never blocks a PR/merge/loop, like the review packet); `scripts/validate_feature_doc.py`
+  checks structure + index and self-tests in CI. `docs/features/` is scaffolded by `init` and is
+  **tracked** (ships), unlike gitignored `docs/specs/`/`docs/reports/`. Workflow-layer only — base
+  skills unchanged (ADR-0018), no new state-machine phase; attended `/capiva:sprint` unaffected.
 - **Two-sprint cycle (RFN-013).** The grill-sprint (`/capiva:refine`) and execution-sprint
   (`/capiva:auto`) are now documented as one flow, with an explicit board-state handoff and a single
   interactive **pre-flight confirmation** at the top of `/capiva:auto` (the "begin execution?" gate).

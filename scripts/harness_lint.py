@@ -97,7 +97,7 @@ PLUGIN_ROOT_REF_RE = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([\w./ -]+?\.(?:md|py
 PROJECT_ARTIFACT_PREFIXES = (
     "docs/specs/", "docs/reports/", "docs/tech-context/", "docs/handover/",
     "docs/cab/", "docs/release/", "docs/deviations/", ".board/", "docs/adr/",
-    "capiva-blueprints/",
+    "docs/features/", "capiva-blueprints/",
 )
 ADR_LINK_RE = re.compile(r"adr/(\d{4}-[\w-]+\.md)")
 SECTION_HEADING_RE = re.compile(r"^##+ *(§[\w-]+)", re.MULTILINE)

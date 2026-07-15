@@ -21,13 +21,19 @@ import sys
 REQUIRED_SECTIONS = ["PR", "Spec", "AC", "Quality", "Verdict", "Deviations", "Parks"]
 # A task row: "| RFN-007 | #55 | ... | Done |" — Done rows must carry a #<n> PR ref.
 _ROW_RE = re.compile(r"^\|\s*([A-Z]+-\d+)\s*\|(.*)\|\s*$", re.MULTILINE)
+# Required section/column tokens must live in STRUCTURE — a Markdown heading or a
+# table row (a pipe line) — not arbitrary prose, so a sentence mentioning e.g.
+# "the verdict" cannot mask a missing Verdict column (RFN-012 AC10, the
+# not-in-prose hardening scoped to this packet's table form).
+_STRUCT_LINE_RE = re.compile(r"^(?:#{1,6}\s+.*|.*\|.*)$", re.MULTILINE)
 
 
 def validate(text):
     findings = []
     low = text.lower()
+    struct = "\n".join(_STRUCT_LINE_RE.findall(text)).lower()
     for sec in REQUIRED_SECTIONS:
-        if sec.lower() not in low:
+        if sec.lower() not in struct:
             findings.append(f"missing required section/column: {sec!r}")
     if "run-log" not in low and "run_log" not in low:
         findings.append("missing run-log reconciliation reference (packet must reconcile against .state/run-log.jsonl)")
@@ -56,6 +62,14 @@ def _self_test():
             failures.append(f"self-test '{name}': expected ~{needle!r}, got {f}")
 
     expect("missing-section", good.replace("| Verdict ", "| "), "Verdict")
+    # prose-only token (AC10): "Verdict" removed from the table header but present
+    # in a prose sentence — a substring check would false-PASS; the structural
+    # (heading/pipe-row) check must still catch it.
+    expect("prose-only-token",
+           good.replace(" Verdict |", " |").replace(
+               "Reconciled against .state/run-log.jsonl.",
+               "Reconciled against .state/run-log.jsonl. The verdict per task is listed."),
+           "Verdict")
     expect("done-no-pr",
            good.replace("| RFN-007 | #56 |", "| RFN-007 | -- |"),
            "no PR reference")
@@ -67,7 +81,7 @@ def _self_test():
         for x in failures:
             print("  -", x)
         return 1
-    print("validate_review_packet --self-test: clean (3 seeded packets caught + baseline OK)")
+    print("validate_review_packet --self-test: clean (4 seeded packets caught + baseline OK)")
     return 0
 
 
