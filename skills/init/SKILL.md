@@ -1,6 +1,6 @@
 ---
 name: init
-description: Phase 0 — Bootstrap a project for the capivaOS harness. Scaffolds board + docs from the plugin's project-template, validates project docs, detects stack, writes per-project config with schema version. Must run before /capiva:sprint.
+description: Phase 0 — Bootstrap a project for the capivaOS harness. Scaffolds board + docs from the plugin's project-template, validates project docs, detects stack, writes per-project config with schema version. Must run before /sprint.
 ---
 
 # Init — Phase 0: Project Bootstrap

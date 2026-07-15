@@ -9,6 +9,16 @@ Schema-affecting changes MUST land with a matching migration row in
 
 ## [1.5.0] — 2026-07-15
 
+### Changed
+- **Invocation-reference convention (DIST-005, ADR-0019).** Skills invoke under their **unqualified**
+  name (`/sprint`); the `/capiva:` prefix appears only when a name collides with a built-in
+  (`/capiva:init`). `phase_guard` deny/guidance messages and the `init`/`refine`/`update-project` skill
+  descriptions now use the unqualified form. `harness_lint`'s `/capiva:`-namespace mandate is relaxed
+  to **resolution** — check 1 accepts any reference that resolves (bare, qualified, or built-in) and
+  still flags unknown commands; check 11 is narrowed to catch unresolved `/capiva:<name>` refs in hooks
+  (false-positive-safe), superseding the earlier rule that enforced the `/capiva:` prefix. The ~90
+  canonical `/capiva:` references in prose docs are unchanged (both forms resolve). See ADR-0019.
+
 ### Added
 - **Docs-generation step (RFN-012).** The execution workflow (`/capiva:auto`, and the clustered cycle
   that runs via it) now generates a project-facing **feature doc** after each task reaches FINISH —

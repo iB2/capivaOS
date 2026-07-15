@@ -357,14 +357,12 @@ def lint(root: Path):
             continue
         for m in SLASH_RE.finditer(text):
             name = m.group(1)
-            if name in known_commands:
+            # ADR-0019: skills invoke UNQUALIFIED (`/sprint`); the `/capiva:` prefix
+            # only appears on a built-in collision. A reference is valid if it
+            # RESOLVES — a bare skill name, a `/capiva:<skill>`, or a built-in.
+            if name in known_commands or name in bare_skills:
                 continue
-            if name in bare_skills:
-                findings.append(
-                    f"{f.relative_to(root)}: un-namespaced skill reference /{name} "
-                    f"(plugin skills are /{NAMESPACE}:{name})")
-            else:
-                findings.append(f"{f.relative_to(root)}: reference to unknown command /{name}")
+            findings.append(f"{f.relative_to(root)}: reference to unknown command /{name}")
 
     # 2a. ${CLAUDE_PLUGIN_ROOT}/ references must resolve against the repo root
     #     (engine files travel with the plugin).
@@ -453,18 +451,23 @@ def lint(root: Path):
                 f"{f.relative_to(root).as_posix()}: personal path {m.group(0)!r} — "
                 f"use the C:\\Users\\<you>\\ placeholder form")
 
-    # 11. bare skill references inside hook string literals — the .md-only
-    #     scan let "Run /sprint" ship inside phase_guard.py deny messages.
-    #     Lookarounds: not preceded by word/dot/colon chars (path segments
-    #     like .board/sprint-state.md), not followed by word/dot/dash
-    #     (sprint-state)
+    # 11. QUALIFIED skill references in hook literals must RESOLVE (ADR-0019).
+    #     Skills invoke UNQUALIFIED (`/sprint`), so a bare ref in a deny message
+    #     is valid and no longer flagged. But a `/capiva:<name>` naming a skill
+    #     that does not exist (a typo or a removed skill) is a real defect. The
+    #     `capiva:` prefix is unambiguous — paths never contain it — so scanning
+    #     Python for it is false-positive-safe. Bare typos in hook Python are
+    #     deliberately not scanned (no safe way to tell `/sprnt` from a path
+    #     segment); the doc surface is covered by check 1.
+    qualified_hook_ref = re.compile(rf"/{NAMESPACE}:([a-z][a-z0-9-]*)")
     for hook_file in sorted(root.glob("hooks/*.py")):
         text = hook_file.read_text(encoding="utf-8", errors="replace")
-        for name in sorted(bare_skills):
-            if re.search(rf"(?<![\w./`>:])/{re.escape(name)}(?![\w.-])", text):
+        for m in qualified_hook_ref.finditer(text):
+            name = m.group(1)
+            if name not in bare_skills:
                 findings.append(
-                    f"{hook_file.relative_to(root).as_posix()}: bare skill reference "
-                    f"/{name} (plugin skills are /{NAMESPACE}:{name})")
+                    f"{hook_file.relative_to(root).as_posix()}: unresolved skill "
+                    f"reference /{NAMESPACE}:{name} (no such skill)")
 
     # 5. blueprint §-section parity + referenced sections exist everywhere
     section_sets = {}
@@ -725,7 +728,7 @@ def self_test():
         (root / "agents" / "rogue.md").write_text("# rogue agent\n", encoding="utf-8")
         (root / "hooks").mkdir()
         (root / "hooks" / "phase_guard.py").write_text(
-            'MSG = "Run /plan to continue; see .board/sprint-state.md"\n'
+            'MSG = "Run /plan to continue, or /capiva:sprnt (stale typo); see .board/sprint-state.md"\n'
             'PHASE = _parse_field(content, "Ghost Field")\n'
             'ENFORCED_SURFACES = (\n    "ghost-surface",\n)\nLOCK_STALE_SECONDS = 99\n', encoding="utf-8")
         (root / "scripts").mkdir(exist_ok=True)
@@ -781,7 +784,6 @@ def self_test():
             "hook-registration parity",
             "board-lock staleness drift",
             "false-mechanism, PRD-004",
-            "un-namespaced skill reference /plan",
             "dead plugin-root reference rules/gone.md",
             "bare engine path skills/plan/SKILL.md",
             "unknown command /discovery",
@@ -807,7 +809,7 @@ def self_test():
             "dependency cycle involving",
             "agent 'rogue' exists but is not mentioned",
             "personal path",
-            "hooks/phase_guard.py: bare skill reference /plan",
+            "hooks/phase_guard.py: unresolved skill reference /capiva:sprnt (no such skill)",
             "write-intent into the read-only plugin cache",
             "reads sprint-state field 'Ghost Field'",
             "enforced surface 'ghost-surface' has no",
@@ -820,9 +822,12 @@ def self_test():
         missed = [frag for frag in expected_fragments
                   if not any(frag in f for f in findings)]
         false_neg_free = not missed
-        # /capiva:plan must NOT be flagged; GOOD acs must not be flagged
+        # /capiva:plan must NOT be flagged; GOOD acs must not be flagged;
+        # ADR-0019: a resolvable BARE /plan must NOT be flagged (docs or hooks).
         no_false_pos = (not any("unknown command /capiva:plan" in f for f in findings)
-                        and not any("GOOD-1-acs.json" in f for f in findings))
+                        and not any("GOOD-1-acs.json" in f for f in findings)
+                        and not any("/plan" in f and ("un-namespaced" in f or "bare skill reference" in f)
+                                    for f in findings))
 
         print(f"self-test: {len(findings)} findings on seeded fixture")
         for frag in expected_fragments:

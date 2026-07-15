@@ -1,6 +1,6 @@
 ---
 name: update-project
-description: Migrate a project's scaffolded harness files (.board, docs skeleton, config) after a capiva plugin update changed the schema. Invoked by /capiva:update on version skew, or directly when the session-start hook flags skew.
+description: Migrate a project's scaffolded harness files (.board, docs skeleton, config) after a capiva plugin update changed the schema. Invoked by /update on version skew, or directly when the session-start hook flags skew.
 ---
 
 # Update-Project — Scaffolded-File Migration
