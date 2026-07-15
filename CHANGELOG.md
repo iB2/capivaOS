@@ -7,6 +7,8 @@ Schema-affecting changes MUST land with a matching migration row in
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-07-15
+
 ### Added
 - **Docs-generation step (RFN-012).** The execution workflow (`/capiva:auto`, and the clustered cycle
   that runs via it) now generates a project-facing **feature doc** after each task reaches FINISH —
@@ -23,6 +25,20 @@ Schema-affecting changes MUST land with a matching migration row in
   harness-config; absent any signal the gate is shown (fail-safe). New README "Running the two-sprint
   cycle" section; ADR-0014 4th amendment. Workflow-layer + docs only — base skills unchanged (ADR-0018),
   no new phase/transition/guard rule, attended `/capiva:sprint` unaffected.
+- **Refine batch-cadence + Step-3 clarity (RFN-011).** Two clarifying sentences in `skills/refine/SKILL.md`:
+  refine drives grill-spec in BATCH (generate the full question set, then triage via the
+  context-answerer before presenting), and the answerer IS refine's explore-before-asking (so
+  grill-spec Step 3 is skipped when refine drives it; Step 3 stays for attended mode). grill-spec
+  untouched (ADR-0018); behavior-neutral.
+- **Command invocation-syntax docs (DIST-003).** README + troubleshooting now state that skills invoke
+  under their **unqualified** name (`/sprint`), with the `/capiva:` prefix appearing only when a name
+  collides with a built-in (e.g. `/capiva:init`). Fixes the first-run confusion where `/capiva:sprint`
+  returned "no matching command" in the VS Code extension. Canonical `/capiva:` references unchanged.
+
+### Fixed
+- **Update-ritual command (DIST-004).** `skills/update/SKILL.md` Step 3 corrected from
+  `claude plugin update capiva` (fails: "Plugin capiva not found") to the marketplace-qualified
+  `claude plugin update capiva@capiva`.
 
 ## [1.4.0] — 2026-07-14
 
