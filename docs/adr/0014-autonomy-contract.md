@@ -243,3 +243,18 @@ reinforcement layer).
    removed. The gate-judge and the RFN-006 reinforcement checks become mandatory
    for the unattended execution segment, since the mid-run human quality gate is
    the thing being deferred.
+
+---
+
+## Amendment (2026-07-13 — composing with native auto mode, RFN-008)
+
+Claude Code's native **auto mode** (a classifier that removes routine per-tool prompts) composes
+*under* this contract's never-list, it does not weaken it. The classifier is a second gate that runs
+*after* the permissions system; the never-list is a PreToolUse deny that fires before it and in every
+permission mode, so no auto-mode configuration can delegate into the never-list. Adopters are
+*recommended* (not required) to enable auto mode with a trusted-environment config +
+`classifyAllShell: true` — it removes per-tool friction during unattended runs with zero concession to
+the never-list. `/capiva:auto`'s entry gate detects auto mode and surfaces this recommendation
+alongside its branch-protection and guard-liveness checks. Details + the config snippet live in
+SECURITY.md ("Composing with Claude Code's native auto mode"). This is documentation + a nudge — it
+adds no enforced surface.

@@ -23,6 +23,14 @@ default; this mode is opt-in **per run** — never a standing repo state.
    branch requires PRs. Unprotected → REFUSE with the init Step 5b explanation;
    the human may override with an explicit "run unprotected" — record the
    override in Phase History.
+2b. **Native auto-mode nudge** (RFN-008, recommend — do NOT refuse): if Claude
+   Code's native auto mode is not active, note that enabling it removes routine
+   per-tool permission prompts for this unattended run — and that it is safe
+   because the never-list is a PreToolUse deny that fires *before* the auto-mode
+   classifier and in every mode (see SECURITY.md "Composing with … native auto
+   mode"; recommended config includes `classifyAllShell: true`). This is a
+   recommendation only; the run proceeds either way, and the never-list is the
+   hard floor regardless.
 3. **Task eligibility**: auto only picks tasks that are (a) full-lane with an
    ALREADY-APPROVED spec (`Spec Approved` recorded from an attended session, or
    spec + acs.json exist with the board noting human approval), or (b)
