@@ -54,6 +54,7 @@ Shipped blueprints have real, buildable reference projects on the maintainers' m
 ```
 Full lane: IDLE → TRIAGE → GRILL_SPEC → PLAN → IMPLEMENT → TEST_VERIFY → FINISH → IDLE
 Fast lane: IDLE → TRIAGE → SPEC_PLAN → IMPLEMENT → VERIFY_FINISH → IDLE
+Clustered lane (batch-refine, RFN-004): IDLE → REFINING → IDLE (/capiva:refine; then normal execution)
 ```
 
 The **fast lane** ([ADR-0010](${CLAUDE_PLUGIN_ROOT}/docs/adr/0010-fast-lane-pipeline.md)) is an alternate state-machine path for qualifying small tasks — P2/P3, no new files, no schema/arch changes, no new dependencies. /capiva:sprint evaluates the predicate at TRIAGE and records `Lane` in sprint-state. TDD, the acs.json contract, and quality thresholds are identical in both lanes. Full is the default; P0/P1 can never go fast.

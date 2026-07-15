@@ -42,6 +42,9 @@ def main():
         ("GRILL_SPEC", "GRILL_SPEC"),          # self / field update
         ("IMPLEMENT", "BLOCKED"), ("BLOCKED", "IMPLEMENT"),  # escalate / resume
         ("PLAN", "IDLE"),                       # abort
+        ("IDLE", "REFINING"),                   # RFN-004: clustered batch-refine entry
+        ("REFINING", "IDLE"),                   # batch done → normal execution picks up
+        ("REFINING", "BLOCKED"),                # escalate mid-refine
     ]
     illegal = [
         ("IDLE", "IMPLEMENT"), ("IDLE", "FINISH"), ("TRIAGE", "IMPLEMENT"),
@@ -49,6 +52,8 @@ def main():
         ("IMPLEMENT", "FINISH"),                # must pass TEST_VERIFY (full lane)
         ("TRIAGE", "PLAN"),                     # skips grill
         ("SPEC_PLAN", "TEST_VERIFY"),
+        ("TRIAGE", "REFINING"),                 # REFINING is entered only from IDLE
+        ("REFINING", "IMPLEMENT"),              # refine produces specs, doesn't execute
     ]
     for a, b in legal:
         cases.append((f"legal {a}->{b}", pg._transition_legal(a, b) is True))
@@ -61,7 +66,7 @@ def main():
     tmpl = ROOT / "project-template" / ".board" / "sprint-state.md"
     documented = set()
     phases = {"IDLE", "TRIAGE", "GRILL_SPEC", "PLAN", "IMPLEMENT", "TEST_VERIFY",
-              "FINISH", "SPEC_PLAN", "VERIFY_FINISH", "BLOCKED"}
+              "FINISH", "SPEC_PLAN", "VERIFY_FINISH", "BLOCKED", "REFINING"}
     if tmpl.is_file():
         m = re.search(r"## Valid Transitions\s*\n```(.*?)```",
                       tmpl.read_text(encoding="utf-8"), re.DOTALL)
