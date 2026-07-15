@@ -75,6 +75,21 @@ PARK at the phase boundary when any cap/limit hits (standard /capiva:handover do
 Parking is always clean: mid-phase budget death abandons that phase's runner
 (branch stays at its last green commit) and the task re-enters at that phase.
 
+## Reinforcement (this workflow's rule, not the base skill's — ADR-0018)
+
+Because auto/clustered execution defers the mid-run human quality gate, THIS workflow requires, at
+every quality gate (attended runs do not — the human is the check):
+- **Dual review is mandatory** — run test-verify's second independent reviewer regardless of the
+  `Dual Review` config (test-verify keeps it config-optional as a base skill; auto imposes it).
+- **The gate-judge applies its reinforcement method** — test-meaningfulness (is each AC's test a
+  tautology or does it exercise the behavior?) and spec-conformance (does the work match the approved
+  spec's intent, not just the AC letter?), per the [ADR-0009](../../docs/adr/0009-machine-readable-ac-gating.md)
+  amendment. Either failure → ESCALATE. Ensure the quality report surfaces per-AC behavior evidence so
+  the judge can assess it.
+
+Reinforcement protects a half-assed implementation of a *good* spec; a faithful implementation of a
+*bad* spec is upstream (the grill / context-answerer), not here.
+
 ## Circuit breakers
 - `Max Auto-Approvals Per Run` from the policy file: after N delegated CLEARs,
   everything further escalates

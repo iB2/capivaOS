@@ -31,11 +31,13 @@ spec-approved). **Order by dependency** (a task whose `Depends` are all refined/
 earlier decisions inform later specs.
 
 ### Step 2 — Refine each task (grill-spec, wrapped — never forked)
-For each task in dependency order, run the **grill-spec process** (Steps 1–5 of `/capiva:grill-spec`)
-with the **context-answerer** enabled (it is the whole point of clustered mode — set
-`Context Answerer: on` for the run, or honor the config):
+For each task in dependency order, run the base **grill-spec** adversarial interview
+(`/capiva:grill-spec`) — but **this workflow interposes the `context-answerer` between grill-spec's
+question-generation and human-answering.** The answerer is intrinsic to the grill-sprint (it is the
+whole point of clustered mode); grill-spec itself stays workflow-agnostic and knows nothing about it
+(ADR-0018 — the base skill is composed, not modified). The composed flow per task:
 
-1. **Generate** the full adversarial question set (unchanged, context-blind — never let
+1. **Generate** grill-spec's full adversarial question set (unchanged, context-blind — never let
    answer-availability shrink the questions; [ADR-0017](../../docs/adr/0017-context-answerer-contract.md)
    invariant 3).
 2. **Triage** via the `context-answerer` subagent (read-only): each question → `FINDING <cite>`

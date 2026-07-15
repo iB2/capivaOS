@@ -165,6 +165,10 @@ Proceed with this configuration?
 - **Context Answerer**: off
 ```
 
+Field scope: `Phase Isolation` and `Dual Review` tune base-pipeline behavior; `Context Answerer` is
+**scoped to the `/capiva:refine` (grill-sprint) workflow** — the base `grill-spec` skill does not read
+it (ADR-0018). It toggles the context-answerer within refine.
+
 2. Write `.board/harness-schema-version` containing exactly the plugin's
    `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (no
    newline decoration — the session-context hook and `/capiva:update` compare
