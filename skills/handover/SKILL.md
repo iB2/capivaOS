@@ -19,6 +19,20 @@ This skill is invoked:
 3. **Before expensive phases** when context is already pressured (1+ auto-compactions)
 4. **On sprint interruption** — rate limit, timeout, or user stop
 
+## Two Modes
+
+This skill has two modes. Pick by WHAT is being handed over.
+
+**Mode A — Task/Sprint handover** (default — everything under "Process" below): one task inside
+the `/capiva:sprint` pipeline. Triggered as listed above.
+
+**Mode B — Orchestrator-Seat handover** (see the section at the end of this file): the BOSS SEAT
+of a whole multi-track project, handed to a fresh agent that must "become you." Use Mode B when
+the request signals the SEAT, not a task:
+"handover do assento/seat de orquestrador", "passe/atualize o plano pro próximo agente",
+"orchestrator seat", "ele precisa 'ser você'", "prepara a mensagem pro novo agente pra eu colar",
+"hand over the project". If unsure which mode → ask.
+
 ## Process
 
 ### Step 1: Snapshot Current State
@@ -220,3 +234,89 @@ The handover document follows the same anti-slop rules as all artifacts:
 - **Don't restart the pipeline.** The handover explicitly tells the next agent which phases are DONE. Redoing approved work wastes time and may produce different (worse) results.
 - **Handover at phase boundaries when possible.** Between phases is the cleanest handover point. Mid-phase handovers work but require more detail.
 - **Never lose uncommitted code.** `git add . && git commit -m "WIP: handover at [phase]"` before writing the handover doc.
+
+---
+
+## Mode B — Orchestrator-Seat Handover
+
+You are handing over the SEAT of a whole project (many tracks, subagents, decisions) — not one
+task. The next agent must be able to "be you": own the sequencing, delegation, validation, and
+the "is this actually done?" check with zero context loss. Produce or UPDATE one living seat
+document, then deliver it to the next agent.
+
+### Reference the durable — don't re-embed it
+Identity, standing guardrails, and global rules already live in durable files (the project's
+`CLAUDE.md`, memory, board). POINT to them ("operate under the guardrails in `<file>`"); do NOT
+paste their full text into every handover — a re-embedded copy just goes stale and burns tokens.
+The seat doc carries only what is NOT already durable: the live plan, this session's decisions,
+work in flight, dead ends, and the resume point.
+
+### Where it lives
+`docs/handover/PROJECT-ORCHESTRATOR-handover.md` in the project's primary repo (fall back to the
+project folder if there is no repo). It is a LIVING doc: UPDATE in place, newest block on top;
+never fork a new file per handover.
+
+### Step 1 — Refresh before writing
+Reconcile the CURRENT prioritized plan (board/tasks, blocked vs unblocked, the priority/spec
+agreed with the human). Hand over the plan as it is NOW, not a stale snapshot. Persist any
+session-only state (worktree/scratchpad paths, verbal agreements) — if it lives only in this
+window, it is about to be lost.
+
+### Step 2 — Update the seat document (newest block on top)
+
+    # Project Handover — [Project] — the ORCHESTRATOR SEAT
+    > Updated [ISO] by [session id]. Living doc: newest block first, UPDATE in place.
+    > This is the WHOLE-PROJECT seat, not a task. Read once, top to bottom — it is your full orientation.
+
+    ## ★★★ [DATE] — READ THIS FIRST (latest)
+    [What changed since the last handover: advanced / completed / merged (commits, PRs). Newest
+     first; older dated blocks stay below for continuity.]
+
+    ## HOW TO OPERATE THIS SEAT
+    - You are the SOLE orchestrator: you coordinate and VALIDATE; you do not build directly.
+      Subagents build — you write precise briefs, then re-validate every result yourself
+      (adversarial: gates AND your own eyes; a green gate is not proof).
+    - Keep the record current each session: board, this doc, memory.
+    - Operate under the standing guardrails in [pointer to CLAUDE.md / rules] — do not restate them here.
+
+    ## PRIORITIZED PLAN (current — agreed with the human)
+    | Prio | Item | Status | Done = (acceptance bar) | Spec / where | Notes |
+    (P0→P3. "Done =" is the agreed acceptance criterion for THIS item — the yardstick the next
+     agent uses for its "is this actually done?" check. Priority + spec are as agreed, not re-derived.)
+
+    ## BLOCKED — dependency, unblock trigger, owner
+    | Item | Blocked on | Unblocks when | Owner |
+
+    ## DELEGATED CONVERSATIONS / AGENTS — and what each owes
+    | Agent / session | Track | Owes | State |
+
+    ## WORK IN FLIGHT (running now — do NOT re-spawn)
+    | Agent / job | Task id / how to check | What it owes | Expected signal |
+    (Background agents/jobs still running: their id, where output lands, and the fact that a fresh
+     agent must WAIT for their result instead of starting the same work again.)
+
+    ## REJECTED / DEAD ENDS (do not re-explore)
+    [Approaches already tried and discarded, each with WHY. This is the anti-rework carry — the
+     single most expensive thing to lose is a path the next agent re-explores because nobody
+     wrote down that it was already killed.]
+
+    ## DECISIONS THIS SESSION (not yet in artifacts)
+    1. [decision + why + implication for remaining work]
+
+    ## RESUME POINT
+    [Exact next action. "Continue X" is banned — say precisely what to do next.]
+
+### Step 3 — Deliver to the next agent
+Default: the next agent is ALREADY started (the human set its model). On finishing the doc,
+contact it over the mesh (SendMessage) with a short pointer: "You hold the ORCHESTRATOR SEAT for
+[project]. Read `docs/handover/PROJECT-ORCHESTRATOR-handover.md` — top block + HOW TO OPERATE THIS
+SEAT first; it is your full context. Resume at [resume point]." If the human asked for a
+paste-ready message instead, output the full message as text — don't just point at the file.
+
+### Mode B quality standard
+- The plan handed over is the CURRENT prioritized one; blocked/unblocked reflects reality now.
+- Every item carries its "Done =" acceptance bar, so the next agent can actually run the done-check.
+- Every delegated agent, and every job still IN FLIGHT, is listed — no duplicate work, nothing orphaned.
+- Rejected paths are recorded with WHY — the next agent never re-explores a dead end.
+- Guardrails/identity are REFERENCED from the durable source, not re-embedded.
+- Nothing session-only is lost (paths, worktrees, verbal decisions).
